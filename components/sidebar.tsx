@@ -94,7 +94,8 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed md:relative z-50 h-full`}
       >
         <div className="h-16 flex items-center px-3 border-b border-sidebar-border justify-between">
-          {!isCollapsed && <span className="text-2xl font-bold text-primary">DreamCut</span>}
+          {!isCollapsed && 
+          <span className="text-2xl font-bold text-primary">DreamCut</span>}
           <Button variant="ghost" size="icon" onClick={onToggle} className="h-8 w-8 shrink-0 hidden md:flex">
             <PanelLeft className="h-5 w-5" />
           </Button>

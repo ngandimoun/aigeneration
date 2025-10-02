@@ -21,10 +21,48 @@ import {
   Cpu,
   ChevronRight
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface ImageGeneratorInterfaceProps {
   onClose: () => void
   projectTitle: string
+}
+
+// Aspect ratio visual components
+const AspectRatioIcon = ({ ratio }: { ratio: string }) => {
+  const getIconStyle = () => {
+    switch (ratio) {
+      case "1:1":
+        return "w-3 h-3 border border-muted-foreground/50"
+      case "16:9":
+        return "w-4 h-2.5 border border-muted-foreground/50"
+      case "9:16":
+        return "w-2.5 h-4 border border-muted-foreground/50"
+      case "2:3":
+        return "w-3 h-4 border border-muted-foreground/50"
+      case "3:4":
+        return "w-3.5 h-4 border border-muted-foreground/50"
+      case "1:2":
+        return "w-2 h-4 border border-muted-foreground/50"
+      case "2:1":
+        return "w-4 h-2 border border-muted-foreground/50"
+      case "4:5":
+        return "w-3.5 h-4 border border-muted-foreground/50"
+      case "3:2":
+        return "w-4 h-3 border border-muted-foreground/50"
+      case "4:3":
+        return "w-4 h-3 border border-muted-foreground/50"
+      default:
+        return "w-3 h-3 border border-muted-foreground/50"
+    }
+  }
+
+  return <div className={getIconStyle()} />
 }
 
 export function ImageGeneratorInterface({ onClose, projectTitle }: ImageGeneratorInterfaceProps) {
@@ -189,11 +227,107 @@ export function ImageGeneratorInterface({ onClose, projectTitle }: ImageGenerato
         </div>
 
         {/* Aspect Ratio */}
-        <div className="flex items-center gap-1">
-          <Square className="h-3 w-3 text-foreground" />
-          <span className="text-xs text-foreground">1:1</span>
-          <ChevronRight className="h-3 w-3 text-muted-foreground" />
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 transition-colors">
+              <Square className="h-3 w-3 text-foreground" />
+              <span className="text-xs text-foreground">{aspectRatio}</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 text-xs text-foreground space-y-1">
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("1:1")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "1:1" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="1:1" />
+              </div>
+              1:1 Square
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("16:9")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "16:9" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="16:9" />
+              </div>
+              16:9 Widescreen
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("9:16")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "9:16" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="9:16" />
+              </div>
+              9:16 Social story
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("2:3")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "2:3" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="2:3" />
+              </div>
+              2:3 Portrait
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("3:4")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "3:4" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="3:4" />
+              </div>
+              3:4 Traditional
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("1:2")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "1:2" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="1:2" />
+              </div>
+              1:2 Vertical
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("2:1")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "2:1" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="2:1" />
+              </div>
+              2:1 Horizontal
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("4:5")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "4:5" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="4:5" />
+              </div>
+              4:5 Social post
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("3:2")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "3:2" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="3:2" />
+              </div>
+              3:2 Standard
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setAspectRatio("4:3")}
+              className={`flex items-center gap-2 py-2 ${aspectRatio === "4:3" ? "bg-muted" : ""}`}
+            >
+              <div className="flex items-center justify-center w-4 h-4">
+                <AspectRatioIcon ratio="4:3" />
+              </div>
+              4:3 Classic
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Generate Button */}
