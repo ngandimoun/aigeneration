@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { GoogleAuthPopup } from "@/components/auth/google-auth-popup"
@@ -9,7 +9,12 @@ import { Sparkles } from "lucide-react"
 
 export function Hero() {
   const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const { user } = useAuth()
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent">
@@ -53,14 +58,23 @@ export function Hero() {
         </p>
 
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          {user ? (
+          {!isMounted ? (
+            <Button 
+              size="lg" 
+              className="bg-purple-600 text-sm font-semibold text-white cursor-pointer"
+              disabled
+              type="button"
+            >
+              Loading...
+            </Button>
+          ) : user ? (
             <Button 
               size="lg" 
               className="bg-purple-600 text-sm font-semibold text-white cursor-pointer"
               onClick={() => window.location.href = '/content'}
               type="button"
             >
-              Accéder à l'application
+              Access Application
             </Button>
           ) : (
             <Button 

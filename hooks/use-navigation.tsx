@@ -8,6 +8,7 @@ interface Artifact {
   image: string
   description: string
   section: string
+  isPublic?: boolean
 }
 
 interface NavigationContextType {
@@ -19,6 +20,8 @@ interface NavigationContextType {
   addArtifact: (artifact: Omit<Artifact, 'id' | 'section'>) => void
   showArtifactForm: boolean
   setShowArtifactForm: (show: boolean) => void
+  showProjectForm: boolean
+  setShowProjectForm: (show: boolean) => void
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined)
@@ -27,6 +30,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [selectedSection, setSelectedSection] = useState<string>("artifacts")
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [showArtifactForm, setShowArtifactForm] = useState(false)
+  const [showProjectForm, setShowProjectForm] = useState(false)
 
   const getArtifactsBySection = (section: string) => {
     return artifacts.filter(artifact => artifact.section === section)
@@ -40,6 +44,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     }
     setArtifacts(prev => [...prev, newArtifact])
     setShowArtifactForm(false)
+    setShowProjectForm(false)
   }
 
   const getDisplayTitle = () => {
@@ -111,16 +116,25 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Fermer les formulaires quand on change de section
+  const handleSetSelectedSection = (section: string) => {
+    setSelectedSection(section)
+    setShowArtifactForm(false)
+    setShowProjectForm(false)
+  }
+
   return (
     <NavigationContext.Provider value={{ 
       selectedSection, 
-      setSelectedSection, 
+      setSelectedSection: handleSetSelectedSection, 
       getDisplayTitle, 
       artifacts, 
       getArtifactsBySection,
       addArtifact, 
       showArtifactForm, 
-      setShowArtifactForm 
+      setShowArtifactForm,
+      showProjectForm,
+      setShowProjectForm
     }}>
       {children}
     </NavigationContext.Provider>

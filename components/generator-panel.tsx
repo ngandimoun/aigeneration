@@ -5,12 +5,17 @@ import { useNavigation } from "@/hooks/use-navigation"
 import { ArtifactCard } from "@/components/artifact-card"
 import { ArtifactForm } from "@/components/artifact-form"
 import { ImageGeneratorInterface } from "@/components/image-generator-interface"
+import { IllustrationForm } from "@/components/forms/illustration-form"
+import { AvatarsForm } from "@/components/forms/avatars-form"
+import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
+import { ConceptWorldsForm } from "@/components/forms/concept-worlds-form"
+import { ChartsInfographicsForm } from "@/components/forms/charts-infographics-form"
 import { Button } from "@/components/ui/button"
 import { Plus, FolderPlus } from "lucide-react"
 
 export function GeneratorPanel() {
   const [isMounted, setIsMounted] = useState(false)
-  const { getDisplayTitle, selectedSection, getArtifactsBySection, addArtifact, showArtifactForm, setShowArtifactForm } = useNavigation()
+  const { getDisplayTitle, selectedSection, getArtifactsBySection, addArtifact, showArtifactForm, setShowArtifactForm, showProjectForm, setShowProjectForm, artifacts } = useNavigation()
   
   // États locaux pour l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const [showImageGenerator, setShowImageGenerator] = useState(false)
@@ -25,9 +30,9 @@ export function GeneratorPanel() {
   
   // Helper functions
   const isImageGenerationSection = (section: string) => imageGenerationSections.includes(section)
-  const shouldShowNewProjectButton = () => isImageGenerationSection(selectedSection) && !showArtifactForm && !showImageGenerator
+  const shouldShowNewProjectButton = () => isImageGenerationSection(selectedSection) && !showProjectForm && !showImageGenerator
   const shouldShowProjectGrid = () => isImageGenerationSection(selectedSection) && sectionArtifacts.length > 0 && !showImageGenerator
-  const shouldShowEmptyState = () => isImageGenerationSection(selectedSection) && sectionArtifacts.length === 0 && !showArtifactForm && !showImageGenerator
+  const shouldShowEmptyState = () => isImageGenerationSection(selectedSection) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator
 
   useEffect(() => {
     setIsMounted(true)
@@ -61,7 +66,7 @@ export function GeneratorPanel() {
   const NewProjectButton = () => (
     <Button
       size="sm"
-      onClick={() => setShowArtifactForm(true)}
+      onClick={() => setShowProjectForm(true)}
       className="flex items-center gap-2"
     >
       <FolderPlus className="h-4 w-4" />
@@ -73,10 +78,73 @@ export function GeneratorPanel() {
   const ArtifactFormComponent = ({ type = "artifact" }: { type?: "artifact" | "project" }) => (
     <ArtifactForm 
       onSave={addArtifact}
-      onCancel={() => setShowArtifactForm(false)}
+      onCancel={() => {
+        if (type === 'artifact') {
+          setShowArtifactForm(false)
+        } else {
+          setShowProjectForm(false)
+        }
+      }}
       type={type}
     />
   )
+
+  // Fonction pour rendre le bon formulaire selon la section
+  const renderSectionForm = () => {
+    const availableArtifacts = artifacts.map(artifact => ({
+      id: artifact.id,
+      title: artifact.title,
+      image: artifact.image,
+      description: artifact.description
+    }))
+
+    switch (selectedSection) {
+      case 'illustration':
+        return (
+          <IllustrationForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'avatars-personas':
+        return (
+          <AvatarsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'product-mockups':
+        return (
+          <ProductMockupsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'concept-worlds':
+        return (
+          <ConceptWorldsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'charts-infographics':
+        return (
+          <ChartsInfographicsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      default:
+        return (
+          <ArtifactFormComponent type="project" />
+        )
+    }
+  }
 
   // Composant pour la grille de projets
   const ProjectGrid = () => (
@@ -146,8 +214,8 @@ export function GeneratorPanel() {
           <ArtifactFormComponent />
         )}
         
-        {isImageGenerationSection(selectedSection) && showArtifactForm && (
-          <ArtifactFormComponent type="project" />
+        {isImageGenerationSection(selectedSection) && showProjectForm && (
+          renderSectionForm()
         )}
         
         {showImageGenerator && selectedProject && imageGeneratorSection === selectedSection && (
@@ -166,6 +234,7 @@ export function GeneratorPanel() {
                 title={artifact.title}
                 image={artifact.image}
                 description={artifact.description}
+                isPublic={artifact.isPublic}
               />
             ))}
           </div>

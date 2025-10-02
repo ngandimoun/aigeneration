@@ -50,7 +50,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { SidebarUserMenu } from "@/components/auth/sidebar-user-menu"
+import { UserMenu } from "@/components/auth/user-menu"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useNavigation } from "@/hooks/use-navigation"
@@ -762,8 +762,9 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
       <div className="p-4 border-t border-sidebar-border space-y-3">
         {/* Mobile Header Buttons */}
         <div className="md:hidden space-y-2">
-          {user && (
-            <SidebarUserMenu 
+          {isMounted && user && (
+            <UserMenu 
+              variant="sidebar"
               isCollapsed={isCollapsed}
             />
           )}

@@ -4,19 +4,45 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X, Loader2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Plus, X, Loader2, Check, ChevronsUpDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 interface ArtifactFormProps {
-  onSave: (artifact: { title: string; image: string; description: string }) => void
+  onSave: (artifact: { title: string; image: string; description: string; isPublic?: boolean; style?: string }) => void
   onCancel: () => void
   type?: 'artifact' | 'project'
 }
+
+// Données d'exemple pour la sélection de styles d'illustration
+const illustrationStyles = [
+  { value: "realistic", label: "Realistic" },
+  { value: "cartoon", label: "Cartoon" },
+  { value: "anime", label: "Anime" },
+  { value: "watercolor", label: "Watercolor" },
+  { value: "oil-painting", label: "Oil Painting" },
+  { value: "digital-art", label: "Digital Art" },
+  { value: "sketch", label: "Sketch" },
+  { value: "vector", label: "Vector" },
+  { value: "3d-render", label: "3D Render" },
+  { value: "minimalist", label: "Minimalist" },
+  { value: "vintage", label: "Vintage" },
+  { value: "modern", label: "Modern" },
+  { value: "abstract", label: "Abstract" },
+  { value: "geometric", label: "Geometric" },
+  { value: "hand-drawn", label: "Hand Drawn" },
+]
 
 export function ArtifactForm({ onSave, onCancel, type = 'artifact' }: ArtifactFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isPublic, setIsPublic] = useState(false)
+  const [selectedStyle, setSelectedStyle] = useState<string>("")
+  const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -41,12 +67,16 @@ export function ArtifactForm({ onSave, onCancel, type = 'artifact' }: ArtifactFo
       onSave({
         title: title.trim(),
         image: imagePreview,
-        description: description.trim()
+        description: description.trim(),
+        ...(type === 'artifact' && { isPublic }),
+        ...(type === 'project' && selectedStyle && { style: selectedStyle })
       })
       
       setTitle("")
       setDescription("")
       setImagePreview(null)
+      setIsPublic(false)
+      setSelectedStyle("")
       setIsLoading(false)
       
       // Afficher le toast de confirmation
@@ -60,9 +90,24 @@ export function ArtifactForm({ onSave, onCancel, type = 'artifact' }: ArtifactFo
   return (
     <div className="bg-background border border-border rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">
-          {type === 'project' ? 'New Project' : 'New Artifact'}
-        </h3>
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-semibold text-foreground">
+            {type === 'project' ? 'New Project' : 'New Artifact'}
+          </h3>
+          {type === 'artifact' && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="public-toggle" className="text-xs font-medium text-foreground">
+                Public
+              </label>
+              <Switch
+                id="public-toggle"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+                className="h-4 w-7 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#57e6f9] data-[state=checked]:via-blue-500 data-[state=checked]:to-purple-700"
+              />
+            </div>
+          )}
+        </div>
         <Button variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
@@ -111,6 +156,57 @@ export function ArtifactForm({ onSave, onCancel, type = 'artifact' }: ArtifactFo
             </label>
           </div>
         </div>
+
+        {type === 'project' && (
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Style
+            </label>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between"
+                >
+                  {selectedStyle
+                    ? illustrationStyles.find((style) => style.value === selectedStyle)?.label
+                    : "Select style..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Search style..." />
+                  <CommandList>
+                    <CommandEmpty>No style found.</CommandEmpty>
+                    <CommandGroup>
+                      {illustrationStyles.map((style) => (
+                        <CommandItem
+                          key={style.value}
+                          value={style.value}
+                          onSelect={(currentValue) => {
+                            setSelectedStyle(currentValue === selectedStyle ? "" : currentValue)
+                            setOpen(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedStyle === style.value ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {style.label}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
