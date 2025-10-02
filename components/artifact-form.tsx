@@ -10,9 +10,10 @@ import { useToast } from "@/hooks/use-toast"
 interface ArtifactFormProps {
   onSave: (artifact: { title: string; image: string; description: string }) => void
   onCancel: () => void
+  type?: 'artifact' | 'project'
 }
 
-export function ArtifactForm({ onSave, onCancel }: ArtifactFormProps) {
+export function ArtifactForm({ onSave, onCancel, type = 'artifact' }: ArtifactFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -50,7 +51,7 @@ export function ArtifactForm({ onSave, onCancel }: ArtifactFormProps) {
       
       // Afficher le toast de confirmation
       toast({
-        title: "Artifact créé avec succès",
+        title: type === 'project' ? "Projet créé avec succès" : "Artifact créé avec succès",
         description: `"${title.trim()}" a été ajouté à votre collection.`,
       })
     }
@@ -59,7 +60,9 @@ export function ArtifactForm({ onSave, onCancel }: ArtifactFormProps) {
   return (
     <div className="bg-background border border-border rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">New Artifact</h3>
+        <h3 className="text-lg font-semibold text-foreground">
+          {type === 'project' ? 'New Project' : 'New Artifact'}
+        </h3>
         <Button variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
@@ -73,7 +76,7 @@ export function ArtifactForm({ onSave, onCancel }: ArtifactFormProps) {
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter artifact title"
+            placeholder={type === 'project' ? "Enter project title" : "Enter artifact title"}
           />
         </div>
 
@@ -116,7 +119,7 @@ export function ArtifactForm({ onSave, onCancel }: ArtifactFormProps) {
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter artifact description"
+            placeholder={type === 'project' ? "Enter project description" : "Enter artifact description"}
             rows={3}
           />
         </div>

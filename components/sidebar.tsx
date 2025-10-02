@@ -218,17 +218,32 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               <Button
                 variant="ghost"
                 className={`w-full justify-start gap-3 text-sm ${
-                  selectedSection === 'comics-illustration'
+                  selectedSection === 'comics'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
                 }`}
                 onClick={() => {
-                  setSelectedSection('comics-illustration')
+                  setSelectedSection('comics')
                   onMobileClose()
                 }}
               >
                 <BookOpen className="h-4 w-4 shrink-0" />
-                <span>Comics & Illustration</span>
+                <span>Comics</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start gap-3 text-sm ${
+                  selectedSection === 'illustration'
+                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                    : 'text-sidebar-foreground hover:bg-accent'
+                }`}
+                onClick={() => {
+                  setSelectedSection('illustration')
+                  onMobileClose()
+                }}
+              >
+                <Palette className="h-4 w-4 shrink-0" />
+                <span>Illustration</span>
               </Button>
               <Button
                 variant="ghost"

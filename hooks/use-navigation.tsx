@@ -43,8 +43,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return "Templates"
       case "favorites":
         return "Favorites"
-      case "comics-illustration":
-        return "Comics & Illustration"
+      case "comics":
+        return "Comics"
+      case "illustration":
+        return "Illustration"
       case "avatars-personas":
         return "Avatars & Personas"
       case "product-mockups":
