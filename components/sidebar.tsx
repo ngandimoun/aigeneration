@@ -99,7 +99,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <PanelLeft className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex-1 h-0 overflow-y-auto scrollbar-thin">
+        <div className="flex-1 h-0 overflow-y-auto scrollbar-hover">
           <nav className="px-3 py-4 space-y-1">
             <Button
               variant="ghost"
@@ -138,7 +138,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 h-0 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 h-0 overflow-y-auto scrollbar-hover">
         <nav className="px-3 py-4 space-y-1">
         <Button
           variant="ghost"
@@ -217,7 +217,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <div className="ml-6 mt-1 space-y-1">
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-sm ${
+                className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'comics'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
@@ -232,7 +232,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-sm ${
+                className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'illustration'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
@@ -247,7 +247,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-sm ${
+                className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'avatars-personas'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
@@ -262,7 +262,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-sm ${
+                className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'product-mockups'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
@@ -277,7 +277,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-sm ${
+                className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'concept-worlds'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
@@ -292,7 +292,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-sm ${
+                className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'charts-infographics'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                     : 'text-sidebar-foreground hover:bg-accent'
@@ -338,7 +338,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'voiceovers'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -353,7 +353,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'music-jingles'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -368,7 +368,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'sound-fx'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -412,7 +412,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'explainers'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -427,7 +427,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'ugc-ads'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -442,7 +442,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'product-motion'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -457,7 +457,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'cinematic-clips'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -472,7 +472,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'social-cuts'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -487,7 +487,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'talking-avatars'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -531,7 +531,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'thumbnails-covers'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -546,7 +546,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'storyboards-scripts'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -561,7 +561,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'ad-templates'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -576,7 +576,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'brand-kits'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -620,7 +620,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'merge-videos'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -635,7 +635,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'trim-video'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -650,7 +650,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'add-subtitles'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -665,7 +665,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'extract-audio'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -680,7 +680,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'add-sound'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -695,7 +695,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'upscaling'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -710,7 +710,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'style-transfer'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -725,7 +725,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'add-watermark'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -740,7 +740,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-sm ${
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'stitch-clips'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'

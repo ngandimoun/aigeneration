@@ -7,6 +7,7 @@ interface Artifact {
   title: string
   image: string
   description: string
+  section: string
 }
 
 interface NavigationContextType {
@@ -14,7 +15,8 @@ interface NavigationContextType {
   setSelectedSection: (section: string) => void
   getDisplayTitle: () => string
   artifacts: Artifact[]
-  addArtifact: (artifact: Omit<Artifact, 'id'>) => void
+  getArtifactsBySection: (section: string) => Artifact[]
+  addArtifact: (artifact: Omit<Artifact, 'id' | 'section'>) => void
   showArtifactForm: boolean
   setShowArtifactForm: (show: boolean) => void
 }
@@ -26,10 +28,15 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [showArtifactForm, setShowArtifactForm] = useState(false)
 
-  const addArtifact = (artifact: Omit<Artifact, 'id'>) => {
+  const getArtifactsBySection = (section: string) => {
+    return artifacts.filter(artifact => artifact.section === section)
+  }
+
+  const addArtifact = (artifact: Omit<Artifact, 'id' | 'section'>) => {
     const newArtifact: Artifact = {
       ...artifact,
-      id: Date.now().toString()
+      id: Date.now().toString(),
+      section: selectedSection
     }
     setArtifacts(prev => [...prev, newArtifact])
     setShowArtifactForm(false)
@@ -110,6 +117,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       setSelectedSection, 
       getDisplayTitle, 
       artifacts, 
+      getArtifactsBySection,
       addArtifact, 
       showArtifactForm, 
       setShowArtifactForm 

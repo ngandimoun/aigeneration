@@ -59,7 +59,7 @@ export function ImageGeneratorInterface({ onClose, projectTitle }: ImageGenerato
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe your image or upload"
-            className="min-h-[80px] pr-12 text-sm resize-none"
+            className="min-h-[80px] pr-12 pb-8 text-sm resize-none"
           />
           <div className="absolute top-2 right-2 flex items-center gap-1">
             <span className="text-blue-500 text-xs cursor-pointer hover:underline">
@@ -70,15 +70,15 @@ export function ImageGeneratorInterface({ onClose, projectTitle }: ImageGenerato
             </div>
           </div>
           
-          {/* AI Prompt Toggle inside textarea */}
-          <div className="absolute bottom-2 left-2 flex items-center gap-1">
+          {/* AI Prompt Toggle with background for better visibility */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-md border border-border/50">
             <Switch
               checked={aiPromptEnabled}
               onCheckedChange={setAiPromptEnabled}
               className="scale-75"
             />
             <span className="text-xs text-foreground">AI prompt</span>
-            <Button variant="ghost" size="icon" className="h-5 w-5">
+            <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted">
               <Dice6 className="h-3 w-3" />
             </Button>
           </div>
