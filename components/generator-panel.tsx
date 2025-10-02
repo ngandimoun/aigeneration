@@ -17,6 +17,8 @@ import { ProductMotionForm } from "@/components/forms/product-motion-form"
 import { CinematicClipsForm } from "@/components/forms/cinematic-clips-form"
 import { SocialCutsForm } from "@/components/forms/social-cuts-form"
 import { TalkingAvatarsForm } from "@/components/forms/talking-avatars-form"
+import { ComicsForm } from "@/components/forms/comics-form"
+import { ComicCard } from "@/components/comic-card"
 import { Button } from "@/components/ui/button"
 import { Plus, FolderPlus } from "lucide-react"
 
@@ -38,13 +40,13 @@ export function GeneratorPanel() {
   const sectionArtifacts = getArtifactsBySection(selectedSection)
 
   // Sections qui supportent la génération d'images
-  const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics']
+  const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics', 'comics']
   
   // Sections qui supportent la génération vidéo
   const videoGenerationSections = ['explainers', 'talking-avatars', 'social-cuts', 'cinematic-clips', 'product-motion', 'ugc-ads']
   
   // Sections qui supportent les nouveaux formulaires
-  const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars']
+  const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics']
   
   // Helper functions
   const isImageGenerationSection = (section: string) => imageGenerationSections.includes(section)
@@ -226,6 +228,14 @@ export function GeneratorPanel() {
             availableArtifacts={availableArtifacts}
           />
         )
+      case 'comics':
+        return (
+          <ComicsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
       default:
         return (
           <ArtifactFormComponent type="project" />
@@ -257,6 +267,29 @@ export function GeneratorPanel() {
           </p>
         </div>
       ))}
+    </div>
+  )
+
+  // Composant pour la grille de comics
+  const ComicsGrid = () => (
+    <div className="grid grid-cols-2 gap-4">
+      {sectionArtifacts.map((artifact) => {
+        // Extraire les données spécifiques au comic depuis l'artifact
+        const comicData = artifact as any // Type assertion temporaire
+        return (
+          <ComicCard
+            key={artifact.id}
+            title={artifact.title}
+            image={artifact.image}
+            description={artifact.description}
+            type={comicData.type || 'color'}
+            vibe={comicData.vibe || 'action'}
+            inspirationStyle={comicData.inspirationStyle}
+            charactersCount={comicData.characters?.length || 0}
+            onClick={() => handleProjectClick(artifact)}
+          />
+        )
+      })}
     </div>
   )
 
@@ -334,7 +367,8 @@ export function GeneratorPanel() {
           </div>
         )}
         
-        {shouldShowProjectGrid() && <ProjectGrid />}
+        {shouldShowProjectGrid() && selectedSection === 'comics' && <ComicsGrid />}
+        {shouldShowProjectGrid() && selectedSection !== 'comics' && <ProjectGrid />}
         
         {selectedSection === 'artifacts' && sectionArtifacts.length === 0 && !showArtifactForm && (
           <EmptyState message="No artifacts yet. Create your first artifact!" />
