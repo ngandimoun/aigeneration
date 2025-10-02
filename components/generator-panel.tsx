@@ -5,11 +5,18 @@ import { useNavigation } from "@/hooks/use-navigation"
 import { ArtifactCard } from "@/components/artifact-card"
 import { ArtifactForm } from "@/components/artifact-form"
 import { ImageGeneratorInterface } from "@/components/image-generator-interface"
+import { VideoGeneratorInterface } from "@/components/video-generator-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
 import { AvatarsForm } from "@/components/forms/avatars-form"
 import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
 import { ConceptWorldsForm } from "@/components/forms/concept-worlds-form"
 import { ChartsInfographicsForm } from "@/components/forms/charts-infographics-form"
+import { ExplainersForm } from "@/components/forms/explainers-form"
+import { UGCAdsForm } from "@/components/forms/ugc-ads-form"
+import { ProductMotionForm } from "@/components/forms/product-motion-form"
+import { CinematicClipsForm } from "@/components/forms/cinematic-clips-form"
+import { SocialCutsForm } from "@/components/forms/social-cuts-form"
+import { TalkingAvatarsForm } from "@/components/forms/talking-avatars-form"
 import { Button } from "@/components/ui/button"
 import { Plus, FolderPlus } from "lucide-react"
 
@@ -22,17 +29,30 @@ export function GeneratorPanel() {
   const [selectedProject, setSelectedProject] = useState<{title: string, image: string, description: string} | null>(null)
   const [imageGeneratorSection, setImageGeneratorSection] = useState<string | null>(null)
   
+  // États locaux pour l'interface de génération vidéo (Explainers, Talking Avatars, Social Cuts, Cinematic Clips, Product in Motion, UGC Ads)
+  const [showVideoGenerator, setShowVideoGenerator] = useState(false)
+  const [selectedVideoProject, setSelectedVideoProject] = useState<{title: string, image: string, description: string} | null>(null)
+  const [videoGeneratorSection, setVideoGeneratorSection] = useState<string | null>(null)
+  
   // Obtenir les artifacts filtrés par section
   const sectionArtifacts = getArtifactsBySection(selectedSection)
 
   // Sections qui supportent la génération d'images
   const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics']
   
+  // Sections qui supportent la génération vidéo
+  const videoGenerationSections = ['explainers', 'talking-avatars', 'social-cuts', 'cinematic-clips', 'product-motion', 'ugc-ads']
+  
+  // Sections qui supportent les nouveaux formulaires
+  const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars']
+  
   // Helper functions
   const isImageGenerationSection = (section: string) => imageGenerationSections.includes(section)
-  const shouldShowNewProjectButton = () => isImageGenerationSection(selectedSection) && !showProjectForm && !showImageGenerator
-  const shouldShowProjectGrid = () => isImageGenerationSection(selectedSection) && sectionArtifacts.length > 0 && !showImageGenerator
-  const shouldShowEmptyState = () => isImageGenerationSection(selectedSection) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator
+  const isVideoGenerationSection = (section: string) => videoGenerationSections.includes(section)
+  const isNewFormSection = (section: string) => newFormSections.includes(section)
+  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator
+  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator
+  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator
 
   useEffect(() => {
     setIsMounted(true)
@@ -47,12 +67,25 @@ export function GeneratorPanel() {
     }
   }, [selectedSection, imageGeneratorSection])
 
+  // Fermer l'interface de génération vidéo quand on change de section
+  useEffect(() => {
+    if (videoGeneratorSection && videoGeneratorSection !== selectedSection) {
+      setShowVideoGenerator(false)
+      setSelectedVideoProject(null)
+      setVideoGeneratorSection(null)
+    }
+  }, [selectedSection, videoGeneratorSection])
+
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const handleProjectClick = (artifact: {title: string, image: string, description: string}) => {
     if (isImageGenerationSection(selectedSection)) {
       setSelectedProject(artifact)
       setImageGeneratorSection(selectedSection)
       setShowImageGenerator(true)
+    } else if (isVideoGenerationSection(selectedSection)) {
+      setSelectedVideoProject(artifact)
+      setVideoGeneratorSection(selectedSection)
+      setShowVideoGenerator(true)
     }
   }
 
@@ -60,6 +93,12 @@ export function GeneratorPanel() {
     setShowImageGenerator(false)
     setSelectedProject(null)
     setImageGeneratorSection(null)
+  }
+
+  const handleCloseVideoGenerator = () => {
+    setShowVideoGenerator(false)
+    setSelectedVideoProject(null)
+    setVideoGeneratorSection(null)
   }
 
   // Composant pour le bouton New Project
@@ -139,6 +178,54 @@ export function GeneratorPanel() {
             availableArtifacts={availableArtifacts}
           />
         )
+      case 'explainers':
+        return (
+          <ExplainersForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'ugc-ads':
+        return (
+          <UGCAdsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'product-motion':
+        return (
+          <ProductMotionForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'cinematic-clips':
+        return (
+          <CinematicClipsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'social-cuts':
+        return (
+          <SocialCutsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
+      case 'talking-avatars':
+        return (
+          <TalkingAvatarsForm
+            onSave={addArtifact}
+            onCancel={() => setShowProjectForm(false)}
+            availableArtifacts={availableArtifacts}
+          />
+        )
       default:
         return (
           <ArtifactFormComponent type="project" />
@@ -193,8 +280,8 @@ export function GeneratorPanel() {
   }
 
   return (
-    <div className={`w-[380px] border-r border-border bg-background ${showImageGenerator ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hover'}`}>
-      <div className={`${showImageGenerator ? 'p-4 space-y-4' : 'p-6 space-y-6'}`}>
+    <div className={`w-[380px] border-r border-border bg-background ${(showImageGenerator || showVideoGenerator) ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hover'}`}>
+      <div className={`${(showImageGenerator || showVideoGenerator) ? 'p-4 space-y-4' : 'p-6 space-y-6'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{getDisplayTitle()}</h2>
           {selectedSection === 'artifacts' && !showArtifactForm && (
@@ -214,7 +301,7 @@ export function GeneratorPanel() {
           <ArtifactFormComponent />
         )}
         
-        {isImageGenerationSection(selectedSection) && showProjectForm && (
+        {(isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && showProjectForm && (
           renderSectionForm()
         )}
         
@@ -222,6 +309,13 @@ export function GeneratorPanel() {
           <ImageGeneratorInterface 
             onClose={handleCloseImageGenerator}
             projectTitle={selectedProject.title}
+          />
+        )}
+        
+        {showVideoGenerator && selectedVideoProject && videoGeneratorSection === selectedSection && (
+          <VideoGeneratorInterface 
+            onClose={handleCloseVideoGenerator}
+            projectTitle={selectedVideoProject.title}
           />
         )}
         
