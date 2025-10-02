@@ -52,7 +52,7 @@ export function Navigation() {
             />
           ))}
         </div>
-        <span className="text-xl font-bold text-primary">DREAMCUT</span>
+        <span className="text-xl font-bold text-primary">DreamCut</span>
       </Link>
 
       {/* Social Media Links */}

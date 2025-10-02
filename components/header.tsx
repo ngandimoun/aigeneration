@@ -2,16 +2,21 @@
 
 import { ChevronRight, Clock, Sparkles, Bell, User, Menu, Slash } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { SignOutButton } from "@/components/auth/sign-out-button"
+import { UserMenu } from "@/components/auth/user-menu"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useState, useEffect } from "react"
 
 interface HeaderProps {
   onMobileMenuClick: () => void
 }
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
+  const [isMounted, setIsMounted] = useState(false)
   const { user } = useAuth()
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   return (
     <header className="h-16 border-b border-border bg-background flex items-center justify-between px-4 md:px-6">
@@ -36,17 +41,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         </Button>
         
         {/* User Info */}
-        {user && (
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={user.user_metadata?.avatar_url} alt="User" />
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-            <SignOutButton />
-          </div>
-        )}
+        {isMounted && user && <UserMenu />}
       </div>
     </header>
   )

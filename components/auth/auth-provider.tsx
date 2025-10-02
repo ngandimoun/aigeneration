@@ -17,7 +17,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     // Récupérer la session initiale
@@ -37,10 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // Rediriger après connexion
-        if (event === 'SIGNED_IN' && session) {
-          window.location.href = '/content'
-        }
+        // Ne pas rediriger automatiquement - laisser le middleware gérer
+        // La redirection sera gérée par le middleware lors du prochain rechargement
       }
     )
 
@@ -53,9 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = {
-    user,
-    session,
-    loading,
+    user: isMounted ? user : null,
+    session: isMounted ? session : null,
+    loading: isMounted ? loading : true,
     signOut,
   }
 

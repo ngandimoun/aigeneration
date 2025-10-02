@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { GoogleScript } from '@/components/auth/google-script'
 import { Toaster } from '@/components/ui/sonner'
+import { Toaster as CustomToaster } from '@/components/ui/toaster'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({
           </AuthProvider>
         </ThemeProvider>
         <Toaster />
+        <CustomToaster />
         <Analytics />
       </body>
     </html>

@@ -35,6 +35,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Logs pour diagnostiquer
+  console.log('Middleware:', {
+    pathname: request.nextUrl.pathname,
+    hasUser: !!user,
+    searchParams: Object.fromEntries(request.nextUrl.searchParams.entries())
+  })
+
   // Définir les routes publiques (accessibles sans authentification)
   const publicRoutes = ['/', '/auth/auth-code-error']
   const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname) || 
@@ -42,13 +49,16 @@ export async function updateSession(request: NextRequest) {
 
   // Rediriger vers la page d'accueil si pas d'utilisateur et route protégée
   if (!user && !isPublicRoute) {
+    console.log('Redirecting to / (no user, protected route)')
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
   // Rediriger vers /content si utilisateur connecté et sur la page d'accueil
-  if (user && request.nextUrl.pathname === '/') {
+  // Mais seulement si ce n'est pas une requête de callback d'authentification
+  if (user && request.nextUrl.pathname === '/' && !request.nextUrl.searchParams.has('code')) {
+    console.log('Redirecting to /content (user on home page)')
     const url = request.nextUrl.clone()
     url.pathname = '/content'
     return NextResponse.redirect(url)

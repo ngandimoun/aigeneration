@@ -16,11 +16,16 @@ export function SignOutButton() {
         headers: {
           'Content-Type': 'application/json',
         },
+        redirect: 'manual' // Empêche la redirection automatique
       })
 
-      if (response.ok) {
+      if (response.status === 302) {
+        // Redirection détectée, suivre immédiatement
         toast.success('Déconnexion réussie')
-        // La redirection sera gérée par la route serveur
+        window.location.href = '/'
+      } else if (response.ok) {
+        toast.success('Déconnexion réussie')
+        window.location.href = '/'
       } else {
         toast.error('Erreur lors de la déconnexion')
       }
