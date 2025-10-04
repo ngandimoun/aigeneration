@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X, Loader2, Check, ChevronsUpDown, Megaphone, Image as ImageIcon } from "lucide-react"
+import { Plus, X, Loader2, ChevronsUpDown, Megaphone, Image as ImageIcon, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface UGCAdsFormProps {
   onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
@@ -98,8 +99,8 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
       setIsLoading(false)
       
       toast({
-        title: "UGC Ad créé avec succès",
-        description: `"${title.trim()}" a été ajouté à votre collection.`,
+        title: "UGC Ad created successfully",
+        description: `"${title.trim()}" has been added to your collection.`,
       })
     }
   }
@@ -113,7 +114,7 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
             New UGC Ad
           </h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
+        <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -244,6 +245,7 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
 
       <div className="flex gap-2 pt-4">
         <Button 
+          type="button"
           onClick={handleSave} 
           className="flex-1" 
           disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
@@ -258,6 +260,7 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
           )}
         </Button>
         <Button 
+          type="button"
           variant="outline" 
           onClick={onCancel} 
           className="flex-1"

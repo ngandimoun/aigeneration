@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Plus, X, Loader2, Check, ChevronsUpDown, Globe, Image as ImageIcon } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Plus, X, Loader2, ChevronsUpDown, Globe, Image as ImageIcon, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface ConceptWorldsFormProps {
   onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
@@ -21,52 +21,41 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedArtifact, setSelectedArtifact] = useState<string>("")
-  const [artifactOpen, setArtifactOpen] = useState(false)
+  const [artifactDialogOpen, setArtifactDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
+  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
 
-  // Données de simulation pour les artifacts
-  const mockArtifacts = [
-    { id: "1", title: "Futuristic Cityscape", image: "/placeholder.jpg", description: "Sci-fi urban environment" },
-    { id: "2", title: "Fantasy Forest Realm", image: "/placeholder.jpg", description: "Magical woodland world" },
-    { id: "3", title: "Underwater Kingdom", image: "/placeholder.jpg", description: "Deep sea civilization" },
-    { id: "4", title: "Space Station Interior", image: "/placeholder.jpg", description: "Zero-gravity living space" },
-    { id: "5", title: "Steampunk Workshop", image: "/placeholder.jpg", description: "Victorian era machinery" },
-    { id: "6", title: "Post-Apocalyptic Wasteland", image: "/placeholder.jpg", description: "Deserted urban ruins" },
-    { id: "7", title: "Medieval Castle Courtyard", image: "/placeholder.jpg", description: "Ancient fortress grounds" },
-    { id: "8", title: "Cyberpunk Neon Streets", image: "/placeholder.jpg", description: "High-tech urban nightscape" }
-  ]
-
-  // Utiliser les données de simulation si la liste est vide
-  const artifactsToShow = availableArtifacts.length > 0 ? availableArtifacts : mockArtifacts
-  
-  // Filtrer les artifacts basé sur le terme de recherche
-  const filteredArtifacts = artifactsToShow.filter(artifact =>
-    artifact.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artifact.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  
-  // Ref pour gérer le clic en dehors
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  
-  // Fermer le menu quand on clique en dehors
+  // Fetch real artifacts from the database
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setArtifactOpen(false)
-        setSearchTerm("") // Reset search when closing
+    const loadArtifacts = async () => {
+      try {
+        // Fetch all artifacts for the user (both public and private)
+        const artifacts = await fetchArtifacts({})
+        const formattedArtifacts = artifacts.map(artifact => ({
+          id: artifact.id,
+          title: artifact.title,
+          image: artifact.metadata?.image || "/placeholder.jpg",
+          description: artifact.description || "No description available"
+        }))
+        setRealArtifacts(formattedArtifacts)
+      } catch (error) {
+        console.error('Failed to load artifacts:', error)
+        toast({
+          title: "Error loading artifacts",
+          description: "Could not load artifacts from database. Please try again.",
+          variant: "destructive"
+        })
       }
     }
-    
-    if (artifactOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [artifactOpen])
+
+    loadArtifacts()
+  }, [fetchArtifacts, toast])
+
+  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
+  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
+  const selectedArtifactData = artifactsToShow.find(artifact => artifact.id === selectedArtifact)
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -100,8 +89,8 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
       setIsLoading(false)
       
       toast({
-        title: "Concept World créé avec succès",
-        description: `"${title.trim()}" a été ajouté à votre collection.`,
+        title: "Concept World created successfully",
+        description: `"${title.trim()}" has been added to your collection.`,
       })
     }
   }
@@ -115,7 +104,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
             New Concept World
           </h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
+        <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -248,6 +237,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
 
       <div className="flex gap-2 pt-4">
         <Button 
+          type="button"
           onClick={handleSave} 
           className="flex-1" 
           disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
@@ -262,6 +252,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
           )}
         </Button>
         <Button 
+          type="button"
           variant="outline" 
           onClick={onCancel} 
           className="flex-1"

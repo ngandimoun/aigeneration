@@ -5,6 +5,7 @@ import { useNavigation } from "@/hooks/use-navigation"
 import { ArtifactCard } from "@/components/artifact-card"
 import { ArtifactForm } from "@/components/artifact-form"
 import { ImageGeneratorInterface } from "@/components/image-generator-interface"
+import { AvatarPersonaGeneratorInterface } from "@/components/avatar-persona-generator-interface"
 import { VideoGeneratorInterface } from "@/components/video-generator-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
 import { AvatarsForm } from "@/components/forms/avatars-form"
@@ -20,11 +21,12 @@ import { TalkingAvatarsForm } from "@/components/forms/talking-avatars-form"
 import { ComicsForm } from "@/components/forms/comics-form"
 import { ComicCard } from "@/components/comic-card"
 import { Button } from "@/components/ui/button"
-import { Plus, FolderPlus } from "lucide-react"
+import { Plus, FolderPlus, Globe, Lock } from "lucide-react"
+import { ArtifactCardSkeleton } from "@/components/artifact-card-skeleton"
 
 export function GeneratorPanel() {
   const [isMounted, setIsMounted] = useState(false)
-  const { getDisplayTitle, selectedSection, getArtifactsBySection, addArtifact, showArtifactForm, setShowArtifactForm, showProjectForm, setShowProjectForm, artifacts } = useNavigation()
+  const { getDisplayTitle, selectedSection, getArtifactsBySection, addArtifact, deleteArtifact, showArtifactForm, setShowArtifactForm, showProjectForm, setShowProjectForm, artifacts, isLoadingArtifacts, setSelectedArtifact, setSelectedSection } = useNavigation()
   
   // États locaux pour l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const [showImageGenerator, setShowImageGenerator] = useState(false)
@@ -136,7 +138,9 @@ export function GeneratorPanel() {
       id: artifact.id,
       title: artifact.title,
       image: artifact.image,
-      description: artifact.description
+      description: artifact.description,
+      type: artifact.type,
+      section: artifact.section
     }))
 
     switch (selectedSection) {
@@ -149,91 +153,121 @@ export function GeneratorPanel() {
           />
         )
       case 'avatars-personas':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForAvatars = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <AvatarsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForAvatars}
           />
         )
       case 'product-mockups':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForProductMockups = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ProductMockupsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForProductMockups}
           />
         )
       case 'concept-worlds':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForConceptWorlds = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ConceptWorldsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForConceptWorlds}
           />
         )
       case 'charts-infographics':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForCharts = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ChartsInfographicsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForCharts}
           />
         )
       case 'explainers':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForExplainers = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ExplainersForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForExplainers}
           />
         )
       case 'ugc-ads':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForUGCAds = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <UGCAdsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForUGCAds}
           />
         )
       case 'product-motion':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForProductMotion = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ProductMotionForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForProductMotion}
           />
         )
       case 'cinematic-clips':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForCinematicClips = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <CinematicClipsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForCinematicClips}
           />
         )
       case 'social-cuts':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForSocialCuts = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <SocialCutsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForSocialCuts}
           />
         )
       case 'talking-avatars':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifactsForTalkingAvatars = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <TalkingAvatarsForm
             onSave={addArtifact}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifactsForTalkingAvatars}
           />
         )
       case 'comics':
+        // Filter artifacts to show only artifacts from the main "artifacts" section
+        const mainArtifacts = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ComicsForm
-            onSave={addArtifact}
+            onSave={async (comicData) => {
+              // Save the comic as an artifact
+              await addArtifact(comicData)
+              // Close the form
+              setShowProjectForm(false)
+              // Navigate to comics section to view the created comic
+              setSelectedSection('comics')
+              console.log('🎬 Comic saved and navigating to comics section')
+            }}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
+            availableArtifacts={mainArtifacts}
           />
         )
       default:
@@ -252,12 +286,24 @@ export function GeneratorPanel() {
           className="bg-background border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           onClick={() => handleProjectClick(artifact)}
         >
-          <div className="aspect-square mb-3 overflow-hidden rounded-md">
+          <div className="aspect-square mb-3 overflow-hidden rounded-md relative">
             <img 
               src={artifact.image} 
               alt={artifact.title}
               className="w-full h-full object-cover"
             />
+            {/* Public/Private indicator */}
+            <div className="absolute top-2 right-2">
+              {artifact.isPublic ? (
+                <div className="bg-green-500/90 text-white rounded-full p-1.5 shadow-sm">
+                  <Globe className="h-3 w-3" />
+                </div>
+              ) : (
+                <div className="bg-gray-500/90 text-white rounded-full p-1.5 shadow-sm">
+                  <Lock className="h-3 w-3" />
+                </div>
+              )}
+            </div>
           </div>
           <h3 className="font-semibold text-sm text-foreground mb-1 line-clamp-2">
             {artifact.title}
@@ -286,6 +332,7 @@ export function GeneratorPanel() {
             vibe={comicData.vibe || 'action'}
             inspirationStyle={comicData.inspirationStyle}
             charactersCount={comicData.characters?.length || 0}
+            isPublic={artifact.isPublic}
             onClick={() => handleProjectClick(artifact)}
           />
         )
@@ -297,6 +344,14 @@ export function GeneratorPanel() {
   const EmptyState = ({ message }: { message: string }) => (
     <div className="text-center text-muted-foreground py-8">
       <p>{message}</p>
+    </div>
+  )
+
+  // Composant pour l'état de chargement
+  const LoadingSkeleton = () => (
+    <div className="grid grid-cols-2 gap-4">
+      <ArtifactCardSkeleton />
+      <ArtifactCardSkeleton />
     </div>
   )
 
@@ -339,10 +394,17 @@ export function GeneratorPanel() {
         )}
         
         {showImageGenerator && selectedProject && imageGeneratorSection === selectedSection && (
-          <ImageGeneratorInterface 
-            onClose={handleCloseImageGenerator}
-            projectTitle={selectedProject.title}
-          />
+          selectedSection === 'avatars-personas' ? (
+            <AvatarPersonaGeneratorInterface 
+              onClose={handleCloseImageGenerator}
+              projectTitle={selectedProject.title}
+            />
+          ) : (
+            <ImageGeneratorInterface 
+              onClose={handleCloseImageGenerator}
+              projectTitle={selectedProject.title}
+            />
+          )
         )}
         
         {showVideoGenerator && selectedVideoProject && videoGeneratorSection === selectedSection && (
@@ -353,24 +415,36 @@ export function GeneratorPanel() {
         )}
         
         
-        {selectedSection === 'artifacts' && sectionArtifacts.length > 0 && (
+        {/* Loading state for all sections */}
+        {isLoadingArtifacts && (
+          <LoadingSkeleton />
+        )}
+        
+        {/* Artifacts grid */}
+        {selectedSection === 'artifacts' && !isLoadingArtifacts && sectionArtifacts.length > 0 && (
           <div className="grid grid-cols-2 gap-4">
             {sectionArtifacts.map((artifact) => (
               <ArtifactCard
                 key={artifact.id}
+                id={artifact.id}
                 title={artifact.title}
                 image={artifact.image}
                 description={artifact.description}
                 isPublic={artifact.isPublic}
+                isDefault={artifact.isDefault}
+                onDelete={deleteArtifact}
+                onClick={() => setSelectedArtifact(artifact)}
               />
             ))}
           </div>
         )}
         
-        {shouldShowProjectGrid() && selectedSection === 'comics' && <ComicsGrid />}
-        {shouldShowProjectGrid() && selectedSection !== 'comics' && <ProjectGrid />}
+        {/* Project grids */}
+        {shouldShowProjectGrid() && selectedSection === 'comics' && !isLoadingArtifacts && <ComicsGrid />}
+        {shouldShowProjectGrid() && selectedSection !== 'comics' && !isLoadingArtifacts && <ProjectGrid />}
         
-        {selectedSection === 'artifacts' && sectionArtifacts.length === 0 && !showArtifactForm && (
+        {/* Empty states */}
+        {selectedSection === 'artifacts' && !isLoadingArtifacts && sectionArtifacts.length === 0 && !showArtifactForm && (
           <EmptyState message="No artifacts yet. Create your first artifact!" />
         )}
         

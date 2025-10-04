@@ -9,24 +9,13 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Plus, X, Loader2, Check, ChevronsUpDown, Palette, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface IllustrationFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => Promise<void>
   onCancel: () => void
   availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
-
-// Données de simulation pour les artifacts
-const mockArtifacts = [
-  { id: "1", title: "Digital Art Masterpiece", image: "/placeholder.jpg", description: "A stunning digital artwork" },
-  { id: "2", title: "Abstract Composition", image: "/placeholder.jpg", description: "Modern abstract design" },
-  { id: "3", title: "Nature Landscape", image: "/placeholder.jpg", description: "Beautiful natural scenery" },
-  { id: "4", title: "Portrait Study", image: "/placeholder.jpg", description: "Detailed character portrait" },
-  { id: "5", title: "Geometric Pattern", image: "/placeholder.jpg", description: "Mathematical art pattern" },
-  { id: "6", title: "Fantasy Creature", image: "/placeholder.jpg", description: "Imaginary creature design" },
-  { id: "7", title: "Urban Sketch", image: "/placeholder.jpg", description: "City life illustration" },
-  { id: "8", title: "Minimalist Design", image: "/placeholder.jpg", description: "Clean and simple artwork" }
-]
 
 export function IllustrationForm({ onSave, onCancel, availableArtifacts }: IllustrationFormProps) {
   const [title, setTitle] = useState("")
@@ -34,12 +23,39 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedArtifact, setSelectedArtifact] = useState<string>("")
   const [artifactOpen, setArtifactOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
+  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
 
-  // Utiliser les données de simulation si la liste est vide
-  const artifactsToShow = availableArtifacts.length > 0 ? availableArtifacts : mockArtifacts
+  // Fetch real artifacts from the database
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        // Fetch all artifacts for the user (both public and private)
+        const artifacts = await fetchArtifacts({})
+        const formattedArtifacts = artifacts.map(artifact => ({
+          id: artifact.id,
+          title: artifact.title,
+          image: artifact.metadata?.image || "/placeholder.jpg",
+          description: artifact.description || "No description available"
+        }))
+        setRealArtifacts(formattedArtifacts)
+      } catch (error) {
+        console.error('Failed to load artifacts:', error)
+        toast({
+          title: "Error loading artifacts",
+          description: "Could not load artifacts from database. Please try again.",
+          variant: "destructive"
+        })
+      }
+    }
+
+    loadArtifacts()
+  }, [fetchArtifacts, toast])
+
+  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
+  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
   
   // Filtrer les artifacts basé sur le terme de recherche
   const filteredArtifacts = artifactsToShow.filter(artifact =>
@@ -85,28 +101,36 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
 
   const handleSave = async () => {
     if (title.trim() && imagePreview && description.trim() && selectedArtifact) {
-      setIsLoading(true)
-      
-      // Simuler un délai de sauvegarde
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      onSave({
+      const illustrationData = {
         title: title.trim(),
         image: imagePreview,
         description: description.trim(),
         selectedArtifact
-      })
+      }
       
-      setTitle("")
-      setDescription("")
-      setImagePreview(null)
-      setSelectedArtifact("")
-      setIsLoading(false)
-      
-      toast({
-        title: "Illustration créée avec succès",
-        description: `"${title.trim()}" a été ajouté à votre collection.`,
-      })
+      try {
+        // Call onSave which now handles database persistence
+        await onSave(illustrationData)
+        
+        // Clear form after successful save
+        setTitle("")
+        setDescription("")
+        setImagePreview(null)
+        setSelectedArtifact("")
+        
+        // Show success toast
+        toast({
+          title: "Illustration created successfully",
+          description: `"${illustrationData.title}" has been added to your collection.`,
+        })
+      } catch (error) {
+        console.error('Failed to save illustration:', error)
+        toast({
+          title: "Error",
+          description: "Failed to create illustration. Please try again.",
+          variant: "destructive"
+        })
+      }
     }
   }
 
@@ -119,17 +143,19 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
             New Illustration
           </h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
+        <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
       </div>
       
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
+          <label htmlFor="illustration-title" className="block text-sm font-medium text-foreground mb-1">
             Title
           </label>
           <Input
+            id="illustration-title"
+            name="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter illustration title"
@@ -137,18 +163,19 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
+          <div className="block text-sm font-medium text-foreground mb-1">
             Upload Reference Image
-          </label>
+          </div>
           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-muted-foreground/50 transition-colors">
             <input
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
-              id="image-upload"
+              id="illustration-image-upload"
+              name="image"
             />
-            <label htmlFor="image-upload" className="cursor-pointer">
+            <label htmlFor="illustration-image-upload" className="cursor-pointer block">
               {imagePreview ? (
                 <div className="space-y-2">
                   <img 
@@ -238,10 +265,12 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
+          <label htmlFor="illustration-description" className="block text-sm font-medium text-foreground mb-1">
             Description
           </label>
           <Textarea
+            id="illustration-description"
+            name="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe your illustration concept..."
@@ -252,24 +281,18 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
 
       <div className="flex gap-2 pt-4">
         <Button 
+          type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
+          disabled={!title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
-            </>
-          ) : (
-            "Create Illustration"
-          )}
+          Create Illustration
         </Button>
         <Button 
+          type="button"
           variant="outline" 
           onClick={onCancel} 
           className="flex-1"
-          disabled={isLoading}
         >
           Cancel
         </Button>

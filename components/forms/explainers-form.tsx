@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X, Loader2, Check, ChevronsUpDown, PlayCircle, Image as ImageIcon } from "lucide-react"
+import { Plus, X, Loader2, ChevronsUpDown, PlayCircle, Image as ImageIcon, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface ExplainersFormProps {
   onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
@@ -98,8 +99,8 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
       setIsLoading(false)
       
       toast({
-        title: "Explainer créé avec succès",
-        description: `"${title.trim()}" a été ajouté à votre collection.`,
+        title: "Explainer created successfully",
+        description: `"${title.trim()}" has been added to your collection.`,
       })
     }
   }
@@ -113,7 +114,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
             New Explainer
           </h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
+        <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -244,6 +245,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
 
       <div className="flex gap-2 pt-4">
         <Button 
+          type="button"
           onClick={handleSave} 
           className="flex-1" 
           disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
@@ -258,6 +260,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
           )}
         </Button>
         <Button 
+          type="button"
           variant="outline" 
           onClick={onCancel} 
           className="flex-1"

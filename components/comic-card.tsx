@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Globe, Lock } from "lucide-react"
 
 interface ComicCardProps {
   title: string
@@ -11,6 +12,7 @@ interface ComicCardProps {
   vibe: string[]
   inspirationStyle?: string[]
   charactersCount: number
+  isPublic?: boolean
   onClick: () => void
 }
 
@@ -22,6 +24,7 @@ export function ComicCard({
   vibe, 
   inspirationStyle, 
   charactersCount,
+  isPublic = false,
   onClick 
 }: ComicCardProps) {
 
@@ -36,6 +39,18 @@ export function ComicCard({
           alt={title}
           className="w-full h-full object-cover"
         />
+        {/* Public/Private indicator */}
+        <div className="absolute top-2 right-2">
+          {isPublic ? (
+            <div className="bg-green-500/90 text-white rounded-full p-1.5 shadow-sm">
+              <Globe className="h-3 w-3" />
+            </div>
+          ) : (
+            <div className="bg-gray-500/90 text-white rounded-full p-1.5 shadow-sm">
+              <Lock className="h-3 w-3" />
+            </div>
+          )}
+        </div>
       </div>
       
       <CardContent className="p-0">

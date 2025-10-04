@@ -1,9 +1,47 @@
 "use client"
 
+import { useState } from "react"
+import { Globe, Lock } from "lucide-react"
 import { useNavigation } from "@/hooks/use-navigation"
+import { CharacterVariations } from "@/components/character-variations"
+import { ArtifactCard } from "@/components/artifact-card"
+import { ArtifactCardSkeleton } from "@/components/artifact-card-skeleton"
+import { ArtifactGenerationHistory } from "@/components/artifact-generation-history"
+import { Button } from "@/components/ui/button"
 
 export function MainContent() {
-  const { getDisplayTitle } = useNavigation()
+  const { 
+    getDisplayTitle, 
+    selectedSection, 
+    characterVariations = [], 
+    characterVariationsMetadata,
+    isGeneratingVariations = false,
+    getArtifactsBySection,
+    isLoadingArtifacts,
+    deleteArtifact,
+    selectedArtifact,
+    setSelectedArtifact
+  } = useNavigation()
+  const [selectedVariation, setSelectedVariation] = useState<number | undefined>(undefined)
+
+  // Debug global context
+  console.log('🔍 MainContent global context:', {
+    selectedSection,
+    ...(characterVariations.length > 0 || isGeneratingVariations ? {
+      characterVariationsCount: characterVariations.length,
+      isGeneratingVariations,
+      characterVariations: characterVariations
+    } : {})
+  })
+
+  const handleSelectVariation = (index: number) => {
+    console.log('🎯 Variation selected:', index)
+    setSelectedVariation(index)
+    console.log('🔄 Selected variation state updated to:', index)
+  }
+
+  // Get template artifacts for Templates section
+  const templateArtifacts = getArtifactsBySection('templates')
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-hover">
@@ -11,7 +49,212 @@ export function MainContent() {
         <h1 className="text-3xl font-bold text-foreground mb-6">
           {getDisplayTitle()}
         </h1>
-        {/* Content area */}
+        
+        {/* Character Variations for Comics section */}
+        {selectedSection === 'comics' && (characterVariations.length > 0 || isGeneratingVariations) && (
+          <div className="space-y-6">
+            <CharacterVariations
+              variations={characterVariations}
+              variationsMetadata={characterVariationsMetadata || undefined}
+              isLoading={isGeneratingVariations}
+              onSelect={handleSelectVariation}
+              onRegenerate={() => console.log('Regenerate clicked')}
+              selectedIndex={selectedVariation}
+            />
+          </div>
+        )}
+        
+        {/* Templates section */}
+        {selectedSection === 'templates' && (
+          <div className="space-y-6">
+            {isLoadingArtifacts ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <ArtifactCardSkeleton key={index} />
+                ))}
+              </div>
+            ) : templateArtifacts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {templateArtifacts.map((artifact) => (
+                  <ArtifactCard
+                    key={artifact.id}
+                    id={artifact.id}
+                    title={artifact.title}
+                    image={artifact.image}
+                    description={artifact.description}
+                    isPublic={artifact.isPublic}
+                    isDefault={artifact.isDefault}
+                    onDelete={deleteArtifact}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground mb-4">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-2xl">🎨</span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">No templates yet</h3>
+                  <p className="text-sm">Character variations and other templates will appear here when you generate them.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Artifacts section */}
+        {selectedSection === 'artifacts' && (
+          <div className="space-y-6">
+            {selectedArtifact ? (
+              <div className="space-y-6">
+                {/* Artifact Details */}
+                <div className="bg-background border border-border rounded-lg p-6">
+                  <div className="flex items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <img 
+                        src={selectedArtifact.image} 
+                        alt={selectedArtifact.title}
+                        className="w-48 h-48 object-cover rounded-lg"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h2 className="text-2xl font-bold text-foreground mb-2">
+                            {selectedArtifact.title}
+                          </h2>
+                          <div className="flex items-center gap-2 mb-3">
+                            {selectedArtifact.isPublic ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <Globe className="h-3 w-3 mr-1" />
+                                Public
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Private
+                              </span>
+                            )}
+                            {selectedArtifact.isDefault && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedArtifact(null)}
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      <p className="text-muted-foreground mb-4">
+                        {selectedArtifact.description}
+                      </p>
+                      <div className="text-sm text-muted-foreground">
+                        <p><strong>Type:</strong> {selectedArtifact.type}</p>
+                        <p><strong>Section:</strong> {selectedArtifact.section}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Generation History */}
+                <div className="bg-background border border-border rounded-lg p-6">
+                  <ArtifactGenerationHistory 
+                    artifactId={selectedArtifact.id}
+                    artifactTitle={selectedArtifact.title}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Artifacts Grid */}
+                {isLoadingArtifacts ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {Array.from({ length: 2 }).map((_, index) => (
+                      <ArtifactCardSkeleton key={index} />
+                    ))}
+                  </div>
+                ) : (() => {
+                  
+                  const artifacts = getArtifactsBySection('artifacts')
+                  return artifacts.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      {artifacts.map((artifact) => (
+                        <ArtifactCard
+                          key={artifact.id}
+                          id={artifact.id}
+                          title={artifact.title}
+                          image={artifact.image}
+                          description={artifact.description}
+                          isPublic={artifact.isPublic}
+                          isDefault={artifact.isDefault}
+                          onDelete={deleteArtifact}
+                          onClick={() => setSelectedArtifact(artifact)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="text-muted-foreground mb-4">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                          <span className="text-2xl">🎨</span>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">No artifacts yet</h3>
+                        <p className="text-sm">Create your first artifact to get started.</p>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Content area for other sections */}
+        {selectedSection !== 'comics' && selectedSection !== 'templates' && selectedSection !== 'artifacts' && (() => {
+            if (isLoadingArtifacts) {
+              return (
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <ArtifactCardSkeleton key={index} />
+                  ))}
+                </div>
+              )
+            }
+          
+          const sectionArtifacts = getArtifactsBySection(selectedSection)
+          return sectionArtifacts.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {sectionArtifacts.map((artifact) => (
+                <ArtifactCard
+                  key={artifact.id}
+                  id={artifact.id}
+                  title={artifact.title}
+                  image={artifact.image}
+                  description={artifact.description}
+                  isPublic={artifact.isPublic}
+                  isDefault={artifact.isDefault}
+                  onDelete={deleteArtifact}
+                  onClick={() => setSelectedArtifact(artifact)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-muted-foreground mb-4">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <span className="text-2xl">🎨</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No {getDisplayTitle().toLowerCase()} yet</h3>
+                <p className="text-sm">Create your first {getDisplayTitle().toLowerCase().slice(0, -1)} to get started.</p>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
