@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-// Validation schema for voiceover creation
-const createVoiceoverSchema = z.object({
+// Validation schema for voice creation
+const createVoiceCreationSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
   selected_artifact: z.string().optional(),
@@ -23,7 +23,7 @@ const createVoiceoverSchema = z.object({
   is_template: z.boolean().optional().default(false),
 })
 
-// GET /api/voiceovers - Get user's voiceovers
+// GET /api/voice-creation - Get user's voice creations
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // Build query with filters
     let query = supabase
-      .from('voiceovers')
+      .from('voice_creations')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -54,21 +54,21 @@ export async function GET(request: NextRequest) {
     // Apply pagination (use range instead of limit to avoid conflicts)
     query = query.range(offset, offset + limit - 1)
 
-    const { data: voiceovers, error } = await query
+    const { data: voiceCreations, error } = await query
 
     if (error) {
-      console.error('Error fetching voiceovers:', error)
-      return NextResponse.json({ error: 'Failed to fetch voiceovers' }, { status: 500 })
+      console.error('Error fetching voice creations:', error)
+      return NextResponse.json({ error: 'Failed to fetch voice creations' }, { status: 500 })
     }
 
-    return NextResponse.json({ voiceovers }, { status: 200 })
+    return NextResponse.json({ voiceCreations }, { status: 200 })
   } catch (error) {
-    console.error('Unexpected error in GET /api/voiceovers:', error)
+    console.error('Unexpected error in GET /api/voice-creation:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST /api/voiceovers - Create new voiceover
+// POST /api/voice-creation - Create new voice creation
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json()
-    const validatedData = createVoiceoverSchema.parse(body)
+    const validatedData = createVoiceCreationSchema.parse(body)
 
-    // Create voiceover
-    const { data: voiceover, error } = await supabase
-      .from('voiceovers')
+    // Create voice creation
+    const { data: voiceCreation, error } = await supabase
+      .from('voice_creations')
       .insert({
         user_id: user.id,
         title: validatedData.title,
@@ -111,16 +111,16 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('❌ Error creating voiceover:', error)
-      return NextResponse.json({ error: 'Failed to create voiceover' }, { status: 500 })
+      console.error('❌ Error creating voice creation:', error)
+      return NextResponse.json({ error: 'Failed to create voice creation' }, { status: 500 })
     }
 
-    return NextResponse.json({ voiceover }, { status: 201 })
+    return NextResponse.json({ voiceCreation }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 })
     }
-    console.error('Unexpected error in POST /api/voiceovers:', error)
+    console.error('Unexpected error in POST /api/voice-creation:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

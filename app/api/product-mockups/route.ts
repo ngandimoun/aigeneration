@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const { data: productMockups, error } = await query
 
     if (error) {
-      console.error('Error fetching product mockups:', error)
+      console.error('❌ Error fetching product mockups:', error)
       return NextResponse.json({ error: 'Failed to fetch product mockups' }, { status: 500 })
     }
 

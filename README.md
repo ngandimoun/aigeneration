@@ -13,7 +13,7 @@ DreamCut is a powerful content generation platform that enables users to create 
   - Product Mockups & Motion
   - Social Media Content
   - UGC Ads
-  - Voiceovers & Sound FX
+  - Voice Creation & Sound FX
 
 - 🔐 Secure Authentication
 - 🎯 Real-time Content Generation

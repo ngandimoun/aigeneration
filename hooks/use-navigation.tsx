@@ -121,6 +121,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         'social-cuts': '/api/social-cuts',
         'talking-avatars': '/api/talking-avatars',
         'ugc-ads': '/api/ugc-ads',
+        'sound-fx': '/api/sound-fx',
         'templates': '/api/templates'
       }
       
@@ -140,8 +141,26 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
             data = responseData.comics
           } else if (responseData.illustrations) {
             data = responseData.illustrations
+          } else if (responseData.productMockups) {
+            data = responseData.productMockups
+          } else if (responseData.conceptWorlds) {
+            data = responseData.conceptWorlds
+          } else if (responseData.chartsInfographics) {
+            data = responseData.chartsInfographics
+          } else if (responseData.cinematicClips) {
+            data = responseData.cinematicClips
+          } else if (responseData.explainers) {
+            data = responseData.explainers
+          } else if (responseData.productMotion) {
+            data = responseData.productMotion
+          } else if (responseData.socialCuts) {
+            data = responseData.socialCuts
           } else if (responseData.talkingAvatars) {
             data = responseData.talkingAvatars
+          } else if (responseData.ugcAds) {
+            data = responseData.ugcAds
+          } else if (responseData.soundFx) {
+            data = responseData.soundFx
           } else if (responseData.templates) {
             data = responseData.templates
           } else if (responseData.artifacts) {
@@ -238,6 +257,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         'social-cuts': '/api/social-cuts',
         'talking-avatars': '/api/talking-avatars',
         'ugc-ads': '/api/ugc-ads',
+        'sound-fx': '/api/sound-fx',
         'templates': '/api/templates', // Templates use independent templates API
         'artifacts': '/api/artifacts' // General artifacts use artifacts API
       }
@@ -309,7 +329,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
           'talking-avatars': 'talking-avatars',
           'ugc-ads': 'ugc-ads',
           'product-motion': 'product-motion',
-          'social-cuts': 'social-cuts'
+          'social-cuts': 'social-cuts',
+          'sound-fx': 'sound-fx'
         }
         
         mappedSection = sectionMapping[selectedSection] || selectedSection
@@ -390,8 +411,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return "Concept Worlds"
       case "charts-infographics":
         return "Charts & Infographics"
-      case "voiceovers":
-        return "Voiceovers"
+      case "voice-creation":
+        return "Voice Creation"
       case "music-jingles":
         return "Music & Jingles"
       case "sound-fx":

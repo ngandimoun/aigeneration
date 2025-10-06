@@ -5,8 +5,14 @@ import { useNavigation } from "@/hooks/use-navigation"
 import { ArtifactCard } from "@/components/artifact-card"
 import { ArtifactForm } from "@/components/artifact-form"
 import { ImageGeneratorInterface } from "@/components/image-generator-interface"
+import { IllustrationGeneratorInterface } from "@/components/illustration-generator-interface"
 import { AvatarPersonaGeneratorInterface } from "@/components/avatar-persona-generator-interface"
 import { VideoGeneratorInterface } from "@/components/video-generator-interface"
+import { ProductMockupGeneratorInterface } from "@/components/product-mockup-generator-interface"
+import { ChartsInfographicsGeneratorInterface } from "@/components/charts-infographics-generator-interface"
+import { ConceptWorldsGeneratorInterface } from "@/components/concept-worlds-generator-interface"
+import { VoiceCreationInterface } from "@/components/voice-creation-interface"
+import { SoundFxInterface } from "@/components/sound-fx-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
 import { AvatarsForm } from "@/components/forms/avatars-form"
 import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
@@ -38,6 +44,12 @@ export function GeneratorPanel() {
   const [selectedVideoProject, setSelectedVideoProject] = useState<{title: string, image: string, description: string} | null>(null)
   const [videoGeneratorSection, setVideoGeneratorSection] = useState<string | null>(null)
   
+  // États locaux pour l'interface de création de voix
+  const [showVoiceCreation, setShowVoiceCreation] = useState(false)
+  
+  // États locaux pour l'interface de création de Sound FX
+  const [showSoundFx, setShowSoundFx] = useState(false)
+  
   // Obtenir les artifacts filtrés par section
   const sectionArtifacts = getArtifactsBySection(selectedSection)
 
@@ -47,16 +59,24 @@ export function GeneratorPanel() {
   // Sections qui supportent la génération vidéo
   const videoGenerationSections = ['explainers', 'talking-avatars', 'social-cuts', 'cinematic-clips', 'product-motion', 'ugc-ads']
   
+  // Sections qui supportent la création de voix
+  const voiceCreationSections = ['voice-creation']
+  
+  // Sections qui supportent la création de Sound FX
+  const soundFxSections = ['sound-fx']
+  
   // Sections qui supportent les nouveaux formulaires
   const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics']
   
   // Helper functions
   const isImageGenerationSection = (section: string) => imageGenerationSections.includes(section)
   const isVideoGenerationSection = (section: string) => videoGenerationSections.includes(section)
+  const isVoiceCreationSection = (section: string) => voiceCreationSections.includes(section)
+  const isSoundFxSection = (section: string) => soundFxSections.includes(section)
   const isNewFormSection = (section: string) => newFormSections.includes(section)
-  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator
-  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator
-  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator
+  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showSoundFx
+  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showSoundFx
+  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showSoundFx
 
   useEffect(() => {
     setIsMounted(true)
@@ -79,6 +99,20 @@ export function GeneratorPanel() {
       setVideoGeneratorSection(null)
     }
   }, [selectedSection, videoGeneratorSection])
+
+  // Fermer l'interface de création de voix quand on change de section
+  useEffect(() => {
+    if (showVoiceCreation && selectedSection !== 'voice-creation') {
+      setShowVoiceCreation(false)
+    }
+  }, [selectedSection, showVoiceCreation])
+
+  // Fermer l'interface de création de Sound FX quand on change de section
+  useEffect(() => {
+    if (showSoundFx && selectedSection !== 'sound-fx') {
+      setShowSoundFx(false)
+    }
+  }, [selectedSection, showSoundFx])
 
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const handleProjectClick = (artifact: {title: string, image: string, description: string}) => {
@@ -103,6 +137,14 @@ export function GeneratorPanel() {
     setShowVideoGenerator(false)
     setSelectedVideoProject(null)
     setVideoGeneratorSection(null)
+  }
+
+  const handleCloseVoiceCreation = () => {
+    setShowVoiceCreation(false)
+  }
+
+  const handleCloseSoundFx = () => {
+    setShowSoundFx(false)
   }
 
   // Composant pour le bouton New Project
@@ -394,11 +436,29 @@ export function GeneratorPanel() {
         )}
         
         {showImageGenerator && selectedProject && imageGeneratorSection === selectedSection && (
-          selectedSection === 'avatars-personas' ? (
+          selectedSection === 'illustration' ? (
+            <IllustrationGeneratorInterface 
+              onClose={handleCloseImageGenerator}
+              projectTitle={selectedProject.title}
+            />
+          ) : selectedSection === 'avatars-personas' ? (
             <AvatarPersonaGeneratorInterface 
               onClose={handleCloseImageGenerator}
               projectTitle={selectedProject.title}
             />
+          ) : selectedSection === 'product-mockups' ? (
+            <ProductMockupGeneratorInterface 
+              onClose={handleCloseImageGenerator}
+              projectTitle={selectedProject.title}
+              selectedArtifact={selectedProject as any}
+            />
+          ) : selectedSection === 'charts-infographics' ? (
+            <ChartsInfographicsGeneratorInterface 
+              onClose={handleCloseImageGenerator}
+              projectTitle={selectedProject.title}
+            />
+          ) : selectedSection === 'concept-worlds' ? (
+            <ConceptWorldsGeneratorInterface />
           ) : (
             <ImageGeneratorInterface 
               onClose={handleCloseImageGenerator}
@@ -414,6 +474,59 @@ export function GeneratorPanel() {
           />
         )}
         
+        {/* Voice Creation Interface */}
+        {isVoiceCreationSection(selectedSection) && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Voice Creation</h2>
+                <p className="text-muted-foreground">Craft unique, emotionally intelligent voices that match your world's DNA.</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowVoiceCreation(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Voice
+              </Button>
+            </div>
+            
+            {showVoiceCreation && (
+              <VoiceCreationInterface 
+                onClose={handleCloseVoiceCreation}
+                projectTitle="Voice Creation"
+              />
+            )}
+          </div>
+        )}
+        
+        {/* Sound FX Interface */}
+        {isSoundFxSection(selectedSection) && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Sound FX Studio</h2>
+                <p className="text-muted-foreground">Craft emotionally intelligent sound design synchronized with your world's mood and story.</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowSoundFx(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Sound FX
+              </Button>
+            </div>
+            
+            {showSoundFx && (
+              <SoundFxInterface 
+                onClose={handleCloseSoundFx}
+                projectTitle="Sound FX Studio"
+              />
+            )}
+          </div>
+        )}
         
         {/* Loading state for all sections */}
         {isLoadingArtifacts && (

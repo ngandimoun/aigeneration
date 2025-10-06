@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, Loader2, ChevronsUpDown, Globe, Image as ImageIcon, CheckCircle } from "lucide-react"
+import { Plus, X, Loader2, ChevronsUpDown, Globe, Image as ImageIcon, CheckCircle, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useArtifactsApi } from "@/hooks/use-artifacts-api"
@@ -24,6 +24,9 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
   const [artifactDialogOpen, setArtifactDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
+  const [artifactOpen, setArtifactOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
 
@@ -56,6 +59,25 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
   // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
   const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
   const selectedArtifactData = artifactsToShow.find(artifact => artifact.id === selectedArtifact)
+  
+  // Filter artifacts based on search term
+  const filteredArtifacts = artifactsToShow.filter(artifact =>
+    artifact.title.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setArtifactOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -69,7 +91,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
   }
 
   const handleSave = async () => {
-    if (title.trim() && imagePreview && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim() && selectedArtifact) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -77,7 +99,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
       
       onSave({
         title: title.trim(),
-        image: imagePreview,
+        image: imagePreview || "/placeholder.jpg", // Use placeholder if no image provided
         description: description.trim(),
         selectedArtifact
       })
@@ -123,7 +145,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
-            Upload Reference Image
+            Upload Reference Image (Optional)
           </label>
           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-muted-foreground/50 transition-colors">
             <input
@@ -240,7 +262,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
+          disabled={isLoading || !title.trim() || !description.trim() || !selectedArtifact}
         >
           {isLoading ? (
             <>

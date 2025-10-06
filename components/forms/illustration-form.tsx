@@ -100,7 +100,7 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
   }
 
   const handleSave = async () => {
-    if (title.trim() && imagePreview && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim() && selectedArtifact) {
       const illustrationData = {
         title: title.trim(),
         image: imagePreview,
@@ -164,7 +164,7 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
 
         <div>
           <div className="block text-sm font-medium text-foreground mb-1">
-            Upload Reference Image
+            Upload Reference Image <span className="text-muted-foreground text-xs">(optional)</span>
           </div>
           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-muted-foreground/50 transition-colors">
             <input
@@ -284,7 +284,7 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={!title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
+          disabled={!title.trim() || !description.trim() || !selectedArtifact}
         >
           Create Illustration
         </Button>
