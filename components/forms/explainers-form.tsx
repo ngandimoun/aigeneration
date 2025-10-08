@@ -8,6 +8,7 @@ import { Plus, X, Loader2, ChevronsUpDown, PlayCircle, Image as ImageIcon, Check
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface ExplainersFormProps {
   onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
@@ -15,17 +16,6 @@ interface ExplainersFormProps {
   availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-// Données de simulation pour les artifacts
-const mockArtifacts = [
-  { id: "1", title: "Product Demo Video", image: "/placeholder.jpg", description: "A comprehensive product demonstration" },
-  { id: "2", title: "Tutorial Guide", image: "/placeholder.jpg", description: "Step-by-step tutorial content" },
-  { id: "3", title: "Educational Content", image: "/placeholder.jpg", description: "Learning-focused video material" },
-  { id: "4", title: "How-to Video", image: "/placeholder.jpg", description: "Instructional video content" },
-  { id: "5", title: "Process Explanation", image: "/placeholder.jpg", description: "Detailed process breakdown" },
-  { id: "6", title: "Feature Overview", image: "/placeholder.jpg", description: "Product feature showcase" },
-  { id: "7", title: "Technical Demo", image: "/placeholder.jpg", description: "Technical demonstration video" },
-  { id: "8", title: "User Guide", image: "/placeholder.jpg", description: "User manual video content" }
-]
 
 export function ExplainersForm({ onSave, onCancel, availableArtifacts }: ExplainersFormProps) {
   const [title, setTitle] = useState("")
@@ -35,10 +25,38 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
   const [artifactOpen, setArtifactOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
+  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
 
-  // Utiliser les données de simulation si la liste est vide
-  const artifactsToShow = availableArtifacts.length > 0 ? availableArtifacts : mockArtifacts
+  // Fetch real artifacts from the database
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        // Fetch all artifacts for the user (both public and private)
+        const artifacts = await fetchArtifacts({})
+        const formattedArtifacts = artifacts.map(artifact => ({
+          id: artifact.id,
+          title: artifact.title,
+          image: artifact.metadata?.image || "/placeholder.jpg",
+          description: artifact.description || "No description available"
+        }))
+        setRealArtifacts(formattedArtifacts)
+      } catch (error) {
+        console.error('Failed to load artifacts:', error)
+        toast({
+          title: "Error loading artifacts",
+          description: "Could not load artifacts from database. Please try again.",
+          variant: "destructive"
+        })
+      }
+    }
+
+    loadArtifacts()
+  }, [fetchArtifacts, toast])
+
+  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
+  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
   
   // Filtrer les artifacts basé sur le terme de recherche
   const filteredArtifacts = artifactsToShow.filter(artifact =>
@@ -79,7 +97,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
   }
 
   const handleSave = async () => {
-    if (title.trim() && imagePreview && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim() && selectedArtifact) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -87,7 +105,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
       
       onSave({
         title: title.trim(),
-        image: imagePreview,
+        image: imagePreview || "",
         description: description.trim(),
         selectedArtifact
       })
@@ -133,7 +151,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
-            Upload Media
+            Upload Media <span className="text-muted-foreground">(Optional)</span>
           </label>
           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-muted-foreground/50 transition-colors">
             <input
@@ -167,9 +185,9 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
           <label className="block text-sm font-medium text-foreground mb-1">
             Artifact(s)
           </label>
-          {availableArtifacts.length === 0 && (
+          {realArtifacts.length === 0 && availableArtifacts.length === 0 && (
             <p className="text-xs text-muted-foreground mb-2">
-              Using demo artifacts for testing. Create real artifacts in the "Artifacts" section.
+              No artifacts available. Create artifacts in the "Artifacts" section.
             </p>
           )}
           
@@ -248,7 +266,7 @@ export function ExplainersForm({ onSave, onCancel, availableArtifacts }: Explain
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
+          disabled={isLoading || !title.trim() || !description.trim() || !selectedArtifact}
         >
           {isLoading ? (
             <>

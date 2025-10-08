@@ -20,7 +20,8 @@ import {
   Wand2,
   ImageUpIcon,
   ImageDown,
-  ChevronDown
+  ChevronDown,
+  Plus
 } from "lucide-react"
 
 interface VideoGeneratorInterfaceProps {
@@ -217,6 +218,7 @@ export function VideoGeneratorInterface({ onClose, projectTitle }: VideoGenerato
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
 
       {/* Generate Button */}
       <Button 

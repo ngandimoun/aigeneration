@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -123,9 +122,7 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
     pitch: 50,
     volume: 50,
     emotion: "",
-    use_case: "",
-    background_music: false,
-    sound_effects: false
+    use_case: ""
   })
 
   // DreamCut Voice Library
@@ -440,39 +437,6 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
         </CardContent>
       </Card>
 
-      {/* Advanced Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Audio Options
-          </CardTitle>
-          <CardDescription>
-            Configure additional audio options for your voiceover.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="background_music"
-                checked={formData.background_music}
-                onCheckedChange={(checked) => handleInputChange("background_music", checked)}
-              />
-              <Label htmlFor="background_music">Background Music</Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="sound_effects"
-                checked={formData.sound_effects}
-                onCheckedChange={(checked) => handleInputChange("sound_effects", checked)}
-              />
-              <Label htmlFor="sound_effects">Sound Effects</Label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Form Actions */}
       <div className="flex justify-end space-x-3">

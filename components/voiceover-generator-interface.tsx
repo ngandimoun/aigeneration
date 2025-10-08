@@ -148,6 +148,39 @@ const EMOTION_OPTIONS = [
   { value: "gentle", label: "Gentle", icon: "🕊️" }
 ]
 
+// ElevenLabs API Output Format Options
+const OUTPUT_FORMAT_OPTIONS = [
+  { value: "mp3_22050_32", label: "MP3 22.05kHz 32kbps" },
+  { value: "mp3_44100_32", label: "MP3 44.1kHz 32kbps" },
+  { value: "mp3_44100_64", label: "MP3 44.1kHz 64kbps" },
+  { value: "mp3_44100_96", label: "MP3 44.1kHz 96kbps" },
+  { value: "mp3_44100_128", label: "MP3 44.1kHz 128kbps (Recommended)" },
+  { value: "mp3_44100_192", label: "MP3 44.1kHz 192kbps (Creator+)" },
+  { value: "pcm_8000", label: "PCM 8kHz" },
+  { value: "pcm_16000", label: "PCM 16kHz" },
+  { value: "pcm_22050", label: "PCM 22.05kHz" },
+  { value: "pcm_24000", label: "PCM 24kHz" },
+  { value: "pcm_44100", label: "PCM 44.1kHz (Pro+)" },
+  { value: "pcm_48000", label: "PCM 48kHz (Pro+)" },
+  { value: "ulaw_8000", label: "μ-law 8kHz (Twilio)" },
+  { value: "alaw_8000", label: "A-law 8kHz" },
+  { value: "opus_48000_32", label: "Opus 48kHz 32kbps" },
+  { value: "opus_48000_64", label: "Opus 48kHz 64kbps" },
+  { value: "opus_48000_96", label: "Opus 48kHz 96kbps" },
+  { value: "opus_48000_128", label: "Opus 48kHz 128kbps" },
+  { value: "opus_48000_192", label: "Opus 48kHz 192kbps" }
+]
+
+
+// Streaming Latency Optimization Options
+const LATENCY_OPTIONS = [
+  { value: 0, label: "Default (No optimization)" },
+  { value: 1, label: "Normal optimization (~50% improvement)" },
+  { value: 2, label: "Strong optimization (~75% improvement)" },
+  { value: 3, label: "Max optimization" },
+  { value: 4, label: "Max optimization + No text normalizer" }
+]
+
 export function VoiceoverGeneratorInterface({ onClose, projectTitle }: VoiceoverGeneratorInterfaceProps) {
   const { toast } = useToast()
   
@@ -155,13 +188,21 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   const [script, setScript] = useState("")
   const [language, setLanguage] = useState("English")
   const [selectedVoice, setSelectedVoice] = useState<DreamCutVoice | null>(null)
-  const [speed, setSpeed] = useState([50])
-  const [pitch, setPitch] = useState([50])
-  const [volume, setVolume] = useState([50])
+  
+  // ElevenLabs Voice Settings (mapped to actual API parameters)
+  const [stability, setStability] = useState([50]) // 0-100 mapped to 0-1
+  const [similarityBoost, setSimilarityBoost] = useState([75]) // 0-100 mapped to 0-1
+  const [style, setStyle] = useState([0]) // 0-100 mapped to 0-1
+  const [useSpeakerBoost, setUseSpeakerBoost] = useState(true)
+  
+  // Additional ElevenLabs API parameters
+  const [outputFormat, setOutputFormat] = useState("mp3_44100_128")
+  const [optimizeStreamingLatency, setOptimizeStreamingLatency] = useState(0)
+  const [enableLogging, setEnableLogging] = useState(true)
+  const [modelId] = useState("eleven_v3") // Hardcoded to eleven_v3
+  
   const [emotion, setEmotion] = useState("")
   const [useCase, setUseCase] = useState("")
-  const [backgroundMusic, setBackgroundMusic] = useState(false)
-  const [soundEffects, setSoundEffects] = useState(false)
   
   // DreamCut Voice Library
   const [dreamCutVoices, setDreamCutVoices] = useState<DreamCutVoice[]>([])
@@ -224,20 +265,24 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
     setIsGenerating(true)
     try {
-      // Call ElevenLabs API to generate voiceover
+      // Call ElevenLabs API to generate voiceover with proper parameter mapping
       const elevenLabsResponse = await fetch('/api/elevenlabs/text-to-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: script,
           voice_id: selectedVoice.voice_id,
+          model_id: modelId,
+          language_code: language === "English" ? "en" : language.toLowerCase(),
           voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true
+            stability: stability[0] / 100, // Convert 0-100 to 0-1
+            similarity_boost: similarityBoost[0] / 100, // Convert 0-100 to 0-1
+            style: style[0] / 100, // Convert 0-100 to 0-1
+            use_speaker_boost: useSpeakerBoost
           },
-          model_id: "eleven_multilingual_v2"
+          output_format: outputFormat,
+          optimize_streaming_latency: optimizeStreamingLatency,
+          enable_logging: enableLogging
         })
       })
 
@@ -317,26 +362,27 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
         script,
         language,
         voice_id: selectedVoice?.voice_id,
-        speed: speed[0],
-        pitch: pitch[0],
-        volume: volume[0],
         emotion,
         use_case: useCase,
-        background_music: backgroundMusic,
-        sound_effects: soundEffects,
         content: {
           dreamcut_voice: selectedVoice,
           elevenlabs_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true
+            stability: stability[0] / 100,
+            similarity_boost: similarityBoost[0] / 100,
+            style: style[0] / 100,
+            use_speaker_boost: useSpeakerBoost,
+            model_id: modelId,
+            output_format: outputFormat,
+            optimize_streaming_latency: optimizeStreamingLatency,
+            enable_logging: enableLogging
           }
         },
         metadata: {
           generated_at: new Date().toISOString(),
-          model_used: "eleven_multilingual_v2",
-          dreamcut_voice_name: selectedVoice?.name
+          model_used: modelId,
+          dreamcut_voice_name: selectedVoice?.name,
+          output_format: outputFormat,
+          api_version: "v1"
         }
       }
 
@@ -403,6 +449,103 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                     placeholder="Enter your voiceover script here..."
                     className="min-h-[120px]"
                   />
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="text-blue-800 font-medium mb-2">💡 Pro Tip: Use Audio Tags for Better Expression</p>
+                        <p className="text-blue-700 mb-3">
+                          Eleven v3 supports audio tags to control voice delivery and emotion. Here are all available tags:
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-blue-800 font-semibold mb-1">🎭 Voice & Emotions:</p>
+                              <div className="text-blue-600 space-y-1">
+                                <p><code>[laughs]</code>, <code>[laughs harder]</code>, <code>[starts laughing]</code>, <code>[wheezing]</code></p>
+                                <p><code>[whispers]</code>, <code>[sighs]</code>, <code>[exhales]</code></p>
+                                <p><code>[sarcastic]</code>, <code>[curious]</code>, <code>[excited]</code>, <code>[crying]</code></p>
+                                <p><code>[snorts]</code>, <code>[mischievously]</code>, <code>[happy]</code>, <code>[sad]</code></p>
+                                <p><code>[angry]</code>, <code>[annoyed]</code>, <code>[appalled]</code>, <code>[thoughtful]</code></p>
+                                <p><code>[surprised]</code>, <code>[professional]</code>, <code>[sympathetic]</code></p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <p className="text-blue-800 font-semibold mb-1">🔊 Sound Effects:</p>
+                              <div className="text-blue-600 space-y-1">
+                                <p><code>[gunshot]</code>, <code>[applause]</code>, <code>[clapping]</code>, <code>[explosion]</code></p>
+                                <p><code>[swallows]</code>, <code>[gulps]</code>, <code>[clears throat]</code></p>
+                                <p><code>[short pause]</code>, <code>[long pause]</code>, <code>[exhales sharply]</code></p>
+                                <p><code>[inhales deeply]</code>, <code>[chuckles]</code>, <code>[giggles]</code></p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-blue-800 font-semibold mb-1">🌍 Accents & Special:</p>
+                              <div className="text-blue-600 space-y-1">
+                                <p><code>[strong French accent]</code>, <code>[strong Russian accent]</code></p>
+                                <p><code>[strong British accent]</code>, <code>[strong German accent]</code></p>
+                                <p><code>[strong Spanish accent]</code>, <code>[strong Italian accent]</code></p>
+                                <p><code>[sings]</code>, <code>[woo]</code>, <code>[fart]</code></p>
+                                <p><code>[robotic voice]</code>, <code>[binary beeping]</code></p>
+                                <p><code>[dramatically]</code>, <code>[warmly]</code>, <code>[delightedly]</code></p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <p className="text-blue-800 font-semibold mb-1">🎬 Dialogue & Timing:</p>
+                              <div className="text-blue-600 space-y-1">
+                                <p><code>[starting to speak]</code>, <code>[jumping in]</code></p>
+                                <p><code>[overlapping]</code>, <code>[interrupting]</code></p>
+                                <p><code>[stopping abruptly]</code>, <code>[cautiously]</code></p>
+                                <p><code>[questioning]</code>, <code>[reassuring]</code></p>
+                                <p><code>[impressed]</code>, <code>[alarmed]</code>, <code>[sheepishly]</code></p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 p-2 bg-blue-100 rounded border-l-4 border-blue-400">
+                          <p className="text-blue-800 font-semibold text-xs mb-1">📝 Example Usage:</p>
+                          <div className="text-blue-700 text-xs space-y-2">
+                            <div>
+                              <p className="font-medium mb-1">English Script:</p>
+                              <p>"In the ancient land of Eldoria, where skies shimmered and forests whispered secrets to the wind, lived a dragon named Zephyros. [sarcastically] Not the 'burn it all down' kind... [giggles] but he was gentle, wise, with eyes like old stars. [whispers] Even the birds fell silent when he passed."</p>
+                            </div>
+                            <div>
+                              <p className="font-medium mb-1">French Script (with English tags):</p>
+                              <p>"Tu es une ordure, soldat ! Tu crois avoir ce qu'il faut pour être le MEILLEUR ?! [chuckles] tu es une honte pour la troupe - DÉGAGE DE MA VUE !! [voix aiguë] ooohh, mais c'est trop 'DIFFICILE'..,[voix aiguë] je n'ai pas assez de force ni de volonté, j'ai trop peur ! [rire] ASSEZ ! tu me fais rire, soldat, ET TU ME DONNES LA NAUSÉE !"</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 text-xs text-blue-600">
+                          <p><strong>💡 Tips:</strong> Combine multiple tags, match tags to your voice's character, and experiment with different combinations for best results!</p>
+                        </div>
+                        
+                        <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded border-l-4 border-l-amber-400">
+                          <div className="flex items-start gap-2">
+                            <span className="text-amber-600 text-sm">⚠️</span>
+                            <div className="text-xs">
+                              <p className="text-amber-800 font-semibold mb-1">Important: Audio Tags Language</p>
+                              <p className="text-amber-700">
+                                <strong>Always write audio tags in English</strong>, even if your script is in another language. 
+                                The tags are processed by the AI model and must be in English to work correctly.
+                              </p>
+                              <p className="text-amber-700 mt-1">
+                                <strong>Example:</strong> "Bonjour, comment allez-vous? [whispers] Je suis très heureux de vous voir." 
+                                ✅ Correct - script in French, tags in English
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -527,51 +670,69 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Speed: {speed[0]}%</Label>
+                  <Label>Stability: {stability[0]}%</Label>
                   <Slider
-                    value={speed}
-                    onValueChange={setSpeed}
+                    value={stability}
+                    onValueChange={setStability}
                     min={0}
                     max={100}
                     step={1}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Slow</span>
-                    <span>Fast</span>
+                    <span>Variable</span>
+                    <span>Stable</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">Controls voice consistency and variation</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Pitch: {pitch[0]}%</Label>
+                  <Label>Similarity Boost: {similarityBoost[0]}%</Label>
                   <Slider
-                    value={pitch}
-                    onValueChange={setPitch}
+                    value={similarityBoost}
+                    onValueChange={setSimilarityBoost}
                     min={0}
                     max={100}
                     step={1}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Low</span>
-                    <span>High</span>
+                    <span>Less Similar</span>
+                    <span>More Similar</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">How closely the voice matches the original</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Volume: {volume[0]}%</Label>
+                  <Label>Style: {style[0]}%</Label>
                   <Slider
-                    value={volume}
-                    onValueChange={setVolume}
+                    value={style}
+                    onValueChange={setStyle}
                     min={0}
                     max={100}
                     step={1}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Quiet</span>
-                    <span>Loud</span>
+                    <span>Neutral</span>
+                    <span>Exaggerated</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">Exaggeration of the speaking style</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Speaker Boost</Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="speaker-boost"
+                      checked={useSpeakerBoost}
+                      onCheckedChange={setUseSpeakerBoost}
+                    />
+                    <Label htmlFor="speaker-boost">
+                      {useSpeakerBoost ? "Enabled" : "Disabled"}
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Enhances the similarity to the original speaker</p>
                 </div>
 
                 <div className="space-y-2">
@@ -609,23 +770,72 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   </Select>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="background-music"
-                      checked={backgroundMusic}
-                      onCheckedChange={setBackgroundMusic}
-                    />
-                    <Label htmlFor="background-music">Background Music</Label>
+              </div>
+
+              {/* Advanced ElevenLabs API Settings */}
+              <Separator />
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Advanced ElevenLabs Settings</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Model</Label>
+                    <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                      <span className="text-sm font-medium">Eleven v3</span>
+                      <Badge variant="secondary" className="text-xs">Fixed</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Using the latest Eleven v3 model for optimal quality</p>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="sound-effects"
-                      checked={soundEffects}
-                      onCheckedChange={setSoundEffects}
-                    />
-                    <Label htmlFor="sound-effects">Sound Effects</Label>
+                  <div className="space-y-2">
+                    <Label>Output Format</Label>
+                    <Select value={outputFormat} onValueChange={setOutputFormat}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OUTPUT_FORMAT_OPTIONS.map((format) => (
+                          <SelectItem key={format.value} value={format.value}>
+                            {format.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Streaming Latency Optimization</Label>
+                    <Select 
+                      value={optimizeStreamingLatency.toString()} 
+                      onValueChange={(value) => setOptimizeStreamingLatency(parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LATENCY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Request Logging</Label>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="enable-logging"
+                        checked={enableLogging}
+                        onCheckedChange={setEnableLogging}
+                      />
+                      <Label htmlFor="enable-logging">
+                        {enableLogging ? "Enabled" : "Disabled"}
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {enableLogging ? "Request history will be saved" : "Zero retention mode (Enterprise only)"}
+                    </p>
                   </div>
                 </div>
               </div>

@@ -5,17 +5,30 @@ import { z } from 'zod'
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech'
 
-// Request validation schema
+// Request validation schema - matches ElevenLabs API specification
 const textToVoiceSchema = z.object({
   text: z.string().min(1).max(5000),
   voice_id: z.string().min(1),
+  model_id: z.string().optional().default('eleven_v3'),
+  language_code: z.string().optional(),
   voice_settings: z.object({
     stability: z.number().min(0).max(1).optional().default(0.5),
     similarity_boost: z.number().min(0).max(1).optional().default(0.75),
     style: z.number().min(0).max(1).optional().default(0.0),
     use_speaker_boost: z.boolean().optional().default(true)
   }).optional(),
-  model_id: z.string().optional().default('eleven_multilingual_v2')
+  output_format: z.string().optional().default('mp3_44100_128'),
+  optimize_streaming_latency: z.number().min(0).max(4).optional().default(0),
+  enable_logging: z.boolean().optional().default(true),
+  seed: z.number().optional(),
+  previous_text: z.string().optional(),
+  next_text: z.string().optional(),
+  previous_request_ids: z.array(z.string()).optional(),
+  next_request_ids: z.array(z.string()).optional(),
+  use_pvc_as_ivc: z.boolean().optional().default(false),
+  apply_text_normalization: z.enum(['auto', 'on', 'off']).optional().default('auto'),
+  apply_language_text_normalization: z.boolean().optional().default(true),
+  hcaptcha_token: z.string().optional()
 })
 
 export async function POST(request: NextRequest) {
@@ -32,26 +45,82 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare ElevenLabs API request
-    const elevenLabsRequest = {
+    // Prepare ElevenLabs API request with all supported parameters
+    const elevenLabsRequest: any = {
       text: validatedData.text,
-      model_id: validatedData.model_id,
-      voice_settings: validatedData.voice_settings || {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.0,
-        use_speaker_boost: true
-      }
+      model_id: validatedData.model_id
     }
+
+    // Add optional parameters if provided
+    if (validatedData.language_code) {
+      elevenLabsRequest.language_code = validatedData.language_code
+    }
+
+    if (validatedData.voice_settings) {
+      elevenLabsRequest.voice_settings = validatedData.voice_settings
+    }
+
+    if (validatedData.seed !== undefined) {
+      elevenLabsRequest.seed = validatedData.seed
+    }
+
+    if (validatedData.previous_text) {
+      elevenLabsRequest.previous_text = validatedData.previous_text
+    }
+
+    if (validatedData.next_text) {
+      elevenLabsRequest.next_text = validatedData.next_text
+    }
+
+    if (validatedData.previous_request_ids) {
+      elevenLabsRequest.previous_request_ids = validatedData.previous_request_ids
+    }
+
+    if (validatedData.next_request_ids) {
+      elevenLabsRequest.next_request_ids = validatedData.next_request_ids
+    }
+
+    if (validatedData.use_pvc_as_ivc !== undefined) {
+      elevenLabsRequest.use_pvc_as_ivc = validatedData.use_pvc_as_ivc
+    }
+
+    if (validatedData.apply_text_normalization) {
+      elevenLabsRequest.apply_text_normalization = validatedData.apply_text_normalization
+    }
+
+    if (validatedData.apply_language_text_normalization !== undefined) {
+      elevenLabsRequest.apply_language_text_normalization = validatedData.apply_language_text_normalization
+    }
+
+    if (validatedData.hcaptcha_token) {
+      elevenLabsRequest.hcaptcha_token = validatedData.hcaptcha_token
+    }
+
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+    if (validatedData.output_format) {
+      queryParams.append('output_format', validatedData.output_format)
+    }
+    if (validatedData.optimize_streaming_latency !== undefined) {
+      queryParams.append('optimize_streaming_latency', validatedData.optimize_streaming_latency.toString())
+    }
+    if (validatedData.enable_logging !== undefined) {
+      queryParams.append('enable_logging', validatedData.enable_logging.toString())
+    }
+
+    const apiUrl = `${ELEVENLABS_API_URL}/${validatedData.voice_id}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
     console.log('🎙️ Calling ElevenLabs API with:', {
       voice_id: validatedData.voice_id,
       text_length: validatedData.text.length,
-      model_id: validatedData.model_id
+      model_id: validatedData.model_id,
+      output_format: validatedData.output_format,
+      optimize_streaming_latency: validatedData.optimize_streaming_latency,
+      enable_logging: validatedData.enable_logging
     })
 
     // Call ElevenLabs API
-    const response = await fetch(`${ELEVENLABS_API_URL}/${validatedData.voice_id}`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
@@ -113,3 +182,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

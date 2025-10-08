@@ -180,7 +180,8 @@ const PURPOSE_OPTIONS = [
   { value: "icon", label: "Icon" },
   { value: "diagram", label: "Diagram" },
   { value: "background", label: "Background" },
-  { value: "character", label: "Character" }
+  { value: "character", label: "Character" },
+  { value: "thumbnails-covers", label: "Thumbnails & Covers" }
 ]
 
 const MOOD_CONTEXTS = [
@@ -316,6 +317,15 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle }: Illust
       setArtDirection("flat-vector") // Force flat vector for icons
       setLightingPreset("") // Disable lighting
       message = "DreamCut forced flat vector style and disabled lighting for icon generation."
+    }
+    
+    if (purpose === "thumbnails-covers") {
+      setCompositionTemplate("hero-scene") // Force hero scene composition for thumbnails
+      setLightingPreset("golden-hour") // Warm, engaging lighting for thumbnails
+      setToneIntensity([75]) // High contrast for visibility at small sizes
+      setSubjectPlacement("center") // Center subject for thumbnail focus
+      setSafeZoneOverlay(true) // Enable safe zone for text overlays
+      message = "DreamCut optimized composition, lighting, and contrast for thumbnail visibility and engagement."
     }
     
     // Mood context changes

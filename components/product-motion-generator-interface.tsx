@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -65,6 +65,7 @@ interface ProductMotionGeneratorInterfaceProps {
 }
 
 // Motion DNA Types
+type ProductCategory = "Product" | "Chart" | "Infographic" | "Logo Animation" | "UI/UX Element"
 type EmotionalTone = "Epic" | "Elegant" | "Calm" | "Poetic" | "Powerful"
 type VisualStyle = "Photoreal" | "Cinematic" | "Stylized CG" | "Watercolor Softness"
 type Environment = "Studio white" | "Urban twilight" | "Forest dawn" | "Black marble" | "Custom"
@@ -86,6 +87,7 @@ export function ProductMotionGeneratorInterface({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 1️⃣ Product Description & Intent Capture
+  const [productCategory, setProductCategory] = useState<ProductCategory>("Product")
   const [productName, setProductName] = useState("")
   const [coreMoment, setCoreMoment] = useState("")
   const [emotionalTone, setEmotionalTone] = useState<EmotionalTone>("Epic")
@@ -140,6 +142,103 @@ export function ProductMotionGeneratorInterface({
     }))
   }
 
+  // Smart defaults based on category selection
+  useEffect(() => {
+    switch (productCategory) {
+      case "Chart":
+        // Chart defaults: Epic, Cinematic, 10s, Studio white, High-Contrast Spot, Glass/Metal/Liquid, Macro Precision, Cinematic 60 fps, Morph, 50% energy, SFX only, Ambient minimal
+        setEmotionalTone("Epic")
+        setVisualStyle("Cinematic")
+        setDuration([10])
+        setEnvironment("Studio white")
+        setLightingMood("High-Contrast Spot")
+        setMaterialFocus(["Glass", "Metal", "Liquid"])
+        setCameraType("Macro Precision")
+        setFrameRate("Cinematic 60 fps")
+        setRevealType("Morph")
+        setCameraEnergy([50])
+        setHookIntensity([50])
+        setEndEmotion([50])
+        setSoundMode("SFX only")
+        setSoundMood("Ambient minimal")
+        setMixCurve([50])
+        break
+      case "Infographic":
+        // Infographic defaults: Elegant, Stylized CG, 8s, Studio white, Soft Daylight, All materials, Orbit Reveal, Cinematic 60 fps, Assemble, 40% energy, Hybrid, Cinematic warm
+        setEmotionalTone("Elegant")
+        setVisualStyle("Stylized CG")
+        setDuration([8])
+        setEnvironment("Studio white")
+        setLightingMood("Soft Daylight")
+        setMaterialFocus(["All"])
+        setCameraType("Orbit Reveal")
+        setFrameRate("Cinematic 60 fps")
+        setRevealType("Assemble")
+        setCameraEnergy([40])
+        setHookIntensity([40])
+        setEndEmotion([60])
+        setSoundMode("Hybrid")
+        setSoundMood("Cinematic warm")
+        setMixCurve([60])
+        break
+      case "Logo Animation":
+        // Logo Animation defaults: Powerful, Cinematic, 6s, Studio white, Glossy Specular, Glass/Metal, Orbit Reveal, Cinematic 60 fps, Morph From Form, 60% energy, SFX only, Ambient minimal
+        setEmotionalTone("Powerful")
+        setVisualStyle("Cinematic")
+        setDuration([6])
+        setEnvironment("Studio white")
+        setLightingMood("Glossy Specular")
+        setMaterialFocus(["Glass", "Metal"])
+        setCameraType("Orbit Reveal")
+        setFrameRate("Cinematic 60 fps")
+        setRevealType("Morph From Form")
+        setCameraEnergy([60])
+        setHookIntensity([70])
+        setEndEmotion([80])
+        setSoundMode("SFX only")
+        setSoundMood("Ambient minimal")
+        setMixCurve([40])
+        setLogoMoment("Morph From Form")
+        break
+      case "UI/UX Element":
+        // UI/UX defaults: Calm, Photoreal, 5s, Studio white, Soft Daylight, Glass/Fabric, Macro Precision, Standard 30 fps, Slide, 30% energy, SFX only, Ambient minimal
+        setEmotionalTone("Calm")
+        setVisualStyle("Photoreal")
+        setDuration([5])
+        setEnvironment("Studio white")
+        setLightingMood("Soft Daylight")
+        setMaterialFocus(["Glass", "Fabric"])
+        setCameraType("Macro Precision")
+        setFrameRate("Standard 30 fps")
+        setRevealType("Slide")
+        setCameraEnergy([30])
+        setHookIntensity([30])
+        setEndEmotion([40])
+        setSoundMode("SFX only")
+        setSoundMood("Ambient minimal")
+        setMixCurve([30])
+        break
+      default: // Product
+        // Product defaults: Epic, Cinematic, 10s, Studio white, Soft Daylight, All materials, Macro Precision, Cinematic 60 fps, Morph, 50% energy, SFX only, Ambient minimal
+        setEmotionalTone("Epic")
+        setVisualStyle("Cinematic")
+        setDuration([10])
+        setEnvironment("Studio white")
+        setLightingMood("Soft Daylight")
+        setMaterialFocus(["All"])
+        setCameraType("Macro Precision")
+        setFrameRate("Cinematic 60 fps")
+        setRevealType("Morph")
+        setCameraEnergy([50])
+        setHookIntensity([50])
+        setEndEmotion([50])
+        setSoundMode("SFX only")
+        setSoundMood("Ambient minimal")
+        setMixCurve([50])
+        break
+    }
+  }, [productCategory])
+
   const handleMaterialFocusChange = (material: MaterialFocus) => {
     setMaterialFocus(prev => {
       if (material === "All") {
@@ -168,6 +267,24 @@ export function ProductMotionGeneratorInterface({
     "Mechanical click", "Liquid splash", "Fabric rustle", "Metal ping"
   ]
 
+  // Helper function to get dynamic placeholders based on category
+  const getCoreMomentPlaceholder = (category: ProductCategory): string => {
+    switch (category) {
+      case "Product":
+        return "e.g., Foot strike morphs city pavement into forest floor"
+      case "Chart":
+        return "e.g., Stock prices rise as bars grow taller with data flowing"
+      case "Infographic":
+        return "e.g., Statistics animate into visual elements with smooth transitions"
+      case "Logo Animation":
+        return "e.g., Logo emerges from particles and settles into final form"
+      case "UI/UX Element":
+        return "e.g., Interface elements slide and morph into new layouts"
+      default:
+        return "Describe the key transformation or moment"
+    }
+  }
+
   const handleGenerate = async () => {
     if (!productName.trim() || !coreMoment.trim()) {
       toast({
@@ -183,6 +300,7 @@ export function ProductMotionGeneratorInterface({
     try {
       // Compile all DNA layers into Veo 3 JSON
       const motionDNA = {
+        category: productCategory,
         product: productName.trim(),
         coreMoment: coreMoment.trim(),
         style: `${emotionalTone.toLowerCase()} ${visualStyle.toLowerCase()} kinetic reveal`,
@@ -219,6 +337,7 @@ export function ProductMotionGeneratorInterface({
         metadata: {
           projectTitle,
           selectedArtifact,
+          category: productCategory,
           timestamp: new Date().toISOString()
         }
       }
@@ -232,8 +351,8 @@ export function ProductMotionGeneratorInterface({
       setGeneratedVideo("/placeholder-video.mp4")
       
       toast({
-        title: "Product in Motion generated successfully!",
-        description: `"${productName}" motion video is ready for preview.`,
+        title: `${productCategory} in Motion generated successfully!`,
+        description: `"${productName}" ${productCategory.toLowerCase()} motion video is ready for preview.`,
       })
       
     } catch (error) {
@@ -259,10 +378,10 @@ export function ProductMotionGeneratorInterface({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-foreground">
-                Product in Motion Studio
+                {productCategory} in Motion Studio
               </h2>
               <p className="text-sm text-muted-foreground">
-                Transform "{projectTitle}" into a cinematic performance
+                Transform "{projectTitle}" into a cinematic {productCategory.toLowerCase()} performance
               </p>
             </div>
           </div>
@@ -308,12 +427,55 @@ export function ProductMotionGeneratorInterface({
                   
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
+                      Content Category *
+                    </label>
+                    <Select value={productCategory} onValueChange={(value: ProductCategory) => setProductCategory(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Product">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            Product
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Chart">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Chart (CNBC/Bloomberg style)
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Infographic">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            Infographic
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Logo Animation">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                            Logo Animation
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="UI/UX Element">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                            UI/UX Element
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Core Moment / Transformation *
                     </label>
                     <Textarea
                       value={coreMoment}
                       onChange={(e) => setCoreMoment(e.target.value)}
-                      placeholder="e.g., Foot strike morphs city pavement into forest floor"
+                      placeholder={getCoreMomentPlaceholder(productCategory)}
                       rows={3}
                       className="w-full"
                     />
@@ -874,3 +1036,4 @@ export function ProductMotionGeneratorInterface({
     </div>
   )
 }
+

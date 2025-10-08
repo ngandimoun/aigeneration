@@ -8,6 +8,7 @@ import { ImageGeneratorInterface } from "@/components/image-generator-interface"
 import { IllustrationGeneratorInterface } from "@/components/illustration-generator-interface"
 import { AvatarPersonaGeneratorInterface } from "@/components/avatar-persona-generator-interface"
 import { VideoGeneratorInterface } from "@/components/video-generator-interface"
+import { ExplainerGeneratorInterface } from "@/components/explainer-generator-interface"
 import { UGCAdsGeneratorInterface } from "@/components/ugc-ads-generator-interface"
 import { ProductMotionGeneratorInterface } from "@/components/product-motion-generator-interface"
 import { ProductMockupGeneratorInterface } from "@/components/product-mockup-generator-interface"
@@ -29,10 +30,14 @@ import { CinematicClipsForm } from "@/components/forms/cinematic-clips-form"
 import { SocialCutsForm } from "@/components/forms/social-cuts-form"
 import { TalkingAvatarsForm } from "@/components/forms/talking-avatars-form"
 import { ComicsForm } from "@/components/forms/comics-form"
+import { SubtitleForm } from "@/components/forms/subtitle-form"
+import { SubtitleInterface } from "@/components/subtitle-interface"
+import { SoundToVideoInterface } from "@/components/sound-to-video-interface"
 import { ComicCard } from "@/components/comic-card"
 import { Button } from "@/components/ui/button"
 import { Plus, FolderPlus, Globe, Lock } from "lucide-react"
 import { ArtifactCardSkeleton } from "@/components/artifact-card-skeleton"
+import { AutocaptionModelInputs } from "@/lib/types/subtitles"
 
 export function GeneratorPanel() {
   const [isMounted, setIsMounted] = useState(false)
@@ -80,7 +85,7 @@ export function GeneratorPanel() {
   const soundFxSections = ['sound-fx']
   
   // Sections qui supportent les nouveaux formulaires
-  const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics']
+  const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound']
   
   // Sections qui supportent la génération de talking avatars
   const talkingAvatarsSections = ['talking-avatars']
@@ -358,6 +363,56 @@ export function GeneratorPanel() {
             availableArtifacts={mainArtifacts}
           />
         )
+      case 'add-subtitles':
+        return (
+          <SubtitleForm
+            onSubmit={async (subtitleData: AutocaptionModelInputs) => {
+              try {
+                const response = await fetch('/api/subtitles', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    ...subtitleData,
+                    title: `Subtitle Project - ${new Date().toLocaleDateString()}`,
+                    description: `Video subtitle generation with ${subtitleData.emoji_enrichment ? 'emoji enrichment' : 'standard'} styling`
+                  }),
+                })
+
+                if (!response.ok) {
+                  throw new Error('Failed to create subtitle project')
+                }
+
+                const result = await response.json()
+                console.log('🎬 Subtitle project saved:', result)
+                setShowProjectForm(false)
+                
+                // Optionally show a success message or redirect
+              } catch (error) {
+                console.error('Error saving subtitle project:', error)
+                // Handle error (show toast, etc.)
+              }
+            }}
+            onCancel={() => setShowProjectForm(false)}
+            isLoading={false}
+          />
+        )
+      case 'add-sound':
+        return (
+          <div className="bg-background border border-border rounded-lg p-6">
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🎵</div>
+              <h3 className="text-lg font-medium text-foreground mb-2">Sound-to-Video Form</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Form will be implemented later
+              </p>
+              <Button onClick={() => setShowProjectForm(false)} variant="outline">
+                Close
+              </Button>
+            </div>
+          </div>
+        )
       default:
         return (
           <ArtifactFormComponent type="project" />
@@ -514,7 +569,12 @@ export function GeneratorPanel() {
         )}
         
         {showVideoGenerator && selectedVideoProject && videoGeneratorSection === selectedSection && (
-          selectedSection === 'ugc-ads' ? (
+          selectedSection === 'explainers' ? (
+            <ExplainerGeneratorInterface 
+              onClose={handleCloseVideoGenerator}
+              projectTitle={selectedVideoProject.title}
+            />
+          ) : selectedSection === 'ugc-ads' ? (
             <UGCAdsGeneratorInterface 
               onClose={handleCloseVideoGenerator}
               projectTitle={selectedVideoProject.title}
@@ -622,6 +682,22 @@ export function GeneratorPanel() {
             selectedArtifact={selectedTalkingAvatarProject as any}
           />
         )}
+
+        {/* Subtitle Interface */}
+        {selectedSection === 'add-subtitles' && !showProjectForm && (
+          <SubtitleInterface 
+            onClose={() => setShowProjectForm(true)}
+            projectTitle="Add Subtitles"
+          />
+        )}
+
+        {/* Sound-to-Video Interface */}
+        {selectedSection === 'add-sound' && !showProjectForm && (
+          <SoundToVideoInterface 
+            onClose={() => setShowProjectForm(true)}
+            projectTitle="Add Sound to Video"
+          />
+        )}
         
         {/* Loading state for all sections */}
         {isLoadingArtifacts && (
@@ -649,14 +725,14 @@ export function GeneratorPanel() {
         
         {/* Project grids */}
         {shouldShowProjectGrid() && selectedSection === 'comics' && !isLoadingArtifacts && <ComicsGrid />}
-        {shouldShowProjectGrid() && selectedSection !== 'comics' && !isLoadingArtifacts && <ProjectGrid />}
+        {shouldShowProjectGrid() && selectedSection !== 'comics' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && !isLoadingArtifacts && <ProjectGrid />}
         
         {/* Empty states */}
         {selectedSection === 'artifacts' && !isLoadingArtifacts && sectionArtifacts.length === 0 && !showArtifactForm && (
           <EmptyState message="No artifacts yet. Create your first artifact!" />
         )}
         
-        {shouldShowEmptyState() && (
+        {shouldShowEmptyState() && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && (
           <EmptyState message="No projects yet. Create your first project!" />
         )}
       </div>
