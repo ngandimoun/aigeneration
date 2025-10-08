@@ -355,6 +355,21 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
+                selectedSection === 'voiceovers'
+                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                  : 'text-sidebar-foreground hover:bg-accent'
+              }`}
+              onClick={() => {
+                setSelectedSection('voiceovers')
+                onMobileClose()
+              }}
+            >
+              <Volume2 className="h-4 w-4 shrink-0" />
+              <span>Voiceovers</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'music-jingles'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -364,7 +379,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
                 onMobileClose()
               }}
             >
-              <Volume2 className="h-4 w-4 shrink-0" />
+              <Music className="h-4 w-4 shrink-0" />
               <span>Music & Jingles</span>
             </Button>
             <Button

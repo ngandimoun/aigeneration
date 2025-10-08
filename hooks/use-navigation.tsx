@@ -121,6 +121,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         'social-cuts': '/api/social-cuts',
         'talking-avatars': '/api/talking-avatars',
         'ugc-ads': '/api/ugc-ads',
+        'voice-creation': '/api/voice-creation',
+        'voiceovers': '/api/voiceovers',
         'sound-fx': '/api/sound-fx',
         'templates': '/api/templates'
       }
@@ -161,6 +163,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
             data = responseData.ugcAds
           } else if (responseData.soundFx) {
             data = responseData.soundFx
+          } else if (responseData.voiceCreations) {
+            data = responseData.voiceCreations
+          } else if (responseData.voiceovers) {
+            data = responseData.voiceovers
           } else if (responseData.templates) {
             data = responseData.templates
           } else if (responseData.artifacts) {
@@ -257,6 +263,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         'social-cuts': '/api/social-cuts',
         'talking-avatars': '/api/talking-avatars',
         'ugc-ads': '/api/ugc-ads',
+        'voice-creation': '/api/voice-creation',
+        'voiceovers': '/api/voiceovers',
         'sound-fx': '/api/sound-fx',
         'templates': '/api/templates', // Templates use independent templates API
         'artifacts': '/api/artifacts' // General artifacts use artifacts API
@@ -271,23 +279,43 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       console.log('📝 Creating content via API endpoint:', apiEndpoint)
       console.log('📝 Form metadata:', formMetadata)
       
+      // Special handling for talking avatars API
+      let requestBody: any = {
+        title: artifact.title,
+        description: artifact.description,
+        content: { image: artifact.image || '/placeholder.jpg' },
+        metadata: { 
+          isPublic: artifact.isPublic, 
+          style: artifact.style,
+          // Include all form-specific metadata for full traceability
+          ...formMetadata
+        },
+        is_public: artifact.isPublic || false
+      }
+
+      // For talking avatars, we need to pass the selected_artifact directly
+      if (selectedSection === 'talking-avatars') {
+        requestBody = {
+          title: artifact.title,
+          description: artifact.description,
+          script: 'Default script', // Default script since form doesn't collect it
+          selected_artifact: artifact.selected_artifact,
+          content: { image: artifact.image || '/placeholder.jpg' },
+          metadata: { 
+            isPublic: artifact.isPublic, 
+            style: artifact.style,
+            ...formMetadata
+          },
+          is_public: artifact.isPublic || false
+        }
+      }
+
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          title: artifact.title,
-          description: artifact.description,
-          content: { image: artifact.image || '/placeholder.jpg' },
-          metadata: { 
-            isPublic: artifact.isPublic, 
-            style: artifact.style,
-            // Include all form-specific metadata for full traceability
-            ...formMetadata
-          },
-          is_public: artifact.isPublic || false
-        })
+        body: JSON.stringify(requestBody)
       })
       
       if (!response.ok) {
@@ -330,6 +358,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
           'ugc-ads': 'ugc-ads',
           'product-motion': 'product-motion',
           'social-cuts': 'social-cuts',
+          'voice-creation': 'voice-creation',
+          'voiceovers': 'voiceovers',
           'sound-fx': 'sound-fx'
         }
         
@@ -413,6 +443,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return "Charts & Infographics"
       case "voice-creation":
         return "Voice Creation"
+      case "voiceovers":
+        return "Voiceovers"
       case "music-jingles":
         return "Music & Jingles"
       case "sound-fx":

@@ -8,11 +8,15 @@ import { ImageGeneratorInterface } from "@/components/image-generator-interface"
 import { IllustrationGeneratorInterface } from "@/components/illustration-generator-interface"
 import { AvatarPersonaGeneratorInterface } from "@/components/avatar-persona-generator-interface"
 import { VideoGeneratorInterface } from "@/components/video-generator-interface"
+import { UGCAdsGeneratorInterface } from "@/components/ugc-ads-generator-interface"
+import { ProductMotionGeneratorInterface } from "@/components/product-motion-generator-interface"
 import { ProductMockupGeneratorInterface } from "@/components/product-mockup-generator-interface"
 import { ChartsInfographicsGeneratorInterface } from "@/components/charts-infographics-generator-interface"
 import { ConceptWorldsGeneratorInterface } from "@/components/concept-worlds-generator-interface"
 import { VoiceCreationInterface } from "@/components/voice-creation-interface"
+import { VoiceoverGeneratorInterface } from "@/components/voiceover-generator-interface"
 import { SoundFxInterface } from "@/components/sound-fx-interface"
+import { TalkingAvatarsGeneratorInterface } from "@/components/talking-avatars-generator-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
 import { AvatarsForm } from "@/components/forms/avatars-form"
 import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
@@ -47,8 +51,15 @@ export function GeneratorPanel() {
   // États locaux pour l'interface de création de voix
   const [showVoiceCreation, setShowVoiceCreation] = useState(false)
   
+  // États locaux pour l'interface de création de voiceovers
+  const [showVoiceover, setShowVoiceover] = useState(false)
+  
   // États locaux pour l'interface de création de Sound FX
   const [showSoundFx, setShowSoundFx] = useState(false)
+  
+  // États locaux pour l'interface de génération de talking avatars
+  const [showTalkingAvatars, setShowTalkingAvatars] = useState(false)
+  const [selectedTalkingAvatarProject, setSelectedTalkingAvatarProject] = useState<{title: string, image: string, description: string} | null>(null)
   
   // Obtenir les artifacts filtrés par section
   const sectionArtifacts = getArtifactsBySection(selectedSection)
@@ -57,10 +68,13 @@ export function GeneratorPanel() {
   const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics', 'comics']
   
   // Sections qui supportent la génération vidéo
-  const videoGenerationSections = ['explainers', 'talking-avatars', 'social-cuts', 'cinematic-clips', 'product-motion', 'ugc-ads']
+  const videoGenerationSections = ['explainers', 'social-cuts', 'cinematic-clips', 'product-motion', 'ugc-ads']
   
   // Sections qui supportent la création de voix
   const voiceCreationSections = ['voice-creation']
+  
+  // Sections qui supportent la création de voiceovers
+  const voiceoverSections = ['voiceovers']
   
   // Sections qui supportent la création de Sound FX
   const soundFxSections = ['sound-fx']
@@ -68,15 +82,20 @@ export function GeneratorPanel() {
   // Sections qui supportent les nouveaux formulaires
   const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics']
   
+  // Sections qui supportent la génération de talking avatars
+  const talkingAvatarsSections = ['talking-avatars']
+  
   // Helper functions
   const isImageGenerationSection = (section: string) => imageGenerationSections.includes(section)
   const isVideoGenerationSection = (section: string) => videoGenerationSections.includes(section)
   const isVoiceCreationSection = (section: string) => voiceCreationSections.includes(section)
+  const isVoiceoverSection = (section: string) => voiceoverSections.includes(section)
   const isSoundFxSection = (section: string) => soundFxSections.includes(section)
   const isNewFormSection = (section: string) => newFormSections.includes(section)
-  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showSoundFx
-  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showSoundFx
-  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showSoundFx
+  const isTalkingAvatarsSection = (section: string) => talkingAvatarsSections.includes(section)
+  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars
+  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars
+  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars
 
   useEffect(() => {
     setIsMounted(true)
@@ -106,13 +125,28 @@ export function GeneratorPanel() {
       setShowVoiceCreation(false)
     }
   }, [selectedSection, showVoiceCreation])
-
+  
+  // Fermer l'interface de création de voiceovers quand on change de section
+  useEffect(() => {
+    if (showVoiceover && selectedSection !== 'voiceovers') {
+      setShowVoiceover(false)
+    }
+  }, [selectedSection, showVoiceover])
+  
   // Fermer l'interface de création de Sound FX quand on change de section
   useEffect(() => {
     if (showSoundFx && selectedSection !== 'sound-fx') {
       setShowSoundFx(false)
     }
   }, [selectedSection, showSoundFx])
+
+  // Fermer l'interface de génération de talking avatars quand on change de section
+  useEffect(() => {
+    if (showTalkingAvatars && selectedSection !== 'talking-avatars') {
+      setShowTalkingAvatars(false)
+      setSelectedTalkingAvatarProject(null)
+    }
+  }, [selectedSection, showTalkingAvatars])
 
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const handleProjectClick = (artifact: {title: string, image: string, description: string}) => {
@@ -124,6 +158,9 @@ export function GeneratorPanel() {
       setSelectedVideoProject(artifact)
       setVideoGeneratorSection(selectedSection)
       setShowVideoGenerator(true)
+    } else if (isTalkingAvatarsSection(selectedSection)) {
+      setSelectedTalkingAvatarProject(artifact)
+      setShowTalkingAvatars(true)
     }
   }
 
@@ -143,8 +180,17 @@ export function GeneratorPanel() {
     setShowVoiceCreation(false)
   }
 
+  const handleCloseVoiceover = () => {
+    setShowVoiceover(false)
+  }
+  
   const handleCloseSoundFx = () => {
     setShowSoundFx(false)
+  }
+
+  const handleCloseTalkingAvatars = () => {
+    setShowTalkingAvatars(false)
+    setSelectedTalkingAvatarProject(null)
   }
 
   // Composant pour le bouton New Project
@@ -468,10 +514,23 @@ export function GeneratorPanel() {
         )}
         
         {showVideoGenerator && selectedVideoProject && videoGeneratorSection === selectedSection && (
-          <VideoGeneratorInterface 
-            onClose={handleCloseVideoGenerator}
-            projectTitle={selectedVideoProject.title}
-          />
+          selectedSection === 'ugc-ads' ? (
+            <UGCAdsGeneratorInterface 
+              onClose={handleCloseVideoGenerator}
+              projectTitle={selectedVideoProject.title}
+            />
+          ) : selectedSection === 'product-motion' ? (
+            <ProductMotionGeneratorInterface 
+              onClose={handleCloseVideoGenerator}
+              projectTitle={selectedVideoProject.title}
+              selectedArtifact={selectedVideoProject as any}
+            />
+          ) : (
+            <VideoGeneratorInterface 
+              onClose={handleCloseVideoGenerator}
+              projectTitle={selectedVideoProject.title}
+            />
+          )
         )}
         
         {/* Voice Creation Interface */}
@@ -501,6 +560,33 @@ export function GeneratorPanel() {
           </div>
         )}
         
+        {/* Voiceover Interface */}
+        {isVoiceoverSection(selectedSection) && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Voiceover Studio</h2>
+                <p className="text-muted-foreground">Generate high-quality voiceovers for your videos and projects.</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowVoiceover(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Voiceover
+              </Button>
+            </div>
+            
+            {showVoiceover && (
+              <VoiceoverGeneratorInterface 
+                onClose={handleCloseVoiceover}
+                projectTitle="Voiceover Studio"
+              />
+            )}
+          </div>
+        )}
+
         {/* Sound FX Interface */}
         {isSoundFxSection(selectedSection) && (
           <div className="space-y-6">
@@ -526,6 +612,15 @@ export function GeneratorPanel() {
               />
             )}
           </div>
+        )}
+
+        {/* Talking Avatars Interface */}
+        {showTalkingAvatars && selectedTalkingAvatarProject && (
+          <TalkingAvatarsGeneratorInterface 
+            onClose={handleCloseTalkingAvatars}
+            projectTitle={selectedTalkingAvatarProject.title}
+            selectedArtifact={selectedTalkingAvatarProject as any}
+          />
         )}
         
         {/* Loading state for all sections */}

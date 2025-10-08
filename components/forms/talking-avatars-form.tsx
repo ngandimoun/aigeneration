@@ -1,31 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X, Loader2, ChevronsUpDown, MessageCircle, Image as ImageIcon, CheckCircle } from "lucide-react"
+import { Plus, X, Loader2, ChevronsUpDown, MessageCircle, Image as ImageIcon, CheckCircle, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface TalkingAvatarsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string; selected_artifact: string }) => void
   onCancel: () => void
   availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-// Données de simulation pour les artifacts
-const mockArtifacts = [
-  { id: "1", title: "AI Presenter", image: "/placeholder.jpg", description: "Professional AI presenter avatar" },
-  { id: "2", title: "Character Voice", image: "/placeholder.jpg", description: "Animated character with voice" },
-  { id: "3", title: "Virtual Host", image: "/placeholder.jpg", description: "Virtual event host avatar" },
-  { id: "4", title: "Educational Avatar", image: "/placeholder.jpg", description: "Teaching assistant avatar" },
-  { id: "5", title: "Brand Spokesperson", image: "/placeholder.jpg", description: "Brand representative avatar" },
-  { id: "6", title: "News Anchor", image: "/placeholder.jpg", description: "News presentation avatar" },
-  { id: "7", title: "Customer Service", image: "/placeholder.jpg", description: "Support assistant avatar" },
-  { id: "8", title: "Storyteller", image: "/placeholder.jpg", description: "Narrative storytelling avatar" }
-]
 
 export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: TalkingAvatarsFormProps) {
   const [title, setTitle] = useState("")
@@ -35,10 +25,38 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
   const [artifactOpen, setArtifactOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
+  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
 
-  // Utiliser les données de simulation si la liste est vide
-  const artifactsToShow = availableArtifacts.length > 0 ? availableArtifacts : mockArtifacts
+  // Fetch real artifacts from the database
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        // Fetch all artifacts for the user (both public and private)
+        const artifacts = await fetchArtifacts({})
+        const formattedArtifacts = artifacts.map(artifact => ({
+          id: artifact.id,
+          title: artifact.title,
+          image: artifact.metadata?.image || "/placeholder.jpg",
+          description: artifact.description || "No description available"
+        }))
+        setRealArtifacts(formattedArtifacts)
+      } catch (error) {
+        console.error('Failed to load artifacts:', error)
+        toast({
+          title: "Error loading artifacts",
+          description: "Could not load artifacts from database. Please try again.",
+          variant: "destructive"
+        })
+      }
+    }
+
+    loadArtifacts()
+  }, [fetchArtifacts, toast])
+
+  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
+  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
   
   // Filtrer les artifacts basé sur le terme de recherche
   const filteredArtifacts = artifactsToShow.filter(artifact =>
@@ -79,7 +97,7 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
   }
 
   const handleSave = async () => {
-    if (title.trim() && imagePreview && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim() && selectedArtifact) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -87,9 +105,9 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
       
       onSave({
         title: title.trim(),
-        image: imagePreview,
+        image: imagePreview || "",
         description: description.trim(),
-        selectedArtifact
+        selected_artifact: selectedArtifact
       })
       
       setTitle("")
@@ -133,7 +151,7 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
-            Upload Media
+            Upload Media <span className="text-muted-foreground">(Optional)</span>
           </label>
           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-muted-foreground/50 transition-colors">
             <input
@@ -167,9 +185,9 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
           <label className="block text-sm font-medium text-foreground mb-1">
             Artifact(s)
           </label>
-          {availableArtifacts.length === 0 && (
+          {realArtifacts.length === 0 && availableArtifacts.length === 0 && (
             <p className="text-xs text-muted-foreground mb-2">
-              Using demo artifacts for testing. Create real artifacts in the "Artifacts" section.
+              No artifacts available. Create artifacts in the "Artifacts" section.
             </p>
           )}
           
@@ -241,6 +259,7 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
             rows={3}
           />
         </div>
+
       </div>
 
       <div className="flex gap-2 pt-4">
@@ -248,7 +267,7 @@ export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: Tal
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !imagePreview || !description.trim() || !selectedArtifact}
+          disabled={isLoading || !title.trim() || !description.trim() || !selectedArtifact}
         >
           {isLoading ? (
             <>
