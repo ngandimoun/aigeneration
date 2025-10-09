@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   X, 
   Sparkles, 
@@ -36,9 +37,16 @@ import {
   Wand2,
   CheckCircle,
   Loader2,
-  ArrowUp
+  ArrowUp,
+  Code,
+  FileText,
+  AlertCircle,
+  RefreshCw,
+  Copy
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 interface ExplainerGeneratorInterfaceProps {
   onClose: () => void
@@ -117,36 +125,179 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null)
   const [hasSubtitles, setHasSubtitles] = useState(false)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  
+  // Real-time job tracking
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<string>("")
+  const [retryCount, setRetryCount] = useState(0)
+  const [lastError, setLastError] = useState<string>("")
+  const [manimCode, setManimCode] = useState<string>("")
+  const [logs, setLogs] = useState<string>("")
+  const [stderr, setStderr] = useState<string>("")
+  
+  // Refs and hooks
+  const supabase = createClient()
+  const { toast } = useToast()
+  const realtimeChannel = useRef<any>(null)
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
 
     setIsGenerating(true)
     setGenerationProgress(0)
-    setGenerationStep("Building Manim Scene...")
+    setGenerationStep("Starting generation...")
+    setCurrentJobId(null)
+    setJobStatus("")
+    setRetryCount(0)
+    setLastError("")
+    setManimCode("")
+    setLogs("")
+    setStderr("")
 
     try {
-      // Simulate progress steps
-      const steps = [
-        { step: "Building Manim Scene...", progress: 20 },
-        { step: "Rendering animation...", progress: 60 },
-        { step: hasVoiceover ? "Adding AI voiceover..." : "Finalizing video...", progress: 90 },
-        { step: "Complete!", progress: 100 }
-      ]
+      // Call the generation API
+      const response = await fetch('/api/explainers/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          hasVoiceover,
+          voiceStyle,
+          language,
+          duration: duration[0],
+          aspectRatio,
+          resolution,
+          style
+        }),
+      })
 
-      for (const { step, progress } of steps) {
-        setGenerationStep(step)
-        setGenerationProgress(progress)
-        await new Promise(resolve => setTimeout(resolve, 1000))
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to start generation')
       }
 
-      // Simulate successful generation
-      setGeneratedVideo("/placeholder-video.mp4")
-      setGenerationStep("")
+      const result = await response.json()
+      setCurrentJobId(result.jobId)
+      setJobStatus("queued")
+      
+      toast({
+        title: "Generation started",
+        description: "Your animation is being created. You'll be notified when it's ready.",
+      })
+
+      // Subscribe to real-time updates
+      subscribeToJobUpdates(result.jobId)
+
     } catch (error) {
       console.error("Generation failed:", error)
-    } finally {
+      toast({
+        title: "Generation failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      })
       setIsGenerating(false)
+    }
+  }
+
+  // Subscribe to real-time job updates
+  const subscribeToJobUpdates = (jobId: string) => {
+    // Clean up existing subscription
+    if (realtimeChannel.current) {
+      realtimeChannel.current.unsubscribe()
+    }
+
+    realtimeChannel.current = supabase
+      .channel(`job-${jobId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'explainers',
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          console.log('Job update received:', payload.new)
+          updateJobState(payload.new)
+        }
+      )
+      .subscribe()
+  }
+
+  // Update local state based on job updates
+  const updateJobState = (job: any) => {
+    setJobStatus(job.status)
+    
+    // Read from metadata if columns don't exist
+    const metadata = job.metadata || {}
+    setRetryCount(metadata.retry_count || 0)
+    setLastError(metadata.last_error || "")
+    setManimCode(metadata.manim_code || "")
+    setLogs(metadata.logs || "")
+    setStderr(metadata.stderr || "")
+
+    // Update progress and step based on status
+    const statusMap: Record<string, { step: string; progress: number }> = {
+      'draft': { step: 'Queued for processing...', progress: 5 },
+      'processing': { step: 'Generating animation...', progress: 50 },
+      'completed': { step: 'Complete!', progress: 100 },
+      'failed': { step: 'Generation failed', progress: 0 }
+    }
+
+    const statusInfo = statusMap[job.status] || { step: job.status, progress: 0 }
+    setGenerationStep(statusInfo.step)
+    setGenerationProgress(statusInfo.progress)
+
+    // Handle completion
+    if (job.status === 'completed' && (job.output_url || metadata.output_url)) {
+      // Get the public URL for the video
+      const outputUrl = job.output_url || metadata.output_url
+      const { data } = supabase.storage
+        .from('dreamcut')
+        .getPublicUrl(outputUrl)
+      
+      setGeneratedVideo(data.publicUrl)
+      setIsGenerating(false)
+      
+      toast({
+        title: "Animation complete!",
+        description: "Your Manim animation is ready to watch.",
+      })
+    }
+
+    // Handle failure
+    if (job.status === 'failed') {
+      setIsGenerating(false)
+      toast({
+        title: "Generation failed",
+        description: metadata.last_error || job.last_error || "Unknown error occurred",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Retry generation
+  const handleRetry = async () => {
+    if (!currentJobId) return
+    
+    setIsGenerating(true)
+    setJobStatus("retrying")
+    setLastError("")
+    
+    // Call the generation API again with the same parameters
+    await handleGenerate()
+  }
+
+  // Copy code to clipboard
+  const copyCodeToClipboard = async () => {
+    if (manimCode) {
+      await navigator.clipboard.writeText(manimCode)
+      toast({
+        title: "Code copied",
+        description: "Manim code copied to clipboard",
+      })
     }
   }
 
@@ -169,6 +320,15 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Cleanup realtime subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (realtimeChannel.current) {
+        realtimeChannel.current.unsubscribe()
+      }
+    }
   }, [])
 
   return (
@@ -377,6 +537,56 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
             </div>
           )}
         </>
+      ) : jobStatus === 'failed' ? (
+        /* Error State */
+        <div className="space-y-6">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">
+              Generation Failed
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {lastError || "Something went wrong during generation."}
+            </p>
+            
+            {retryCount > 0 && (
+              <p className="text-xs text-muted-foreground mb-4">
+                Retried {retryCount} times
+              </p>
+            )}
+          </div>
+
+          {/* Error Actions */}
+          <div className="flex gap-3 justify-center">
+            <Button onClick={handleRetry} className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setGeneratedVideo(null)
+                setJobStatus("")
+                setCurrentJobId(null)
+                setIsGenerating(false)
+              }}
+              className="flex items-center gap-2"
+            >
+              <Wand2 className="h-4 w-4" />
+              New Animation
+            </Button>
+          </div>
+
+          {/* Error Details */}
+          {(stderr || logs) && (
+            <div className="bg-muted/20 rounded-lg p-4">
+              <h4 className="text-sm font-medium mb-2">Error Details:</h4>
+              <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-h-32 overflow-y-auto">
+                {stderr || logs}
+              </pre>
+            </div>
+          )}
+        </div>
       ) : (
         /* Step 5: Result Preview */
         <div className="space-y-6">
@@ -402,63 +612,114 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
             </video>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-center">
-            <Button className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Play
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-          </div>
+          {/* Tabs for Code and Logs */}
+          <Tabs defaultValue="output" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="output">Output</TabsTrigger>
+              <TabsTrigger value="code">Code</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="output" className="space-y-4">
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-center">
+                <Button className="flex items-center gap-2">
+                  <Play className="h-4 w-4" />
+                  Play
+                </Button>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+              </div>
 
-          {/* Smart Action Chips */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSmartAction("change-style")}
-              className="flex items-center gap-1 text-xs"
-            >
-              <Palette className="h-3 w-3" />
-              Change Style
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSmartAction("slow-motion")}
-              className="flex items-center gap-1 text-xs"
-            >
-              <Clock className="h-3 w-3" />
-              Slow Down Motion
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHasSubtitles(!hasSubtitles)}
-              className={cn(
-                "flex items-center gap-1 text-xs",
-                hasSubtitles && "bg-primary text-primary-foreground"
+              {/* Smart Action Chips */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSmartAction("change-style")}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  <Palette className="h-3 w-3" />
+                  Change Style
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSmartAction("slow-motion")}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  <Clock className="h-3 w-3" />
+                  Slow Down Motion
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setHasSubtitles(!hasSubtitles)}
+                  className={cn(
+                    "flex items-center gap-1 text-xs",
+                    hasSubtitles && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  <Subtitles className="h-3 w-3" />
+                  {hasSubtitles ? "Remove Subtitles" : "Add Subtitles"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setHasVoiceover(!hasVoiceover)}
+                  className={cn(
+                    "flex items-center gap-1 text-xs",
+                    hasVoiceover && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  {hasVoiceover ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                  {hasVoiceover ? "Remove Voiceover" : "Add Voiceover"}
+                </Button>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="code" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Generated Manim Code</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyCodeToClipboard}
+                  className="flex items-center gap-1"
+                >
+                  <Copy className="h-3 w-3" />
+                  Copy
+                </Button>
+              </div>
+              <div className="bg-muted/20 rounded-lg p-4">
+                <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-h-64 overflow-y-auto">
+                  {manimCode || "No code available"}
+                </pre>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="logs" className="space-y-4">
+              <h4 className="text-sm font-medium">Generation Logs</h4>
+              <div className="bg-muted/20 rounded-lg p-4">
+                <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-h-64 overflow-y-auto">
+                  {logs || "No logs available"}
+                </pre>
+              </div>
+              
+              {stderr && (
+                <>
+                  <h4 className="text-sm font-medium text-red-500">Error Output</h4>
+                  <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4">
+                    <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap max-h-32 overflow-y-auto">
+                      {stderr}
+                    </pre>
+                  </div>
+                </>
               )}
-            >
-              <Subtitles className="h-3 w-3" />
-              {hasSubtitles ? "Remove Subtitles" : "Add Subtitles"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHasVoiceover(!hasVoiceover)}
-              className={cn(
-                "flex items-center gap-1 text-xs",
-                hasVoiceover && "bg-primary text-primary-foreground"
-              )}
-            >
-              {hasVoiceover ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
-              {hasVoiceover ? "Remove Voiceover" : "Add Voiceover"}
-            </Button>
-          </div>
+            </TabsContent>
+          </Tabs>
 
           {/* Regenerate Button */}
           <div className="text-center">
@@ -468,6 +729,12 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
                 setGeneratedVideo(null)
                 setGenerationProgress(0)
                 setGenerationStep("")
+                setJobStatus("")
+                setCurrentJobId(null)
+                setManimCode("")
+                setLogs("")
+                setStderr("")
+                setLastError("")
               }}
               className="text-muted-foreground hover:text-foreground"
             >
