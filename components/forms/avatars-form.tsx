@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, Loader2, ChevronsUpDown, Users, Image as ImageIcon, CheckCircle } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Plus, X, Loader2, ChevronsUpDown, Users, Image as ImageIcon, CheckCircle, Loader } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface AvatarsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string; isPublic: boolean }) => void
   onCancel: () => void
   availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
@@ -23,6 +24,7 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
   const [selectedArtifact, setSelectedArtifact] = useState<string>("")
   const [artifactDialogOpen, setArtifactDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isPublic, setIsPublic] = useState<boolean>(true) // Default to Public
   const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
   const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
@@ -69,7 +71,7 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
   }
 
   const handleSave = async () => {
-    if (title.trim() && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim()) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -79,13 +81,15 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
         title: title.trim(),
         image: imagePreview || "",
         description: description.trim(),
-        selectedArtifact
+        selectedArtifact: "", // Temporarily disabled
+        isPublic
       })
       
       setTitle("")
       setDescription("")
       setImagePreview(null)
       setSelectedArtifact("")
+      setIsPublic(true) // Reset to default Public
       setIsLoading(false)
       
       toast({
@@ -98,14 +102,34 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
   return (
     <div className="bg-background border border-border rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">
-            New Avatar & Persona
-          </h3>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">
+              New Avatar & Persona
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-[9px] font-medium px-1 rounded-full transition-colors",
+              isPublic 
+                ? "bg-green-100 text-green-700 border border-green-200" 
+                : "bg-gray-100 text-gray-700 border border-gray-200"
+            )}>
+              {isPublic ? "Public" : "Private"}
+            </span>
+            <Switch
+              id="public-toggle"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+              className="scale-75"
+            />
+          </div>
         </div>
-        <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
-          <X className="h-4 w-4" />
+        <Button type="button" variant="ghost" size="icon" onClick={onCancel}
+        className="h-6 w-6"
+        >
+          <X className="h-3 w-3" />
         </Button>
       </div>
       
@@ -153,7 +177,8 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
           </div>
         </div>
 
-        {/* Artifact Selection */}
+        {/* Artifact Selection - TEMPORARILY DISABLED */}
+        {/* 
         <div>
           <label className="block text-sm font-medium text-foreground mb-3">
             Artifact Selection
@@ -170,6 +195,7 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
           )}
 
           {/* Bouton pour ouvrir la sélection */}
+          {/* 
           <Button
             variant="outline"
             onClick={() => setArtifactDialogOpen(true)}
@@ -199,8 +225,10 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
             </div>
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
+          */}
 
           {/* Dialog pour la sélection d'artifacts */}
+          {/* 
           <Dialog open={artifactDialogOpen} onOpenChange={setArtifactDialogOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -281,7 +309,10 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
               </div>
             </DialogContent>
           </Dialog>
+          */}
 
+          {/* Selected Artifact Display */}
+          {/* 
           {selectedArtifactData && (
             <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-xl shadow-sm animate-in slide-in-from-top-2 duration-300">
               <div className="flex items-center gap-3">
@@ -304,7 +335,8 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
               </div>
             </div>
           )}
-        </div>
+          */}
+        {/* </div> */}
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
@@ -324,11 +356,11 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !description.trim() || !selectedArtifact}
+          disabled={isLoading || !title.trim() || !description.trim()}
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader className="mr-2 h-4 w-4 animate-spin" />
               Creating...
             </>
           ) : (

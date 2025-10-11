@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, Loader2, ChevronsUpDown, Package, Image as ImageIcon, CheckCircle } from "lucide-react"
+import { Plus, X, Loader2, ChevronsUpDown, Package, Image as ImageIcon, CheckCircle, Loader } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface ProductMockupsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string; isPublic: boolean }) => void
   onCancel: () => void
   availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
@@ -23,6 +24,7 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
   const [selectedArtifact, setSelectedArtifact] = useState<string>("")
   const [artifactDialogOpen, setArtifactDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isPublic, setIsPublic] = useState<boolean>(true) // Default to Public
   const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
   const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
@@ -69,7 +71,7 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
   }
 
   const handleSave = async () => {
-    if (title.trim() && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim()) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -79,7 +81,8 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
         title: title.trim(),
         image: imagePreview || "",
         description: description.trim(),
-        selectedArtifact
+        selectedArtifact: "", // Temporarily disabled
+        isPublic
       })
       
       setTitle("")
@@ -98,11 +101,29 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
   return (
     <div className="bg-background border border-border rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Package className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">
-            New Product Mockup
-          </h3>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">
+              New Product Mockup
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-[9px] font-medium px-2 rounded-full transition-colors",
+              isPublic 
+                ? "bg-green-100 text-green-700 border border-green-200" 
+                : "bg-gray-100 text-gray-700 border border-gray-200"
+            )}>
+              {isPublic ? "Public" : "Private"}
+            </span>
+            <Switch
+              id="public-toggle"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+              className="scale-75"
+            />
+          </div>
         </div>
         <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
@@ -153,7 +174,8 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
           </div>
         </div>
 
-        {/* Artifact Selection */}
+        {/* TEMPORARILY DISABLED - Artifact Selection */}
+        {/*
         <div>
           <label className="block text-sm font-medium text-foreground mb-3">
             Artifact Selection
@@ -164,7 +186,6 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
             </p>
           )}
 
-          {/* Bouton pour ouvrir la sélection */}
           <Button
             variant="outline"
             onClick={() => setArtifactDialogOpen(true)}
@@ -191,7 +212,6 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
 
-          {/* Dialog pour la sélection d'artifacts */}
           <Dialog open={artifactDialogOpen} onOpenChange={setArtifactDialogOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -290,6 +310,7 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
             </div>
           )}
         </div>
+        */}
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
@@ -309,11 +330,11 @@ export function ProductMockupsForm({ onSave, onCancel, availableArtifacts }: Pro
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !description.trim() || !selectedArtifact}
+          disabled={isLoading || !title.trim() || !description.trim()}
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader className="mr-2 h-4 w-4 animate-spin" />
               Creating...
             </>
           ) : (

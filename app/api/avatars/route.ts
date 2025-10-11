@@ -24,6 +24,7 @@ const createAvatarSchema = z.object({
   content: z.record(z.any()).optional(),
   metadata: z.record(z.any()).optional(),
   is_template: z.boolean().optional().default(false),
+  is_public: z.boolean().optional().default(true),
 })
 
 // GET /api/avatars - Get user's avatars
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
         content: validatedData.content,
         metadata: validatedData.metadata,
         is_template: validatedData.is_template,
+        is_public: validatedData.is_public,
         status: 'draft'
       })
       .select()

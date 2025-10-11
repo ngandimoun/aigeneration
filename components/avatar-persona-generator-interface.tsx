@@ -1035,26 +1035,26 @@ const SKIN_TONES = [
 // Hair style options (context-aware)
 const HAIR_STYLES = {
   "Ultra Realistic": [
-    { value: "Short Bob", label: "Short Bob" },
-    { value: "Long Waves", label: "Long Waves" },
-    { value: "Pixie Cut", label: "Pixie Cut" },
-    { value: "Ponytail", label: "Ponytail" },
-    { value: "Bun", label: "Bun" },
-    { value: "Braids", label: "Braids" }
+    { value: "Short Bob", label: "Short Bob", icon: "📌" },
+    { value: "Long Waves", label: "Long Waves", icon: "🌊" },
+    { value: "Pixie Cut", label: "Pixie Cut", icon: "✂️" },
+    { value: "Ponytail", label: "Ponytail", icon: "🎀" },
+    { value: "Bun", label: "Bun", icon: "🔘" },
+    { value: "Braids", label: "Braids", icon: "🪢" }
   ],
   "Anime": [
-    { value: "Spiky", label: "Spiky" },
-    { value: "Long Straight", label: "Long Straight" },
-    { value: "Twin Tails", label: "Twin Tails" },
-    { value: "Messy", label: "Messy" },
-    { value: "Gravity Defying", label: "Gravity Defying" },
-    { value: "Hime Cut", label: "Hime Cut" }
+    { value: "Spiky", label: "Spiky", icon: "⚡" },
+    { value: "Long Straight", label: "Long Straight", icon: "💫" },
+    { value: "Twin Tails", label: "Twin Tails", icon: "🎎" },
+    { value: "Messy", label: "Messy", icon: "🌀" },
+    { value: "Gravity Defying", label: "Gravity Defying", icon: "🚀" },
+    { value: "Hime Cut", label: "Hime Cut", icon: "👸" }
   ],
   "Stylized 3D": [
-    { value: "Rounded", label: "Rounded" },
-    { value: "Geometric", label: "Geometric" },
-    { value: "Flowing", label: "Flowing" },
-    { value: "Textured", label: "Textured" }
+    { value: "Rounded", label: "Rounded", icon: "⭕" },
+    { value: "Geometric", label: "Geometric", icon: "🔷" },
+    { value: "Flowing", label: "Flowing", icon: "🌊" },
+    { value: "Textured", label: "Textured", icon: "🎨" }
   ]
 }
 
@@ -1086,13 +1086,13 @@ const EYE_COLORS = [
 
 // Eye shape options
 const EYE_SHAPES = [
-  { value: "Almond", label: "Almond" },
-  { value: "Round", label: "Round" },
-  { value: "Hooded", label: "Hooded" },
-  { value: "Upturned", label: "Upturned" },
-  { value: "Downturned", label: "Downturned" },
-  { value: "Monolid", label: "Monolid" },
-  { value: "Deep Set", label: "Deep Set" }
+  { value: "Almond", label: "Almond", icon: "👁️" },
+  { value: "Round", label: "Round", icon: "⭕" },
+  { value: "Hooded", label: "Hooded", icon: "🌙" },
+  { value: "Upturned", label: "Upturned", icon: "↗️" },
+  { value: "Downturned", label: "Downturned", icon: "↘️" },
+  { value: "Monolid", label: "Monolid", icon: "▬" },
+  { value: "Deep Set", label: "Deep Set", icon: "🕳️" }
 ]
 
 // Outfit category options (context-aware)
@@ -1114,6 +1114,13 @@ const ACCESSORIES = [
   { value: "Hat", label: "Hat", icon: "🎩" },
   { value: "Jewelry", label: "Jewelry", icon: "💍" },
   { value: "None", label: "None", icon: "🚫" }
+]
+
+// Logo Placement options
+const LOGO_PLACEMENT_OPTIONS = [
+  { value: "None", label: "None", icon: "🚫", desc: "No logo overlay" },
+  { value: "Top-Right", label: "Top-Right", icon: "↗️", desc: "Logo in top-right corner" },
+  { value: "Bottom-Left", label: "Bottom-Left", icon: "↙️", desc: "Logo in bottom-left corner" }
 ]
 
 // Avatar/Persona specific aspect ratios
@@ -1205,6 +1212,7 @@ const AspectRatioIcon = ({ ratio }: { ratio: string }) => {
 }
 
 export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: AvatarPersonaGeneratorInterfaceProps) {
+  const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
   const [aiPromptEnabled, setAiPromptEnabled] = useState(true)
   const [imageCount, setImageCount] = useState(4)
@@ -1238,6 +1246,11 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   // Reference Images
   const [referenceImages, setReferenceImages] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
+  
+  // Logo Placement
+  const [logoPlacement, setLogoPlacement] = useState<string>("None")
+  const [logoImage, setLogoImage] = useState<File | null>(null)
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>("")
   
   // Available options state
   const [availableInfluences, setAvailableInfluences] = useState<Array<{label: string, desc: string, thumb: string, lightingPresets?: Array<{name: string, mood: string}>, backgroundEnvironments?: Array<{name: string, mood: string}>, moodContexts?: Array<{name: string, effect: {expression: string, contrast: string, saturation: string, temp: string}, desc: string}>}>>([])
@@ -1349,12 +1362,15 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   useEffect(() => {
     return () => {
       imagePreviewUrls.forEach(url => URL.revokeObjectURL(url))
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl)
+      }
     }
-  }, [])
+  }, [logoPreviewUrl])
 
   const handleImageCountChange = (delta: number) => {
     const newCount = imageCount + delta
-    if (newCount >= 1 && newCount <= 4) {
+    if (newCount >= 1 && newCount <= 3) {
       setImageCount(newCount)
     }
   }
@@ -1364,7 +1380,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
     const files = event.target.files
     if (!files) return
 
-    const newFiles = Array.from(files).slice(0, 4 - referenceImages.length)
+    const newFiles = Array.from(files).slice(0, 3 - referenceImages.length)
     const validFiles = newFiles.filter(file => {
       const isValidType = file.type.startsWith('image/')
       const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
@@ -1394,6 +1410,36 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
     setImagePreviewUrls(updatedPreviews)
   }
 
+  // Logo upload handling
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const isValidType = file.type.startsWith('image/')
+    const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
+
+    if (!isValidType || !isValidSize) {
+      toast.error("Please use an image file under 10MB.")
+      return
+    }
+
+    // Clean up previous logo URL
+    if (logoPreviewUrl) {
+      URL.revokeObjectURL(logoPreviewUrl)
+    }
+
+    setLogoImage(file)
+    setLogoPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const handleLogoRemove = () => {
+    if (logoPreviewUrl) {
+      URL.revokeObjectURL(logoPreviewUrl)
+    }
+    setLogoImage(null)
+    setLogoPreviewUrl("")
+  }
+
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault()
   }
@@ -1414,6 +1460,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       // Prepare the generation data
       const generationData = {
         // Basic settings
+        name,
         prompt,
         imageCount,
         aspectRatio,
@@ -1449,7 +1496,15 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           name: file.name,
           size: file.size,
           type: file.type
-        }))
+        })),
+        
+        // Logo Placement
+        logoPlacement,
+        logoImage: logoImage ? {
+          name: logoImage.name,
+          size: logoImage.size,
+          type: logoImage.type
+        } : null
       }
 
       console.log("Generating avatar/persona with:", generationData)
@@ -1485,21 +1540,32 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
   return (
     <TooltipProvider>
-      <div className="bg-background border border-border rounded-lg p-4 space-y-4 max-h-[600px] overflow-y-auto scrollbar-hover">
+      <div className="bg-background border border-border rounded-lg p-4 space-y-4 max-h-[80vh] overflow-y-auto scrollbar-hover w-full max-w-full">
         {/* Header */}
-        <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2">
-          <h3 className="text-base font-semibold text-foreground">
+        <div className="flex items-center justify-between sticky top-0 bg-background z-10 pt-4 pb-2  py-10 mb-10 border-b border-border">
+          <h3 className="text-sm font-semibold text-foreground pr-2 flex-1 min-w-0">
             Generate Avatar/Persona for: {projectTitle}
           </h3>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
             <X className="h-3 w-3" />
           </Button>
+        </div>
+
+        {/* Name Input Area */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Name *</label>
+          <Input
+            placeholder="Enter avatar/persona name..."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-8 text-sm"
+          />
         </div>
 
         {/* Prompt Input Area */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-foreground">Prompt</label>
+            <label className="text-sm font-medium text-foreground">Prompt *</label>
             <div className="flex items-center gap-2">
               <Switch
                 checked={aiPromptEnabled}
@@ -1523,10 +1589,10 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <h4 className="text-sm font-semibold text-foreground">🧠 Identity & Role</h4>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Persona Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Persona Name</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Ethnicity</label>
               <Input
                 placeholder="e.g., Luna"
                 value={personaName}
@@ -1535,19 +1601,19 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
 
             {/* Role/Archetype */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Role / Archetype</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Role / Archetype</label>
               <Select value={roleArchetype} onValueChange={setRoleArchetype}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select role..." />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(ROLE_ARCHETYPE_MAP).map(([key, role]) => (
                     <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{role.icon}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{role.icon}</span>
                         <div>
-                          <div className="font-medium">{key}</div>
+                          <div className="text-sm font-medium">{key}</div>
                           <div className="text-xs text-muted-foreground">{role.desc}</div>
                         </div>
                       </div>
@@ -1558,20 +1624,20 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Age Range */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Age Range</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Age Range</label>
               <Select value={ageRange} onValueChange={setAgeRange}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select age..." />
                 </SelectTrigger>
                 <SelectContent>
                   {AGE_RANGES.map((age) => (
                     <SelectItem key={age.value} value={age.value}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{age.icon}</span>
-                        <span>{age.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{age.icon}</span>
+                        <span className="text-sm">{age.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1580,18 +1646,18 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
 
             {/* Gender Expression */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Gender Expression</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Gender Expression</label>
               <Select value={genderExpression} onValueChange={setGenderExpression}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select gender..." />
                 </SelectTrigger>
                 <SelectContent>
                   {GENDER_EXPRESSIONS.map((gender) => (
                     <SelectItem key={gender.value} value={gender.value}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{gender.icon}</span>
-                        <span>{gender.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{gender.icon}</span>
+                        <span className="text-sm">{gender.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1601,9 +1667,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           </div>
 
           {/* Emotion Bias Slider */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-foreground">Emotion Bias</label>
+              <label className="text-xs font-medium text-foreground">Emotion Bias</label>
               <span className="text-xs text-muted-foreground">
                 {emotionBias[0] < 30 ? "Stoic" : emotionBias[0] > 70 ? "Expressive" : "Balanced"}
               </span>
@@ -1623,7 +1689,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Visual Style Stack Section */}
-        <div className="space-y-4 border-t border-border pt-4">
+        <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-primary" />
             <h4 className="text-sm font-semibold text-foreground">🎨 Visual Style Stack</h4>
@@ -1633,9 +1699,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           </p>
 
           {/* Art Direction Field */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-foreground">🎨 Art Direction</label>
+              <label className="text-xs font-medium text-foreground">🎨 Art Direction</label>
             <Tooltip>
               <TooltipTrigger>
                 <Info className="h-3 w-3 text-muted-foreground" />
@@ -1646,27 +1712,72 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </Tooltip>
           </div>
           <Select value={artDirection} onValueChange={setArtDirection}>
-            <SelectTrigger>
+            <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
               <SelectValue placeholder="Select art direction..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Ultra Realistic">Ultra Realistic</SelectItem>
-              <SelectItem value="Realistic">Realistic</SelectItem>
-              <SelectItem value="Anime">Anime</SelectItem>
-              <SelectItem value="Cartoon / 2D Stylized">Cartoon / 2D Stylized</SelectItem>
-              <SelectItem value="Painterly">Painterly</SelectItem>
-              <SelectItem value="Stylized 3D">Stylized 3D</SelectItem>
-              <SelectItem value="Line Art / Sketch">Line Art / Sketch</SelectItem>
-              <SelectItem value="Pixel / Retro">Pixel / Retro</SelectItem>
-              <SelectItem value="Clay / Toy Style">Clay / Toy Style</SelectItem>
+              <SelectItem value="Ultra Realistic">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📸</span>
+                  <span className="text-sm">Ultra Realistic</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Realistic">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🎨</span>
+                  <span className="text-sm">Realistic</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Anime">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🎌</span>
+                  <span className="text-sm">Anime</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Cartoon / 2D Stylized">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🎭</span>
+                  <span className="text-sm">Cartoon / 2D Stylized</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Painterly">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🖼️</span>
+                  <span className="text-sm">Painterly</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Stylized 3D">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🎮</span>
+                  <span className="text-sm">Stylized 3D</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Line Art / Sketch">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">✏️</span>
+                  <span className="text-sm">Line Art / Sketch</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Pixel / Retro">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">👾</span>
+                  <span className="text-sm">Pixel / Retro</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="Clay / Toy Style">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🧱</span>
+                  <span className="text-sm">Clay / Toy Style</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Visual Influence Field */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-foreground">🧭 Visual Influence</label>
+            <label className="text-xs font-medium text-foreground">🧭 Visual Influence</label>
             <Tooltip>
               <TooltipTrigger>
                 <Info className="h-3 w-3 text-muted-foreground" />
@@ -1681,7 +1792,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             onValueChange={setVisualInfluence}
             disabled={!artDirection}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
               <SelectValue placeholder={artDirection ? "Select visual influence..." : "Select art direction first"} />
             </SelectTrigger>
             <SelectContent>
@@ -1703,9 +1814,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Lighting Presets Field */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-foreground">⚙️ Lighting Presets</label>
+            <label className="text-xs font-medium text-foreground">⚙️ Lighting Presets</label>
             <Tooltip>
               <TooltipTrigger>
                 <Info className="h-3 w-3 text-muted-foreground" />
@@ -1720,7 +1831,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             onValueChange={setLightingPreset}
             disabled={!visualInfluence}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
               <SelectValue placeholder={visualInfluence ? "Select lighting preset..." : "Select visual influence first"} />
             </SelectTrigger>
             <SelectContent>
@@ -1742,9 +1853,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Background Environment Field */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-foreground">🌍 Background Environment</label>
+            <label className="text-xs font-medium text-foreground">🌍 Background Environment</label>
             <Tooltip>
               <TooltipTrigger>
                 <Info className="h-3 w-3 text-muted-foreground" />
@@ -1759,7 +1870,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             onValueChange={setBackgroundEnvironment}
             disabled={!visualInfluence}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
               <SelectValue placeholder={visualInfluence ? "Select background environment..." : "Select visual influence first"} />
             </SelectTrigger>
             <SelectContent>
@@ -1781,9 +1892,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Mood Context Field */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-foreground">🎭 Mood Context</label>
+            <label className="text-xs font-medium text-foreground">🎭 Mood Context</label>
             <Tooltip>
               <TooltipTrigger>
                 <Info className="h-3 w-3 text-muted-foreground" />
@@ -1798,7 +1909,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             onValueChange={setMoodContext}
             disabled={!visualInfluence}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
               <SelectValue placeholder={visualInfluence ? "Select mood context..." : "Select visual influence first"} />
             </SelectTrigger>
             <SelectContent>
@@ -1821,26 +1932,26 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Physical Traits & Outfits Section */}
-        <div className="space-y-4 border-t border-border pt-4">
+        <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-primary" />
             <h4 className="text-sm font-semibold text-foreground">👕 Physical Traits & Outfits</h4>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Body Type */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Body Type</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Body Type</label>
               <Select value={bodyType} onValueChange={setBodyType}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select body type..." />
                 </SelectTrigger>
                 <SelectContent>
                   {BODY_TYPES.map((body) => (
                     <SelectItem key={body.value} value={body.value}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{body.icon}</span>
-                        <span>{body.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{body.icon}</span>
+                        <span className="text-sm">{body.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1849,21 +1960,21 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
 
             {/* Skin Tone */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Skin Tone</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Skin Tone</label>
               <Select value={skinTone} onValueChange={setSkinTone}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select skin tone..." />
                 </SelectTrigger>
                 <SelectContent>
                   {SKIN_TONES.map((tone) => (
                     <SelectItem key={tone.value} value={tone.value}>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div 
-                          className="w-4 h-4 rounded-full border border-border" 
+                          className="w-3 h-3 rounded-full border border-border" 
                           style={{ backgroundColor: tone.color }}
                         />
-                        <span>{tone.label}</span>
+                        <span className="text-sm">{tone.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1872,24 +1983,30 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Hair Style */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Hair Style</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Hair Style</label>
               <Select value={hairStyle} onValueChange={setHairStyle}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select hair style..." />
                 </SelectTrigger>
                 <SelectContent>
                   {artDirection && HAIR_STYLES[artDirection as keyof typeof HAIR_STYLES] ? 
                     HAIR_STYLES[artDirection as keyof typeof HAIR_STYLES].map((style) => (
                       <SelectItem key={style.value} value={style.value}>
-                        <span>{style.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{style.icon}</span>
+                          <span className="text-sm">{style.label}</span>
+                        </div>
                       </SelectItem>
                     )) :
                     Object.values(HAIR_STYLES).flat().map((style) => (
                       <SelectItem key={style.value} value={style.value}>
-                        <span>{style.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{style.icon}</span>
+                          <span className="text-sm">{style.label}</span>
+                        </div>
                       </SelectItem>
                     ))
                   }
@@ -1898,21 +2015,21 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
 
             {/* Hair Color */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Hair Color</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Hair Color</label>
               <Select value={hairColor} onValueChange={setHairColor}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select hair color..." />
                 </SelectTrigger>
                 <SelectContent>
                   {HAIR_COLORS.map((color) => (
                     <SelectItem key={color.value} value={color.value}>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div 
-                          className="w-4 h-4 rounded-full border border-border" 
+                          className="w-3 h-3 rounded-full border border-border" 
                           style={{ backgroundColor: color.color }}
                         />
-                        <span>{color.label}</span>
+                        <span className="text-sm">{color.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1921,23 +2038,23 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Eye Color */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Eye Color</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Eye Color</label>
               <Select value={eyeColor} onValueChange={setEyeColor}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select eye color..." />
                 </SelectTrigger>
                 <SelectContent>
                   {EYE_COLORS.map((color) => (
                     <SelectItem key={color.value} value={color.value}>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div 
-                          className="w-4 h-4 rounded-full border border-border" 
+                          className="w-3 h-3 rounded-full border border-border" 
                           style={{ backgroundColor: color.color }}
                         />
-                        <span>{color.label}</span>
+                        <span className="text-sm">{color.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1946,16 +2063,19 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
 
             {/* Eye Shape */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Eye Shape</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Eye Shape</label>
               <Select value={eyeShape} onValueChange={setEyeShape}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select eye shape..." />
                 </SelectTrigger>
                 <SelectContent>
                   {EYE_SHAPES.map((shape) => (
                     <SelectItem key={shape.value} value={shape.value}>
-                      <span>{shape.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{shape.icon}</span>
+                        <span className="text-sm">{shape.label}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1963,23 +2083,20 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Outfit Category */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Outfit Category</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Outfit Category</label>
               <Select value={outfitCategory} onValueChange={setOutfitCategory}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select outfit..." />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(OUTFIT_CATEGORIES).map(([key, outfit]) => (
                     <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{outfit.icon}</span>
-                        <div>
-                          <div className="font-medium">{key}</div>
-                          <div className="text-xs text-muted-foreground">{outfit.desc}</div>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{outfit.icon}</span>
+                        <span className="text-sm">{key}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1988,21 +2105,21 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
 
             {/* Accessories */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Accessories</label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Accessories</label>
               <Select 
                 value={accessories.length > 0 ? accessories[0] : ""} 
                 onValueChange={(value) => setAccessories([value])}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
                   <SelectValue placeholder="Select accessories..." />
                 </SelectTrigger>
                 <SelectContent>
                   {ACCESSORIES.map((accessory) => (
                     <SelectItem key={accessory.value} value={accessory.value}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{accessory.icon}</span>
-                        <span>{accessory.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{accessory.icon}</span>
+                        <span className="text-sm">{accessory.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -2019,20 +2136,20 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <h4 className="text-sm font-semibold text-foreground">📸 Reference Images</h4>
           </div>
           <p className="text-xs text-muted-foreground">
-            Upload up to 4 reference images to guide the avatar/persona generation (max 10MB each)
+            Upload up to 3 reference images to guide the avatar/persona generation (max 10MB each)
           </p>
 
           {/* Upload Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              referenceImages.length < 4
+              referenceImages.length < 3
                 ? "border-muted-foreground/25 hover:border-muted-foreground/50 cursor-pointer"
                 : "border-muted-foreground/10 cursor-not-allowed"
             }`}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onClick={() => {
-              if (referenceImages.length < 4) {
+              if (referenceImages.length < 3) {
                 document.getElementById('image-upload')?.click()
               }
             }}
@@ -2044,7 +2161,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
-              disabled={referenceImages.length >= 4}
+              disabled={referenceImages.length >= 3}
             />
             
             {referenceImages.length === 0 ? (
@@ -2059,7 +2176,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
               <div className="space-y-2">
                 <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
                 <div className="text-sm text-muted-foreground">
-                  <p>{referenceImages.length < 4 ? `Add ${4 - referenceImages.length} more image${4 - referenceImages.length > 1 ? 's' : ''}` : 'Maximum 4 images reached'}</p>
+                  <p>{referenceImages.length < 3 ? `Add ${3 - referenceImages.length} more image${3 - referenceImages.length > 1 ? 's' : ''}` : 'Maximum 3 images reached'}</p>
                 </div>
               </div>
             )}
@@ -2067,7 +2184,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
           {/* Image Previews */}
           {imagePreviewUrls.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {imagePreviewUrls.map((url, index) => (
                 <div key={index} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden border border-border">
@@ -2094,49 +2211,131 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           )}
         </div>
 
-        {/* Generation Settings Section */}
+        {/* Logo Placement Section */}
         <div className="space-y-4 border-t border-border pt-4">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold text-foreground">🏷️ Logo Placement</h4>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Add a logo overlay to your avatar/persona (optional)
+          </p>
+
+          {/* Logo Placement Selection */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground">Logo Position</label>
+            <Select value={logoPlacement} onValueChange={setLogoPlacement}>
+              <SelectTrigger className="h-8 text-sm w-full min-w-[60px]">
+                <SelectValue placeholder="Select logo placement..." />
+              </SelectTrigger>
+              <SelectContent>
+                {LOGO_PLACEMENT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{option.icon}</span>
+                      <span className="text-sm">{option.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Conditional Logo Upload */}
+          {(logoPlacement === "Top-Right" || logoPlacement === "Bottom-Left") && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Logo Image</label>
+              
+              {!logoImage ? (
+                <div
+                  className="border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 rounded-lg p-4 text-center cursor-pointer transition-colors"
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                >
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+                  <div className="text-sm text-muted-foreground">
+                    <p>Click to upload logo</p>
+                    <p className="text-xs">JPG, PNG, GIF up to 10MB</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative group">
+                  <div className="aspect-square max-w-[120px] rounded-lg overflow-hidden border border-border">
+                    <img
+                      src={logoPreviewUrl}
+                      alt="Logo preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleLogoRemove}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                  <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1 rounded">
+                    {logoImage.name?.slice(0, 15)}...
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Generation Settings Section */}
+        <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-primary" />
             <h4 className="text-sm font-semibold text-foreground">⚙️ Generation Settings</h4>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Configure the output format and number of variations for your avatar/persona
+          </p>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Image Variations */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-foreground">Image Variations</label>
+                <label className="text-xs font-medium text-foreground">Image Variations</label>
                 <Tooltip>
                   <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Number of avatar/persona variations to generate (max 4)</p>
+                    <p>Number of avatar/persona variations to generate (max 3)</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => handleImageCountChange(-1)}
                   disabled={imageCount <= 1}
-                  className="h-8 w-8"
+                  className="h-7 w-7 shrink-0"
                 >
-                  <Minus className="h-3 w-3" />
+                  <Minus className="h-2.5 w-2.5" />
                 </Button>
-                <div className="flex items-center gap-2 px-3 py-1 border rounded-md min-w-[60px] justify-center">
-                  <ImageIcon className="h-3 w-3" />
-                  <span className="text-sm font-medium">{imageCount}</span>
+                <div className="flex items-center gap-1.5 px-2 py-1.5 border rounded-md bg-muted/50 justify-center min-w-[45px] flex-1 max-w-[80px]">
+                  <ImageIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-xs font-medium">{imageCount}</span>
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => handleImageCountChange(1)}
-                  disabled={imageCount >= 4}
-                  className="h-8 w-8"
+                  disabled={imageCount >= 3}
+                  className="h-7 w-7 shrink-0"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-2.5 w-2.5" />
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -2147,7 +2346,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             {/* Aspect Ratio */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-foreground">Aspect Ratio</label>
+                <label className="text-xs font-medium text-foreground">Aspect Ratio</label>
                 <Tooltip>
                   <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground" />
@@ -2158,22 +2357,15 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                 </Tooltip>
               </div>
               <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full h-8 text-sm min-w-[120px]">
                   <SelectValue placeholder="Select aspect ratio..." />
                 </SelectTrigger>
                 <SelectContent>
                   {AVATAR_ASPECT_RATIOS.map((ratio) => (
                     <SelectItem key={ratio.value} value={ratio.value}>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{ratio.icon}</span>
-                          <AspectRatioIcon ratio={ratio.value} />
-                        </div>
-                        <div>
-                          <div className="font-medium">{ratio.label}</div>
-                          <div className="text-xs text-muted-foreground">{ratio.desc}</div>
-                          <div className="text-xs text-primary font-medium">{ratio.use}</div>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{ratio.icon}</span>
+                        <span className="text-sm">{ratio.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -2183,12 +2375,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           </div>
         </div>
 
-        {/* Generate Button */}
-        <div className="sticky bottom-0 bg-background pt-2 border-t border-border">
+        {/* Generate Button Footer */}
+        <div className="sticky bottom-0 bg-background py-3 border-t border-border mt-4">
           <Button 
             onClick={handleGenerate}
-            className="w-full"
-            disabled={!prompt.trim() || !artDirection || !visualInfluence || !lightingPreset || !backgroundEnvironment || !moodContext}
+            className="w-full h-10 text-sm font-medium"
+            disabled={!name.trim() || !prompt.trim()}
           >
             <Sparkles className="h-4 w-4 mr-2" />
             Generate Avatar/Persona

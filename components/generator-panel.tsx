@@ -160,8 +160,8 @@ export function GeneratorPanel() {
 
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const handleProjectClick = (artifact: any) => {
-    if (selectedSection === 'illustration') {
-      // For illustration section, show project details in MainContent AND open generator
+    if (selectedSection === 'illustration' || selectedSection === 'avatars-personas') {
+      // For illustration and avatars-personas sections, show project details in MainContent AND open generator
       setSelectedArtifact(artifact)
       setSelectedProject(artifact)
       setImageGeneratorSection(selectedSection)
@@ -185,7 +185,7 @@ export function GeneratorPanel() {
     setSelectedProject(null)
     setImageGeneratorSection(null)
     // Clear selectedArtifact when closing generator to return to welcome message
-    if (selectedSection === 'illustration') {
+    if (selectedSection === 'illustration' || selectedSection === 'avatars-personas') {
       setSelectedArtifact(null)
     }
   }
