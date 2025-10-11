@@ -69,3 +69,4 @@ The system should now work without the permission errors. The sandbox creation s
 4. **Verify video upload** to Supabase Storage
 
 The E2B permission issue should now be resolved! 🎉
+

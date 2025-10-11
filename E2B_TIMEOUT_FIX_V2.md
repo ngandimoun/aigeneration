@@ -105,3 +105,4 @@ The system should now work without the 1200ms timeout error. The sandbox creatio
 4. **Verify rendering completes** successfully
 
 The E2B timeout issue should now be resolved! 🎉
+

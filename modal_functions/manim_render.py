@@ -6,6 +6,186 @@ import re
 from pydantic import BaseModel
 from fastapi import Request
 
+def sanitize_unicode(text):
+    """Remove or replace problematic Unicode characters"""
+    try:
+        # Try to encode as UTF-8 to catch problematic characters
+        text.encode('utf-8')
+        return text
+    except UnicodeEncodeError:
+        # Replace problematic characters with safe alternatives
+        # Remove surrogate characters and other problematic Unicode
+        import re
+        # Remove surrogate pairs and other problematic characters
+        sanitized = re.sub(r'[\ud800-\udfff]', '', text)  # Remove surrogates
+        sanitized = re.sub(r'[^\x00-\x7F\u00A0-\uFFFF]', '?', sanitized)  # Replace other problematic chars
+        print("⚠️ Sanitized problematic Unicode characters")
+        return sanitized
+
+def fix_syntax_errors(code):
+    """Fix common syntax errors in generated Python code"""
+    # First sanitize Unicode
+    code = sanitize_unicode(code)
+    
+    lines = code.split('\n')
+    fixed_lines = []
+    paren_count = 0
+    bracket_count = 0
+    brace_count = 0
+    
+    for i, line in enumerate(lines):
+        # Sanitize each line
+        line = sanitize_unicode(line)
+        
+        # Count parentheses, brackets, and braces
+        paren_count += line.count('(') - line.count(')')
+        bracket_count += line.count('[') - line.count(']')
+        brace_count += line.count('{') - line.count('}')
+        
+        # Skip lines that are just closing parentheses without content
+        if line.strip() == ')' and paren_count < 0:
+            print(f"⚠️ Removing orphaned closing parenthesis at line {i+1}")
+            continue
+            
+        # Skip lines that are just closing brackets without content
+        if line.strip() == ']' and bracket_count < 0:
+            print(f"⚠️ Removing orphaned closing bracket at line {i+1}")
+            continue
+            
+        # Skip lines that are just closing braces without content
+        if line.strip() == '}' and brace_count < 0:
+            print(f"⚠️ Removing orphaned closing brace at line {i+1}")
+            continue
+        
+        # Skip orphaned string literals (lines that are just strings without proper context)
+        if (line.strip().startswith('"') and line.strip().endswith('"') and 
+            '=' not in line and 'self.' not in line and 'print(' not in line and
+            'Text(' not in line and 'Tex(' not in line and 'MathTex(' not in line):
+            print(f"⚠️ Removing orphaned string literal at line {i+1}: {line.strip()[:50]}...")
+            continue
+            
+        fixed_lines.append(line)
+    
+    # Add missing closing parentheses if needed
+    while paren_count > 0:
+        fixed_lines.append(')')
+        paren_count -= 1
+        print("⚠️ Added missing closing parenthesis")
+    
+    while bracket_count > 0:
+        fixed_lines.append(']')
+        bracket_count -= 1
+        print("⚠️ Added missing closing bracket")
+        
+    while brace_count > 0:
+        fixed_lines.append('}')
+        brace_count -= 1
+        print("⚠️ Added missing closing brace")
+    
+    return '\n'.join(fixed_lines)
+
+def fix_indentation(code):
+    """Fix indentation issues in Python code while preserving structure"""
+    lines = code.split('\n')
+    fixed_lines = []
+    in_class = False
+    in_method = False
+    
+    for i, line in enumerate(lines):
+        line_stripped = line.strip()
+        
+        # Skip empty lines - preserve them
+        if not line_stripped:
+            fixed_lines.append('')
+            continue
+        
+        # Top-level imports and class definitions - NO indentation
+        if line_stripped.startswith('import ') or line_stripped.startswith('from '):
+            fixed_lines.append(line_stripped)
+            in_class = False
+            in_method = False
+        elif line_stripped.startswith('class '):
+            fixed_lines.append(line_stripped)
+            in_class = True
+            in_method = False
+        elif line_stripped.startswith('def '):
+            if in_class:
+                # Method inside class - indent 4 spaces
+                fixed_lines.append('    ' + line_stripped)
+                in_method = True
+            else:
+                # Top-level function - no indent
+                fixed_lines.append(line_stripped)
+                in_method = False
+        elif in_method and line_stripped.startswith('self.'):
+            # Code inside method - indent 8 spaces
+            fixed_lines.append('        ' + line_stripped)
+        elif in_method:
+            # Other code inside method - indent 8 spaces
+            fixed_lines.append('        ' + line_stripped)
+        else:
+            # Preserve original indentation if not in a known context
+            fixed_lines.append(line)
+    
+    return '\n'.join(fixed_lines)
+
+def aggressive_syntax_cleanup(code):
+    """Aggressively clean up syntax errors by removing problematic lines and fixing indentation"""
+    # First sanitize Unicode
+    code = sanitize_unicode(code)
+    
+    lines = code.split('\n')
+    cleaned_lines = []
+    expected_indent = 0
+    
+    for i, line in enumerate(lines):
+        # Sanitize each line
+        line = sanitize_unicode(line)
+        line_stripped = line.strip()
+        
+        # Skip lines that are just string literals without context
+        if (line_stripped.startswith('"') and line_stripped.endswith('"') and
+            '=' not in line and 'self.' not in line and 'print(' not in line and
+            'Text(' not in line and 'Tex(' not in line and 'MathTex(' not in line):
+            print(f"⚠️ Aggressively removing string literal at line {i+1}")
+            continue
+            
+        # Skip lines that are just closing delimiters
+        if line_stripped in [')', ']', '}']:
+            print(f"⚠️ Aggressively removing closing delimiter at line {i+1}")
+            continue
+            
+        # Skip lines that look like orphaned text
+        if (line_stripped and not line_stripped.startswith('#') and 
+            not line_stripped.startswith('import') and
+            not line_stripped.startswith('from') and
+            not line_stripped.startswith('class') and
+            not line_stripped.startswith('def') and
+            not line_stripped.startswith('self.') and
+            not line_stripped.startswith('    ') and
+            '=' not in line and
+            line_stripped.count('"') == 2 and line_stripped.startswith('"') and line_stripped.endswith('"')):
+            print(f"⚠️ Aggressively removing orphaned text at line {i+1}")
+            continue
+        
+        # Fix indentation issues
+        if line_stripped:
+            # Calculate proper indentation based on context
+            if line_stripped.startswith('class ') or line_stripped.startswith('def '):
+                expected_indent = 0
+            elif line_stripped.startswith('self.'):
+                expected_indent = 8  # Inside class method
+            else:
+                expected_indent = 8  # Default for method content
+            
+            # Fix the indentation
+            fixed_line = ' ' * expected_indent + line_stripped
+            cleaned_lines.append(fixed_line)
+        else:
+            cleaned_lines.append(line)
+    
+    return '\n'.join(cleaned_lines)
+
 # Create Modal app
 app = modal.App("manim-explainer")
 
@@ -126,11 +306,27 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
     result = None
     
     try:
+        # Sanitize Unicode before writing
+        code = sanitize_unicode(code)
+        
         # Write scene.py
-        with open("scene.py", "w") as f:
+        with open("scene.py", "w", encoding='utf-8') as f:
             f.write(code)
         
         print(f"📝 Written scene.py with {len(code)} characters")
+        
+        # Validate that the scene name exists in the code
+        if f"class {scene_name}" not in code:
+            print(f"⚠️ Warning: Scene name '{scene_name}' not found in code")
+            # Try to extract the actual scene name from the code
+            import re
+            scene_match = re.search(r'class\s+(\w+)\s*\(\s*(?:Voiceover)?Scene\s*\)', code)
+            if scene_match:
+                detected_name = scene_match.group(1)
+                print(f"   Detected scene name: '{detected_name}'")
+                scene_name = detected_name
+            else:
+                print(f"   Could not detect scene name, using: '{scene_name}'")
         
         # Validate chart completeness
         chart_warnings = validate_chart_completeness(code)
@@ -167,12 +363,18 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
             print(f"⚠️ Original render failed, trying fallback without voiceover: {e}")
             
             # Create fallback code by removing voiceover components line by line
+            # First sanitize the original code
+            code = sanitize_unicode(code)
+            
             lines = code.split('\n')
             cleaned_lines = []
             skip_until_dedent = False
             base_indent = None
+            skip_string_literal = False
 
-            for line in lines:
+            for i, line in enumerate(lines):
+                # Sanitize each line
+                line = sanitize_unicode(line)
                 # Skip voiceover imports
                 if 'from manim_voiceover' in line:
                     continue
@@ -189,14 +391,41 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
                 if 'with self.voiceover(' in line:
                     skip_until_dedent = True
                     base_indent = len(line) - len(line.lstrip())
+                    print(f"⚠️ Skipping voiceover block starting at line {i+1}")
                     continue
 
                 # If we're in a voiceover block, check for dedent
                 if skip_until_dedent:
-                    if line.strip() == '' or len(line) - len(line.lstrip()) <= base_indent:
+                    current_indent = len(line) - len(line.lstrip())
+                    # Check if we've reached the end of the voiceover block
+                    if line.strip() == '' or current_indent <= base_indent:
                         skip_until_dedent = False
-                        if line.strip() != '':
+                        print(f"⚠️ Ending voiceover block at line {i+1}")
+                        # Only add the line if it's not empty and not just a closing parenthesis
+                        if line.strip() != '' and line.strip() != ')':
                             cleaned_lines.append(line)
+                    # Skip all lines inside the voiceover block
+                    continue
+
+                # Handle multi-line string literals that might be broken
+                if skip_string_literal:
+                    if line.strip().endswith('"') or line.strip().endswith("'"):
+                        skip_string_literal = False
+                        print(f"⚠️ Ending multi-line string literal at line {i+1}")
+                    continue
+
+                # Skip orphaned string literals (lines that are just strings without assignment)
+                if (line.strip().startswith('"') and line.strip().endswith('"') and 
+                    '=' not in line and 'self.' not in line and 'print(' not in line and
+                    'Text(' not in line and 'Tex(' not in line and 'MathTex(' not in line):
+                    print(f"⚠️ Skipping orphaned string literal at line {i+1}: {line.strip()[:50]}...")
+                    continue
+
+                # Check for multi-line string literals that don't end on the same line
+                if (line.strip().startswith('"') and not line.strip().endswith('"') and 
+                    '=' not in line and 'self.' not in line and 'print(' not in line):
+                    skip_string_literal = True
+                    print(f"⚠️ Starting multi-line string literal at line {i+1}")
                     continue
 
                 # Replace tracker.duration with fixed run_time
@@ -222,12 +451,33 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
                     'LineChart': 'Line',  # Replace LineChart with Line
                     'Histogram': 'Rectangle',  # Replace Histogram with Rectangle
                     'ScatterPlot': 'Dot',  # Replace ScatterPlot with Dot
+                    'AreaChart': 'Polygon',  # Replace AreaChart with Polygon
+                    'BubbleChart': 'Circle',  # Replace BubbleChart with Circle
+                    'RadarChart': 'Polygon',  # Replace RadarChart with Polygon
+                    'Heatmap': 'Rectangle',  # Replace Heatmap with Rectangle
+                    'Treemap': 'Rectangle',  # Replace Treemap with Rectangle
                 }
                 
                 for undefined_class, replacement in undefined_classes.items():
                     if undefined_class in line:
                         line = line.replace(undefined_class, replacement)
                         print(f"⚠️ Replaced undefined class {undefined_class} with {replacement}")
+                
+                # Fix LaTeX syntax issues
+                if 'MathTex(' in line and '\\frac' in line and 'r"' not in line:
+                    # Add raw string prefix for LaTeX
+                    line = line.replace('MathTex("', 'MathTex(r"')
+                    print("⚠️ Added raw string prefix for LaTeX")
+                
+                # Fix LaTeX dollar sign issues
+                if 'MathTex(' in line and '$' in line and 'r"' not in line:
+                    line = line.replace('MathTex("', 'MathTex(r"')
+                    print("⚠️ Added raw string for LaTeX with dollar signs")
+                
+                # Fix LaTeX brace issues
+                if 'MathTex(' in line and ('{' in line or '}' in line) and 'r"' not in line:
+                    line = line.replace('MathTex("', 'MathTex(r"')
+                    print("⚠️ Added raw string for LaTeX with braces")
                 
                 # Fix common Manim API issues
                 if 'ax.get_graph(' in line and 'color=' in line:
@@ -382,6 +632,35 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
                     # Objects with updaters should be properly managed
                     cleaned_lines.append('        # NOTE: Object with updater - ensure proper cleanup')
                     print("⚠️ Object with updater detected - ensure proper cleanup")
+                
+                # Fix 9: Memory optimization - limit object creation
+                if 'for i in range(' in line and 'range(100' in line:
+                    # Large loops can cause memory issues
+                    line = line.replace('range(100', 'range(10')  # Limit to 10 objects
+                    print("⚠️ Limited large loop to prevent memory issues")
+                
+                # Fix 10: Timeout prevention - limit animation duration
+                if 'run_time=' in line:
+                    # Extract and limit run_time
+                    import re
+                    match = re.search(r'run_time=([0-9.]+)', line)
+                    if match:
+                        run_time = float(match.group(1))
+                        if run_time > 5.0:  # Limit to 5 seconds max
+                            line = line.replace(f'run_time={run_time}', 'run_time=5.0')
+                            print(f"⚠️ Limited run_time from {run_time}s to 5.0s")
+                
+                # Fix 11: Prevent complex nested operations
+                if 'VGroup(' in line and 'VGroup(' in line:
+                    # Nested VGroups can cause issues
+                    line = line.replace('VGroup(VGroup(', 'VGroup(')
+                    print("⚠️ Simplified nested VGroup structure")
+                
+                # Fix 12: Memory-efficient object creation
+                if 'Circle(radius=0.1)' in line and 'for' in line:
+                    # Small circles in loops can cause memory issues
+                    line = line.replace('Circle(radius=0.1)', 'Circle(radius=0.3)')
+                    print("⚠️ Increased circle radius to reduce memory usage")
 
                 cleaned_lines.append(line)
             
@@ -397,7 +676,24 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
                         fallback_class_name = match.group(1)
                         break
             
-            with open("fallback_scene.py", "w") as f:
+            # Clean up any remaining issues in the fallback code
+            fallback_code = fix_syntax_errors(fallback_code)
+            
+            # Fix indentation issues
+            fallback_code = fix_indentation(fallback_code)
+            
+            # Validate fallback code syntax before writing
+            try:
+                compile(fallback_code, "fallback_scene.py", "exec")
+                print("✅ Fallback code syntax is valid")
+            except SyntaxError as e:
+                print(f"❌ Fallback code still has syntax error after fixes: {e}")
+                print(f"   Line {e.lineno}: {e.text}")
+                # Try one more aggressive cleanup
+                fallback_code = aggressive_syntax_cleanup(fallback_code)
+                print("🔧 Attempted aggressive syntax cleanup")
+            
+            with open("fallback_scene.py", "w", encoding='utf-8') as f:
                 f.write(fallback_code)
             
             result = subprocess.run(

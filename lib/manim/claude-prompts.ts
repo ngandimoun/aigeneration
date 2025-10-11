@@ -1,11 +1,16 @@
-// OpenAI voice mapping for different voice styles
+// OpenAI voice mapping - all 11 available voices
 export const OPENAI_VOICE_MAP: Record<string, string> = {
-  'educational': 'fable',     // Professional, clear
-  'narrative': 'onyx',        // Story-telling
-  'casual': 'nova',           // Conversational
-  'calm': 'shimmer',          // Calm and soothing
-  'energetic': 'echo',        // Energetic and dynamic
-  'professional': 'fable',    // Professional, clear
+  'alloy': 'alloy',           // Neutral, balanced
+  'ash': 'ash',               // Deep, authoritative
+  'ballad': 'ballad',         // Warm, storytelling
+  'coral': 'coral',           // Bright, energetic
+  'echo': 'echo',             // Clear, professional
+  'fable': 'fable',           // Educational, clear
+  'onyx': 'onyx',             // Rich, narrative
+  'nova': 'nova',             // Conversational, friendly
+  'sage': 'sage',             // Wise, calm
+  'shimmer': 'shimmer',       // Soft, soothing
+  'verse': 'verse',           // Poetic, expressive
 };
 
 // Language code mapping for OpenAI (OpenAI TTS supports multiple languages)
@@ -18,6 +23,7 @@ export const LANGUAGE_CODE_MAP: Record<string, string> = {
 };
 
 export interface ManimGenerationOptions {
+  title: string;
   prompt: string;
   hasVoiceover: boolean;
   voiceStyle: string;
@@ -30,16 +36,18 @@ export interface ManimGenerationOptions {
 
 // System prompt for generating Manim code with voiceover
 export function getVoiceoverSystemPrompt(options: ManimGenerationOptions): string {
-  const voiceName = OPENAI_VOICE_MAP[options.voiceStyle] || OPENAI_VOICE_MAP['educational'];
+  const voiceName = OPENAI_VOICE_MAP[options.voiceStyle] || 'fable';
   const langCode = LANGUAGE_CODE_MAP[options.language] || 'en';
   
   return `You are a Manim animation engineer.
 Generate a complete Python script using Manim CE 0.18+ and manim-voiceover with OpenAI.
 
 Requirements:
+- Title: "${options.title}"
 - Subclass VoiceoverScene
 - Import: from manim_voiceover.services.openai import OpenAIService
-- Set service: self.set_speech_service(OpenAIService(voice="${voiceName}", model="tts-1-hd"))
+- Set service: self.set_speech_service(OpenAIService(voice="${voiceName}", model="gpt-4o-mini-tts", transcription_model=None))
+- CRITICAL: Always set transcription_model=None to avoid package dependency issues
 - Wrap narration: with self.voiceover(text="...") as tracker: self.play(..., run_time=tracker.duration)
 - Duration: ${options.duration}s, Aspect: ${options.aspectRatio}, Resolution: ${options.resolution}
 - Style: ${options.style}
@@ -201,6 +209,7 @@ export function getStandardSystemPrompt(options: ManimGenerationOptions): string
 Generate a complete Python script using Manim CE 0.18+ (no external libs).
 
 Requirements:
+- Title: "${options.title}"
 - Use Scene or ThreeDScene
 - Duration: ${options.duration}s, Aspect: ${options.aspectRatio}, Resolution: ${options.resolution}
 - Style: ${options.style}
@@ -488,17 +497,18 @@ EXAMPLE MANIM PATTERNS:
 CRITICAL: Return ONLY the raw Python code. Do NOT wrap it in markdown code blocks. Do NOT include any explanations or comments outside the code. Start directly with the imports and end with the last line of code.`;
 }
 
-// Scene name generator based on prompt
-export function generateSceneName(prompt: string): string {
-  // Extract key words from prompt and create a valid Python class name
-  const words = prompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+// Scene name generator based on title
+export function generateSceneName(title: string): string {
+  // Create valid Python class name from title
+  const words = title
+    .trim()
+    .replace(/[^a-z0-9\s]/gi, '')
     .split(/\s+/)
-    .slice(0, 3)
+    .slice(0, 4) // Take up to 4 words
     .map(word => word.charAt(0).toUpperCase() + word.slice(1));
   
-  return words.join('') + 'Scene';
+  const className = words.join('');
+  return className || 'ExplainerScene'; // Fallback if empty
 }
 
 // Clean code by removing markdown formatting

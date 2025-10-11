@@ -13,7 +13,7 @@ fal.config({
 // Validation schema for product mockup generation
 const productMockupGenerationSchema = z.object({
   // Basic Settings
-  prompt: z.string().min(1).max(2000),
+  prompt: z.string().min(1).max(5000), // Increased to support detailed prompts
   imageCount: z.number().min(1).max(4).default(4),
   aspectRatio: z.enum(['1:1', '4:5', '16:9', '9:16', '2:1', '3:4', '2:3', '4:3', '3:2']).default('1:1'),
   

@@ -45,7 +45,7 @@ export function GeneratorPanel() {
   
   // États locaux pour l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const [showImageGenerator, setShowImageGenerator] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<{title: string, image: string, description: string} | null>(null)
+  const [selectedProject, setSelectedProject] = useState<{title: string, image: string, description: string, isPublic?: boolean} | null>(null)
   const [imageGeneratorSection, setImageGeneratorSection] = useState<string | null>(null)
   
   // États locaux pour l'interface de génération vidéo (Explainers, Talking Avatars, Social Cuts, Cinematic Clips, Product in Motion, UGC Ads)
@@ -153,9 +153,20 @@ export function GeneratorPanel() {
     }
   }, [selectedSection, showTalkingAvatars])
 
+  // Clear selectedArtifact when changing sections
+  useEffect(() => {
+    setSelectedArtifact(null)
+  }, [selectedSection, setSelectedArtifact])
+
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
-  const handleProjectClick = (artifact: {title: string, image: string, description: string}) => {
-    if (isImageGenerationSection(selectedSection)) {
+  const handleProjectClick = (artifact: any) => {
+    if (selectedSection === 'illustration') {
+      // For illustration section, show project details in MainContent AND open generator
+      setSelectedArtifact(artifact)
+      setSelectedProject(artifact)
+      setImageGeneratorSection(selectedSection)
+      setShowImageGenerator(true)
+    } else if (isImageGenerationSection(selectedSection)) {
       setSelectedProject(artifact)
       setImageGeneratorSection(selectedSection)
       setShowImageGenerator(true)
@@ -173,6 +184,10 @@ export function GeneratorPanel() {
     setShowImageGenerator(false)
     setSelectedProject(null)
     setImageGeneratorSection(null)
+    // Clear selectedArtifact when closing generator to return to welcome message
+    if (selectedSection === 'illustration') {
+      setSelectedArtifact(null)
+    }
   }
 
   const handleCloseVideoGenerator = () => {
@@ -541,6 +556,7 @@ export function GeneratorPanel() {
             <IllustrationGeneratorInterface 
               onClose={handleCloseImageGenerator}
               projectTitle={selectedProject.title}
+              projectData={selectedProject}
             />
           ) : selectedSection === 'avatars-personas' ? (
             <AvatarPersonaGeneratorInterface 

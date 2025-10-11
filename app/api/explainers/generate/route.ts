@@ -8,9 +8,10 @@ import { reportBug } from '@/lib/manim/bug-reporter'
 
 // Validation schema for explainer generation
 const generateExplainerSchema = z.object({
-  prompt: z.string().min(10).max(2000),
+  title: z.string().min(3).max(100),
+  prompt: z.string().min(10).max(5000), // Increased from 2000 to support detailed prompts
   hasVoiceover: z.boolean().default(false),
-  voiceStyle: z.string().default('educational'),
+  voiceStyle: z.string().default('fable'),
   language: z.string().default('english'),
   duration: z.number().min(1).max(180).default(8),
   aspectRatio: z.string().default('16:9'),
@@ -32,9 +33,21 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json()
-    const validatedData = generateExplainerSchema.parse(body)
+    console.log('📥 Raw request body:', body)
+    
+    let validatedData;
+    try {
+      validatedData = generateExplainerSchema.parse(body)
+    } catch (validationError) {
+      console.error('❌ Validation error:', validationError)
+      return NextResponse.json({ 
+        error: 'Invalid request data', 
+        details: validationError.errors || validationError.message 
+      }, { status: 400 })
+    }
 
     console.log('📝 Generation request:', {
+      title: validatedData.title,
       prompt: validatedData.prompt,
       hasVoiceover: validatedData.hasVoiceover,
       voiceStyle: validatedData.voiceStyle,
@@ -50,7 +63,7 @@ export async function POST(request: NextRequest) {
       .from('explainers')
       .insert({
         user_id: user.id,
-        title: validatedData.prompt.slice(0, 100),
+        title: validatedData.title,
         description: validatedData.prompt,
         status: 'draft',
         duration: validatedData.duration,

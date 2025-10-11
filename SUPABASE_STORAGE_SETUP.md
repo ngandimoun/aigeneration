@@ -194,3 +194,4 @@ After setting up the RLS policies correctly, the API should be able to:
 3. Allow users to view and download their generated videos
 
 The error `new row violates row-level security policy` should be resolved.
+

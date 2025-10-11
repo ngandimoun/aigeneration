@@ -81,3 +81,4 @@ The system should now work without the timeout errors. The sandbox creation shou
 4. **Verify the complete flow** works end-to-end
 
 The E2B Manim timeout issue should now be resolved! 🎉
+

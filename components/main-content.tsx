@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Globe, Lock } from "lucide-react"
+import { Globe, Lock, Palette, Sparkles } from "lucide-react"
 import { useNavigation } from "@/hooks/use-navigation"
 import { CharacterVariations } from "@/components/character-variations"
 import { ArtifactCard } from "@/components/artifact-card"
@@ -214,8 +214,77 @@ export function MainContent() {
           </div>
         )}
         
+        {/* Illustration section - Project details or Welcome message */}
+        {selectedSection === 'illustration' && (
+          selectedArtifact ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={selectedArtifact.image} 
+                    alt={selectedArtifact.title}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {selectedArtifact.title}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {selectedArtifact.isPublic ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {selectedArtifact.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                  <Palette className="h-10 w-10 text-purple-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground mb-4">
+                  Welcome to Illustrations
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  Create stunning custom illustrations with AI-powered tools. Choose from various art styles, 
+                  from flat vector designs to photorealistic renders, and bring your creative vision to life.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Click "New Project" to start creating your first illustration</span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
         {/* Content area for other sections */}
-        {selectedSection !== 'comics' && selectedSection !== 'templates' && selectedSection !== 'artifacts' && (() => {
+        {selectedSection !== 'comics' && selectedSection !== 'templates' && selectedSection !== 'artifacts' && selectedSection !== 'illustration' && (() => {
             if (isLoadingArtifacts) {
               return (
                 <div className="grid grid-cols-2 gap-4">

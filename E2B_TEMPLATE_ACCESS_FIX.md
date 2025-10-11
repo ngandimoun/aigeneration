@@ -117,3 +117,4 @@ The system should now work without the "Forbidden" error. The sandbox creation s
 4. **Verify rendering completes** successfully
 
 The E2B template access issue should now be resolved! 🎉
+

@@ -89,3 +89,4 @@ The system should now work without the SDK-related errors. The sandbox creation 
 4. **Verify rendering completes** successfully
 
 The E2B SDK issue should now be resolved! 🎉
+

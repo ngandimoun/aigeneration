@@ -55,3 +55,4 @@ COMMENT ON COLUMN bug_reports.error_category IS 'Category: math, text, animation
 COMMENT ON COLUMN bug_reports.error_severity IS 'Severity: critical, warning, info';
 COMMENT ON COLUMN bug_reports.metadata IS 'Additional context: duration, style, resolution, etc.';
 
+

@@ -105,3 +105,4 @@ ELEVEN_API_KEY=your_elevenlabs_api_key
 4. Monitor for any remaining database issues
 
 The status constraint issue should now be resolved, and the API should work with the existing Supabase database schema.
+

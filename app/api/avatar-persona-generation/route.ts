@@ -5,7 +5,7 @@ import { z } from 'zod'
 // Comprehensive validation schema for avatar/persona generation
 const avatarPersonaGenerationSchema = z.object({
   // Basic settings
-  prompt: z.string().min(1).max(2000),
+  prompt: z.string().min(1).max(5000), // Increased to support detailed prompts
   imageCount: z.number().min(1).max(4).default(4),
   aspectRatio: z.enum(['1:1', '3:4', '4:5', '2:3', '16:9', '4:3', '9:16', '21:9']).default('1:1'),
   aiPromptEnabled: z.boolean().default(true),

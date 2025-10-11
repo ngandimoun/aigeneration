@@ -57,3 +57,4 @@ export function ErrorDisplay({ error, suggestion, severity, onRetry }: ErrorDisp
   );
 }
 
+

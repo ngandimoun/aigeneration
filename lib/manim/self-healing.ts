@@ -91,14 +91,15 @@ async function updateJobStatus(
 async function generateManimCode(
   options: ManimGenerationOptions,
   isRetry: boolean = false,
-  previousError?: string
+  previousError?: string,
+  previousCode?: string
 ): Promise<{ code: string; sceneName: string }> {
   const systemPrompt = options.hasVoiceover 
     ? getVoiceoverSystemPrompt(options)
     : getStandardSystemPrompt(options);
   
   const userPrompt = isRetry && previousError
-    ? getFixOnFailPrompt('', previousError) // We'll inject the previous code
+    ? getFixOnFailPrompt(previousCode || '', previousError)
     : buildUserPrompt(options);
 
   console.log(`🤖 Generating Manim code (attempt ${isRetry ? 'retry' : 'initial'})...`);
@@ -175,7 +176,7 @@ async function generateManimCode(
   console.log('📄 Raw code length:', rawCode.length);
   console.log('📄 Raw code preview:', rawCode.substring(0, 200) + '...');
   
-  const sceneName = generateSceneName(options.prompt);
+  const sceneName = generateSceneName(options.title);
   
   // Validate the generated code
   const validation = validateManimCode(rawCode);
@@ -329,7 +330,8 @@ export async function generateManimCodeWithRetry(
       const { code, sceneName } = await generateManimCode(
         options, 
         attempt > 1, 
-        attempt > 1 ? lastError : undefined
+        attempt > 1 ? lastError : undefined,
+        attempt > 1 ? lastCode : undefined
       );
       
       lastCode = code;
@@ -431,7 +433,7 @@ export async function generateManimCodeWithRetry(
 
 // Helper function to create a safe fallback scene
 export function createSafeFallbackScene(options: ManimGenerationOptions): string {
-  const sceneName = generateSceneName(options.prompt);
+  const sceneName = generateSceneName(options.title);
   
   return `from manim import *
 

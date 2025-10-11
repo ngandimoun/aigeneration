@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -53,12 +54,19 @@ interface ExplainerGeneratorInterfaceProps {
   projectTitle: string
 }
 
-// Voice styles for the voiceover
-const VOICE_STYLES = [
-  { value: "calm", label: "Calm" },
-  { value: "educational", label: "Educational" },
-  { value: "energetic", label: "Energetic" },
-  { value: "professional", label: "Professional" }
+// OpenAI voices for the voiceover
+const OPENAI_VOICES = [
+  { value: "alloy", label: "Alloy - Neutral, balanced" },
+  { value: "ash", label: "Ash - Deep, authoritative" },
+  { value: "ballad", label: "Ballad - Warm, storytelling" },
+  { value: "coral", label: "Coral - Bright, energetic" },
+  { value: "echo", label: "Echo - Clear, professional" },
+  { value: "fable", label: "Fable - Educational, clear" },
+  { value: "onyx", label: "Onyx - Rich, narrative" },
+  { value: "nova", label: "Nova - Conversational, friendly" },
+  { value: "sage", label: "Sage - Wise, calm" },
+  { value: "shimmer", label: "Shimmer - Soft, soothing" },
+  { value: "verse", label: "Verse - Poetic, expressive" }
 ]
 
 // Languages for voiceover
@@ -106,9 +114,10 @@ const STYLES = [
 
 export function ExplainerGeneratorInterface({ onClose, projectTitle }: ExplainerGeneratorInterfaceProps) {
   // Core state
+  const [title, setTitle] = useState("")
   const [prompt, setPrompt] = useState("")
   const [hasVoiceover, setHasVoiceover] = useState(false)
-  const [voiceStyle, setVoiceStyle] = useState("educational")
+  const [voiceStyle, setVoiceStyle] = useState("fable")
   const [language, setLanguage] = useState("english")
   
   // Smart options state
@@ -162,6 +171,7 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          title,
           prompt,
           hasVoiceover,
           voiceStyle,
@@ -350,7 +360,24 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
 
       {!generatedVideo ? (
         <>
-          {/* Step 1: Prompt */}
+          {/* Step 1: Title */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              📝 Title:
+            </Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What is Entropy?"
+              className="text-sm bg-muted/30 border-muted-foreground/25 focus:bg-background transition-colors"
+              maxLength={100}
+            />
+            <p className="text-xs text-muted-foreground">
+              A short title for your animation (used for scene naming)
+            </p>
+          </div>
+
+          {/* Step 2: Prompt */}
           <div className="space-y-3">
             <Label className="text-sm font-medium text-foreground flex items-center gap-2">
               ✏️ Prompt:
@@ -361,12 +388,17 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
               placeholder="Animate a rotating cube transforming into a pyramid on a dark background, with labels appearing as it morphs."
               className="min-h-[100px] text-sm resize-none bg-muted/30 border-muted-foreground/25 focus:bg-background transition-colors"
             />
-            <p className="text-xs text-muted-foreground">
-              DreamCut auto-understands: Scene type, objects, lighting, motion pacing, and duration
-            </p>
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-muted-foreground">
+                DreamCut auto-understands: Scene type, objects, lighting, motion pacing, and duration
+              </p>
+              <p className={`text-xs ${prompt.length > 4500 ? 'text-orange-500' : prompt.length > 4000 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                {prompt.length}/5000 characters
+              </p>
+            </div>
           </div>
 
-          {/* Step 2: Voiceover Toggle */}
+          {/* Step 3: Voiceover Toggle */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -381,15 +413,15 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
             {hasVoiceover && (
               <div className="grid grid-cols-2 gap-3 pl-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Voice Style</Label>
+                  <Label className="text-xs text-muted-foreground">Voice</Label>
                   <Select value={voiceStyle} onValueChange={setVoiceStyle}>
                     <SelectTrigger className="w-full h-8 text-xs">
-                      <SelectValue placeholder="Select voice style" />
+                      <SelectValue placeholder="Select voice" />
                     </SelectTrigger>
                     <SelectContent>
-                      {VOICE_STYLES.map((style) => (
-                        <SelectItem key={style.value} value={style.value} className="text-xs">
-                          {style.label}
+                      {OPENAI_VOICES.map((voice) => (
+                        <SelectItem key={voice.value} value={voice.value} className="text-xs">
+                          {voice.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -415,7 +447,7 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
             )}
           </div>
 
-          {/* Step 3: Smart Options */}
+          {/* Step 4: Smart Options */}
           <Collapsible open={isSmartOptionsOpen} onOpenChange={setIsSmartOptionsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
@@ -507,10 +539,10 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Step 4: Generate Button */}
+          {/* Step 5: Generate Button */}
           <Button 
             onClick={handleGenerate}
-            disabled={!prompt.trim() || isGenerating}
+            disabled={!title.trim() || !prompt.trim() || isGenerating}
             className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
           >
             {isGenerating ? (
