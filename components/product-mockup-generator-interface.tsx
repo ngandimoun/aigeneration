@@ -97,6 +97,7 @@ export function ProductMockupGeneratorInterface({
   const [prompt, setPrompt] = useState("")
   const [imageCount, setImageCount] = useState(4)
   const [aspectRatio, setAspectRatio] = useState<"1:1" | "4:5" | "16:9" | "9:16" | "2:1" | "3:4" | "2:3" | "4:3" | "3:2">("1:1")
+  const [isPublic, setIsPublic] = useState(true)
   
   // Product Photos
   const [productPhotos, setProductPhotos] = useState<File[]>([])
@@ -172,7 +173,7 @@ export function ProductMockupGeneratorInterface({
   const [loadingAvatars, setLoadingAvatars] = useState(false)
   
   // Basic Avatar Options
-  const [useBasicAvatar, setUseBasicAvatar] = useState(false)
+  const [useBasicAvatar, setUseBasicAvatar] = useState(true)
   const [basicAvatarAge, setBasicAvatarAge] = useState<"18-25" | "26-35" | "36-45" | "46-55" | "55+">("26-35")
   const [basicAvatarRace, setBasicAvatarRace] = useState<"Caucasian" | "African" | "Asian" | "Hispanic" | "Middle Eastern" | "Mixed" | "Other">("Caucasian")
   const [basicAvatarGender, setBasicAvatarGender] = useState<"Male" | "Female" | "Non-binary">("Female")
@@ -232,8 +233,8 @@ export function ProductMockupGeneratorInterface({
   const loadAvailableAvatars = async () => {
     setLoadingAvatars(true)
     try {
-      // Fetch avatars from the avatars API
-      const response = await fetch('/api/avatars')
+      // Fetch avatars from the avatar-persona-generation API
+      const response = await fetch('/api/avatar-persona-generation')
       if (response.ok) {
         const data = await response.json()
         setAvailableAvatars(data.avatars || [])
@@ -309,14 +310,6 @@ export function ProductMockupGeneratorInterface({
       return
     }
 
-    if (productPhotos.length === 0) {
-      toast({
-        title: "Product Photos Required",
-        description: "Please upload at least one product photo.",
-        variant: "destructive"
-      })
-      return
-    }
 
     setIsGenerating(true)
     try {
@@ -335,9 +328,9 @@ export function ProductMockupGeneratorInterface({
         })
       }
 
-      const productPhotosBase64 = await Promise.all(
-        productPhotos.map(convertFileToBase64)
-      )
+      const productPhotosBase64 = productPhotos.length > 0 
+        ? await Promise.all(productPhotos.map(convertFileToBase64))
+        : []
 
       const logoFileBase64 = logoFile ? await convertFileToBase64(logoFile) : undefined
 
@@ -398,6 +391,7 @@ export function ProductMockupGeneratorInterface({
           projectTitle,
           title,
           selectedArtifact,
+          isPublic,
           timestamp: new Date().toISOString()
         }
       }
@@ -453,16 +447,35 @@ export function ProductMockupGeneratorInterface({
   const currentInfluence = getCurrentVisualInfluence()
 
   return (
-    <div className="bg-background border border-border rounded-lg p-4 space-y-4 max-h-[80vh] overflow-y-auto scrollbar-hover">
+    <div className="bg-background border border-border rounded-lg p-2 space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">
-            Product Mockup Generator
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {projectTitle}
-          </p>
+      <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div>
+            <h3 className="text-xs font-semibold text-foreground">
+              Product Mockup Generator
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {projectTitle}
+            </p>
+          </div>
+          {/* Public/Private Toggle */}
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-[9px] font-medium px-2 rounded-full transition-colors",
+              isPublic 
+                ? "bg-green-100 text-green-700 border border-green-200" 
+                : "bg-gray-100 text-gray-700 border border-gray-200"
+            )}>
+              {isPublic ? "Public" : "Private"}
+            </span>
+            <Switch
+              id="public-toggle"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+              className="scale-75"
+            />
+          </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
           <X className="h-3 w-3" />
@@ -470,13 +483,13 @@ export function ProductMockupGeneratorInterface({
       </div>
 
       {/* Title Field */}
-      <div className="space-y-4">
-        <label className="text-sm font-medium text-foreground">Title</label>
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-foreground">Title</label>
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter product mockup title"
-          className="text-sm"
+          className="h-8 text-xs"
         />
       </div>
 
@@ -486,46 +499,129 @@ export function ProductMockupGeneratorInterface({
         onOpenChange={() => toggleSection('productPhotos')}
       >
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
+          <Button variant="ghost" className="w-full justify-between p-2 h-auto hover:bg-muted/50 transition-colors">
             <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span className="text-sm font-medium">Product Photos</span>
-              <span className="text-xs text-muted-foreground">({productPhotos.length}/2)</span>
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Upload className="h-3 w-3 text-primary" />
+              </div>
+              <div className="text-left">
+                <span className="text-xs font-medium text-foreground">Product Photos</span>
+                <p className="text-xs text-muted-foreground">
+                  {productPhotos.length === 0 
+                    ? "Upload up to 2 product images" 
+                    : `${productPhotos.length}/2 images uploaded`
+                  }
+                </p>
+              </div>
             </div>
-            {expandedSections.productPhotos ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <div className="flex items-center gap-2">
+              {productPhotos.length > 0 && (
+                <div className="flex -space-x-1">
+                  {productPhotoPreviews.slice(0, 2).map((preview, index) => (
+                    <div key={index} className="w-6 h-6 rounded-full border-2 border-background overflow-hidden">
+                      <img 
+                        src={preview} 
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {expandedSections.productPhotos ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            </div>
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            {productPhotoPreviews.map((preview, index) => (
-              <div key={index} className="relative group">
-                <img 
-                  src={preview} 
-                  alt={`Product ${index + 1}`}
-                  className="w-full h-20 object-cover rounded-md"
-                />
+        <CollapsibleContent className="space-y-2">
+          {/* Upload Area */}
+          <div 
+            className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-2 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 cursor-pointer group"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-2 bg-muted/50 rounded-full group-hover:bg-primary/10 transition-colors">
+                <Upload className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-foreground mb-1">
+                  {productPhotos.length === 0 ? "Drop your product photos here" : "Add more photos"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG up to 10MB • {productPhotos.length}/2 photos
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  fileInputRef.current?.click()
+                }}
+              >
+                <Upload className="h-3 w-3 mr-1" />
+                Choose Files
+              </Button>
+            </div>
+          </div>
+
+          {/* Photo Grid */}
+          {productPhotos.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-medium text-foreground">Uploaded Photos</h4>
                 <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removeProductPhoto(index)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setProductPhotos([])
+                    setProductPhotoPreviews([])
+                  }}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3 w-3 mr-1" />
+                  Clear All
                 </Button>
               </div>
-            ))}
-            {productPhotos.length < 2 && (
-              <div 
-                className="border-2 border-dashed border-muted-foreground/25 rounded-md h-20 flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="text-center">
-                  <Plus className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Add Photo</span>
-                </div>
+              
+              <div className="grid grid-cols-1 gap-2">
+                {productPhotoPreviews.map((preview, index) => (
+                  <div key={index} className="relative group bg-muted/30 rounded-lg p-2 border">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted/50 flex-shrink-0">
+                        <img 
+                          src={preview} 
+                          alt={`Product ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-foreground truncate">
+                          {productPhotos[index]?.name || `Product ${index + 1}`}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {(productPhotos[index]?.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-green-600">Ready</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                        onClick={() => removeProductPhoto(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
           <input
             ref={fileInputRef}
             type="file"
@@ -539,45 +635,45 @@ export function ProductMockupGeneratorInterface({
 
       {/* User Prompt */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Description</label>
+        <label className="text-xs font-medium text-foreground">Prompt</label>
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe your product mockup vision..."
-          className="min-h-[80px] text-sm resize-none"
+          className="min-h-[60px] text-xs resize-none"
         />
       </div>
 
       {/* Logo Upload with Dropdown */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Logo Placement (Optional)</span>
+          <ImageIcon className="h-3 w-3 text-muted-foreground" />
+          <span className="text-xs font-medium">Logo Placement (Optional)</span>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Dropdown Selection */}
           <Select 
             value={logoPlacementOption} 
             onValueChange={(value) => setLogoPlacementOption(value as "None" | "Top-Right" | "Bottom-Left")}
           >
-            <SelectTrigger className="w-full h-9 text-sm">
+            <SelectTrigger className="w-full h-8 text-xs">
               <SelectValue placeholder="Select logo placement" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="None" className="text-sm">
+              <SelectItem value="None" className="text-xs">
                 <div className="flex items-center gap-2">
                   <span>🚫</span>
                   None
                 </div>
               </SelectItem>
-              <SelectItem value="Top-Right" className="text-sm">
+              <SelectItem value="Top-Right" className="text-xs">
                 <div className="flex items-center gap-2">
                   <span>↗️</span>
                   Top-Right
                 </div>
               </SelectItem>
-              <SelectItem value="Bottom-Left" className="text-sm">
+              <SelectItem value="Bottom-Left" className="text-xs">
                 <div className="flex items-center gap-2">
                   <span>↙️</span>
                   Bottom-Left
@@ -588,12 +684,12 @@ export function ProductMockupGeneratorInterface({
 
           {/* Conditional Logo Upload - Only show if not "None" */}
           {logoPlacementOption !== "None" && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {!logoFile ? (
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-muted-foreground/50 transition-colors">
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-2 text-center hover:border-muted-foreground/50 transition-colors">
               <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-6 w-6 text-muted-foreground" />
-                <div className="text-sm">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
                       <span className="font-medium text-foreground">Upload Logo</span>
                   <p className="text-xs text-muted-foreground mt-1">
                         PNG/JPG recommended
@@ -618,14 +714,14 @@ export function ProductMockupGeneratorInterface({
               </div>
             </div>
           ) : (
-              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+              <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border">
                 <img 
                     src={logoPreview || ""} 
                   alt="Logo preview" 
                   className="w-12 h-12 object-contain rounded border"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium">{logoFile.name}</div>
+                  <div className="text-xs font-medium">{logoFile.name}</div>
                   <div className="text-xs text-muted-foreground">
                       {(logoFile.size / 1024 / 1024).toFixed(2)} MB • {logoPlacementOption}
                   </div>
@@ -636,7 +732,7 @@ export function ProductMockupGeneratorInterface({
                   onClick={removeLogo}
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
               )}
@@ -653,13 +749,13 @@ export function ProductMockupGeneratorInterface({
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between p-2 h-auto">
             <div className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              <span className="text-sm font-medium">Art Direction</span>
+              <Palette className="h-3 w-3" />
+              <span className="text-xs font-medium">Art Direction</span>
             </div>
-            {expandedSections.artDirection ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {expandedSections.artDirection ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
+        <CollapsibleContent className="space-y-2">
           {/* Art Direction */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-foreground">Art Direction</label>
@@ -1021,15 +1117,15 @@ export function ProductMockupGeneratorInterface({
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between p-2 h-auto">
             <div className="flex items-center gap-2">
-              <Layout className="h-4 w-4" />
-              <span className="text-sm font-medium">Composition & Branding</span>
+              <Layout className="h-3 w-3" />
+              <span className="text-xs font-medium">Composition & Branding</span>
             </div>
-            {expandedSections.composition ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {expandedSections.composition ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
+        <CollapsibleContent className="space-y-2">
           {/* Aspect Ratio & Image Count */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground">Aspect Ratio</label>
               <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as any)}>
@@ -1126,7 +1222,7 @@ export function ProductMockupGeneratorInterface({
           </div>
 
           {/* Object Count & Shadow */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground">Objects</label>
               <Select value={objectCount.toString()} onValueChange={(value) => setObjectCount(parseInt(value) as any)}>
@@ -1192,7 +1288,7 @@ export function ProductMockupGeneratorInterface({
             {expandedSections.textOverlay ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
+        <CollapsibleContent className="space-y-2">
           {/* Text Inputs */}
           <div className="space-y-2">
             <Input
@@ -1216,7 +1312,7 @@ export function ProductMockupGeneratorInterface({
           </div>
 
           {/* Typography Controls */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground">Font</label>
               <Select value={fontFamily} onValueChange={(value) => setFontFamily(value as any)}>
@@ -1565,7 +1661,7 @@ export function ProductMockupGeneratorInterface({
               <span className="text-xs font-medium text-foreground">Advanced Typography</span>
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground">Text Case</label>
                 <Select value={textCase} onValueChange={(value) => setTextCase(value as any)}>
@@ -1631,7 +1727,7 @@ export function ProductMockupGeneratorInterface({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground">Letter Spacing ({letterSpacing}px)</label>
                 <Slider
@@ -1657,7 +1753,7 @@ export function ProductMockupGeneratorInterface({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground">Brilliance ({brilliance}%)</label>
                 <Slider
@@ -1683,7 +1779,7 @@ export function ProductMockupGeneratorInterface({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground">Accent Element</label>
                 <Select value={accentElement} onValueChange={(value) => setAccentElement(value as any)}>
@@ -1798,7 +1894,7 @@ export function ProductMockupGeneratorInterface({
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground">Vertical Position ({verticalPosition}%)</label>
                 <Slider
@@ -1859,7 +1955,7 @@ export function ProductMockupGeneratorInterface({
             {expandedSections.casting ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
+        <CollapsibleContent className="space-y-2">
           {/* Use Avatars Toggle */}
           <div className="flex items-center justify-between">
             <label className="text-xs font-medium text-foreground">Include Avatars</label>
@@ -1891,7 +1987,7 @@ export function ProductMockupGeneratorInterface({
                     }}
                   >
                     <SelectTrigger className="w-full h-8 text-xs">
-                      <SelectValue placeholder="Select Avatar" />
+                      <SelectValue placeholder="Select an avatar" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
                       <SelectItem value="basic" className="text-xs">
@@ -1904,17 +2000,10 @@ export function ProductMockupGeneratorInterface({
                         </div>
                       </SelectItem>
                       {availableAvatars.map((avatar) => (
-                        <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
+                        <SelectItem key={avatar.id} value={avatar.id} className="text-sm">
                           <div className="flex items-center gap-2">
-                            <img 
-                              src={avatar.image} 
-                              alt={avatar.title}
-                              className="w-6 h-6 object-cover rounded"
-                            />
-                            <div>
-                              <div className="font-medium">{avatar.title}</div>
-                              <div className="text-muted-foreground text-xs">{avatar.roleArchetype}</div>
-                            </div>
+                            <span className="text-xl">🎭</span>
+                            <span className="font-medium">{avatar.persona_name || avatar.title}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -1925,59 +2014,132 @@ export function ProductMockupGeneratorInterface({
 
               {/* Basic Avatar Customization */}
               {useBasicAvatar && (
-                <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
+                <div className="space-y-2 p-3 bg-muted/30 rounded-lg border">
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-foreground">Basic Avatar Settings</span>
+                    <div className="p-1.5 bg-primary/10 rounded-md">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Basic Avatar Settings</span>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium text-foreground">Age</label>
-                      <Select value={basicAvatarAge} onValueChange={(value) => setBasicAvatarAge(value as any)}>
-                        <SelectTrigger className="w-full h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["18-25", "26-35", "36-45", "46-55", "55+"].map((age) => (
-                            <SelectItem key={age} value={age} className="text-xs">
-                              {age}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* Demographics Section */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Demographics</span>
+                      <div className="flex-1 h-px bg-border"></div>
                     </div>
+                    
+                    <div className="grid grid-cols-1 gap-2">
+                      {/* Age Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                          <span>🎂</span>
+                          Age Range
+                        </label>
+                        <Select value={basicAvatarAge} onValueChange={(value) => setBasicAvatarAge(value as any)}>
+                          <SelectTrigger className="w-full h-8 text-xs">
+                            <SelectValue placeholder="Select age range" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["18-25", "26-35", "36-45", "46-55", "55+"].map((age) => {
+                              // Mapping des emojis pour chaque tranche d'âge
+                              const getAgeEmoji = (age: string) => {
+                                switch (age) {
+                                  case "18-25": return "🌱" // Jeune adulte
+                                  case "26-35": return "👨‍💼" // Adulte professionnel
+                                  case "36-45": return "👩‍💼" // Adulte établi
+                                  case "46-55": return "👨‍🎓" // Adulte expérimenté
+                                  case "55+": return "👴" // Senior
+                                  default: return "👤"
+                                }
+                              }
+                              
+                              return (
+                                <SelectItem key={age} value={age} className="text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span>{getAgeEmoji(age)}</span>
+                                    <span>{age} years</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium text-foreground">Gender</label>
-                      <Select value={basicAvatarGender} onValueChange={(value) => setBasicAvatarGender(value as any)}>
-                        <SelectTrigger className="w-full h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["Male", "Female", "Non-binary"].map((gender) => (
-                            <SelectItem key={gender} value={gender} className="text-xs">
-                              {gender}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      {/* Gender Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                          <span>⚧</span>
+                          Gender Identity
+                        </label>
+                        <Select value={basicAvatarGender} onValueChange={(value) => setBasicAvatarGender(value as any)}>
+                          <SelectTrigger className="w-full h-8 text-xs">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Male", "Female", "Non-binary"].map((gender) => {
+                              // Mapping des emojis pour chaque genre
+                              const getGenderEmoji = (gender: string) => {
+                                switch (gender) {
+                                  case "Male": return "👨" // Homme
+                                  case "Female": return "👩" // Femme
+                                  case "Non-binary": return "🧑" // Non-binaire
+                                  default: return "👤"
+                                }
+                              }
+                              
+                              return (
+                                <SelectItem key={gender} value={gender} className="text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span>{getGenderEmoji(gender)}</span>
+                                    <span>{gender}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium text-foreground">Ethnicity</label>
-                      <Select value={basicAvatarRace} onValueChange={(value) => setBasicAvatarRace(value as any)}>
-                        <SelectTrigger className="w-full h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Mixed", "Other"].map((race) => (
-                            <SelectItem key={race} value={race} className="text-xs">
-                              {race}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {/* Ethnicity Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                          <span>🌍</span>
+                          Ethnicity
+                        </label>
+                        <Select value={basicAvatarRace} onValueChange={(value) => setBasicAvatarRace(value as any)}>
+                          <SelectTrigger className="w-full h-8 text-xs">
+                            <SelectValue placeholder="Select ethnicity" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Mixed", "Other"].map((race) => {
+                              // Mapping des emojis pour chaque ethnicité - représentation précise
+                              const getEthnicityEmoji = (race: string) => {
+                                switch (race) {
+                                  case "Caucasian": return "👱‍♂️" // Caucasien - homme blond
+                                  case "African": return "👨🏿" // Africain - homme à la peau foncée
+                                  case "Asian": return "👨🏻" // Asiatique - homme à la peau claire
+                                  case "Hispanic": return "👨🏽" // Hispanique - homme à la peau mate
+                                  case "Middle Eastern": return "👳‍♂️" // Moyen-Orient - homme avec turban
+                                  case "Mixed": return "🧑🏼" // Mixte - personne à la peau intermédiaire
+                                  case "Other": return "👤" // Autre - silhouette neutre
+                                  default: return "🌍"
+                                }
+                              }
+                              
+                              return (
+                                <SelectItem key={race} value={race} className="text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span>{getEthnicityEmoji(race)}</span>
+                                    <span>{race}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
 
@@ -1994,7 +2156,7 @@ export function ProductMockupGeneratorInterface({
               )}
 
               {/* Avatar Role & Interaction */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-foreground">Role</label>
                   <Select value={avatarRole} onValueChange={(value) => setAvatarRole(value as any)}>
@@ -2031,7 +2193,7 @@ export function ProductMockupGeneratorInterface({
           )}
 
           {/* Product Multiplicity & Angle Variety */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground">Product Count</label>
               <Select value={productMultiplicity} onValueChange={(value) => setProductMultiplicity(value as any)}>
@@ -2103,7 +2265,7 @@ export function ProductMockupGeneratorInterface({
             {expandedSections.platform ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
+        <CollapsibleContent className="space-y-2">
           <div className="space-y-2">
             <label className="text-xs font-medium text-foreground">Platform (Optional)</label>
             <Select value={platformTarget || "Auto"} onValueChange={(value) => setPlatformTarget(value === "Auto" ? undefined : value as any)}>
@@ -2148,7 +2310,7 @@ export function ProductMockupGeneratorInterface({
 
       {/* Generated Images */}
       {generatedImages.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium text-foreground">Generated Mockups</h4>
             <div className="flex gap-2">
@@ -2190,7 +2352,7 @@ export function ProductMockupGeneratorInterface({
       {/* Generate Button */}
       <Button 
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-sm font-medium" 
-        disabled={!title.trim() || !prompt.trim() || productPhotos.length === 0 || isGenerating}
+        disabled={!prompt.trim() || isGenerating}
         onClick={handleGenerate}
       >
         {isGenerating ? (

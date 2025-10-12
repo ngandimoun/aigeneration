@@ -43,7 +43,10 @@ const avatarPersonaGenerationSchema = z.object({
   })).optional(),
   
   // Additional metadata
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).optional(),
+  
+  // Public/Private status
+  isPublic: z.boolean().optional().default(true)
 })
 
 // GET /api/avatar-persona-generation - Get user's avatar/persona generations
@@ -205,6 +208,7 @@ export async function POST(request: NextRequest) {
           version: '2.0',
           interface: 'avatar-persona-generator'
         },
+        is_public: validatedData.isPublic,
         status: 'draft'
       })
       .select()

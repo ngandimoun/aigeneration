@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -53,94 +52,94 @@ interface SoundFxPreview {
 
 // Sound Categories
 const SOUND_CATEGORIES = [
-  "Impact",
-  "Ambience", 
-  "Movement",
-  "Interface",
-  "Creature",
-  "Weather",
-  "Foley",
-  "Transition",
-  "Trailer Hit"
+  "💥 Impact",
+  "🌊 Ambience", 
+  "🏃 Movement",
+  "🖱️ Interface",
+  "🐉 Creature",
+  "🌧️ Weather",
+  "🎬 Foley",
+  "🔄 Transition",
+  "🎬 Trailer Hit"
 ]
 
 // Usage Contexts
 const USAGE_CONTEXTS = [
-  "Video",
-  "Game", 
-  "Ad",
-  "UI",
-  "Ambient Loop",
-  "Podcast",
-  "Interactive"
+  "🎬 Video",
+  "🎮 Game", 
+  "📢 Ad",
+  "🖱️ UI",
+  "🔄 Ambient Loop",
+  "🎙️ Podcast",
+  "🎯 Interactive"
 ]
 
 // Sound Textures
 const SOUND_TEXTURES = [
-  "Metallic",
-  "Organic",
-  "Wooden", 
-  "Synthetic",
-  "Watery",
-  "Airy",
-  "Stone",
-  "Plastic"
+  "🔧 Metallic",
+  "🌿 Organic",
+  "🪵 Wooden", 
+  "⚡ Synthetic",
+  "💧 Watery",
+  "💨 Airy",
+  "🪨 Stone",
+  "🧱 Plastic"
 ]
 
 // Attack Types
 const ATTACK_TYPES = [
-  "Soft fade",
-  "Snappy hit",
-  "Sharp transient",
-  "Rolling onset"
+  "🌊 Soft fade",
+  "⚡ Snappy hit",
+  "🔪 Sharp transient",
+  "🌊 Rolling onset"
 ]
 
 // Audio Quality Options
 const AUDIO_QUALITY_OPTIONS = [
-  "Studio",
-  "Field Recording",
-  "Vintage",
-  "Lo-fi",
-  "Cinematic"
+  "🎙️ Studio",
+  "🌍 Field Recording",
+  "📻 Vintage",
+  "🎧 Lo-fi",
+  "🎬 Cinematic"
 ]
 
 // Environment Types
 const ENVIRONMENT_TYPES = [
-  "Indoor",
-  "Outdoor",
-  "Large Hall",
-  "Open Field",
-  "Submerged",
-  "Space",
-  "Abstract"
+  "🏠 Indoor",
+  "🌳 Outdoor",
+  "🏛️ Large Hall",
+  "🌾 Open Field",
+  "🌊 Submerged",
+  "🚀 Space",
+  "🌀 Abstract"
 ]
 
 // Reverb Characters
 const REVERB_CHARACTERS = [
-  "Dry",
-  "Soft Room",
-  "Cathedral",
-  "Metallic Hall",
-  "Cave",
-  "Synthetic Space"
+  "🔇 Dry",
+  "🏠 Soft Room",
+  "⛪ Cathedral",
+  "🔧 Metallic Hall",
+  "🕳️ Cave",
+  "🌀 Synthetic Space"
 ]
 
 // Stereo Behaviors
 const STEREO_BEHAVIORS = [
-  "Mono",
-  "Wide Stereo",
-  "Circular Pan",
-  "Dynamic Sweep"
+  "🔊 Mono",
+  "🎧 Wide Stereo",
+  "🔄 Circular Pan",
+  "⚡ Dynamic Sweep"
 ]
 
 // Ambience Layers
 const AMBIENCE_LAYERS = [
-  "Rain",
-  "Wind",
-  "Crowd",
-  "Machines",
-  "Nature",
-  "Silence"
+  "🌧️ Rain",
+  "💨 Wind",
+  "👥 Crowd",
+  "⚙️ Machines",
+  "🌿 Nature",
+  "🔇 Silence"
 ]
 
 // Mood Options
@@ -156,29 +155,29 @@ const MOOD_OPTIONS = [
 
 // Motion Characters
 const MOTION_CHARACTERS = [
-  "Rising",
-  "Falling", 
-  "Pulsing",
-  "Sustained",
-  "Randomized"
+  "📈 Rising",
+  "📉 Falling", 
+  "💓 Pulsing",
+  "⏸️ Sustained",
+  "🎲 Randomized"
 ]
 
 // Purpose in Scene
 const PURPOSE_OPTIONS = [
-  "Build-Up",
-  "Impact",
-  "Transition",
-  "Background",
-  "Cue",
-  "Texture"
+  "📈 Build-Up",
+  "💥 Impact",
+  "🔄 Transition",
+  "🌊 Background",
+  "🎯 Cue",
+  "🎨 Texture"
 ]
 
 // Loop Types
 const LOOP_TYPES = [
-  "Ambient",
-  "Pulse",
-  "Pattern",
-  "Environment"
+  "🌊 Ambient",
+  "💓 Pulse",
+  "🔄 Pattern",
+  "🌍 Environment"
 ]
 
 // Smart Preset Map
@@ -401,6 +400,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
   
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
+  const [isPublic, setIsPublic] = useState(true)
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({})
 
   // Smart behavior logic
@@ -562,6 +562,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
         fade_in: fadeIn[0],
         fade_out: fadeOut[0],
         tags,
+        is_public: isPublic,
         created_at: new Date().toISOString()
       }
 
@@ -602,54 +603,72 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-1">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[calc(100vh-1rem)] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-2xl font-bold">Sound FX Studio</h2>
-            <p className="text-muted-foreground">Craft emotionally intelligent sound design synchronized with your world's mood and story.</p>
+        <div className="flex items-center justify-between p-2 border-b sticky top-0 bg-background z-10">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div>
+              <h2 className="text-xs font-bold">🎵 Sound FX Studio</h2>
+              <p className="text-[10px] text-muted-foreground">Craft emotionally intelligent sound design synchronized with your world's mood and story.</p>
+            </div>
+            {/* Public/Private Toggle */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={cn(
+                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
+                isPublic 
+                  ? "bg-green-100 text-green-700 border border-green-200" 
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
+              )}>
+                {isPublic ? "Public" : "Private"}
+              </span>
+              <Switch
+                id="public-toggle"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+                className="scale-75"
+              />
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-5 w-5 shrink-0">
+            <X className="h-3 w-3" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6 space-y-8">
+        <div className="overflow-y-auto max-h-[calc(100vh-6rem)] p-2 space-y-3 scrollbar-hover">
           
           {/* Sound Intent & Description Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                1️⃣ Sound Intent & Description
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                🎯 Sound Intent & Description
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Understand the purpose of the sound — what it represents and why it exists.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-3 p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Prompt / Description</Label>
+                  <Label className="text-xs">📝 Prompt / Description</Label>
                   <Textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="A metallic door sliding open with a pneumatic hiss."
-                    className="min-h-[80px]"
+                    className="min-h-[60px] text-xs resize-none"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Category / Use Case</Label>
+                  <Label className="text-xs">🎯 Category / Use Case</Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       {SOUND_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat.toLowerCase()}>
+                        <SelectItem key={cat} value={cat.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {cat}
                         </SelectItem>
                       ))}
@@ -658,14 +677,14 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Usage Context</Label>
+                  <Label className="text-xs">🎬 Usage Context</Label>
                   <Select value={usageContext} onValueChange={setUsageContext}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select context" />
                     </SelectTrigger>
                     <SelectContent>
                       {USAGE_CONTEXTS.map((context) => (
-                        <SelectItem key={context} value={context.toLowerCase()}>
+                        <SelectItem key={context} value={context.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {context}
                         </SelectItem>
                       ))}
@@ -674,23 +693,23 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>World Link (optional)</Label>
+                  <Label className="text-xs">🌍 World Link (optional)</Label>
                   <Select value={worldLink} onValueChange={setWorldLink}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select world" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cyber-tokyo">Cyber Tokyo</SelectItem>
-                      <SelectItem value="zen-oasis">Zen Oasis</SelectItem>
-                      <SelectItem value="desert-bazaar">Desert Bazaar</SelectItem>
-                      <SelectItem value="space-temple">Space Temple</SelectItem>
-                      <SelectItem value="underwater">Underwater</SelectItem>
+                      <SelectItem value="cyber-tokyo">🏙️ Cyber Tokyo</SelectItem>
+                      <SelectItem value="zen-oasis">🧘 Zen Oasis</SelectItem>
+                      <SelectItem value="desert-bazaar">🏜️ Desert Bazaar</SelectItem>
+                      <SelectItem value="space-temple">🚀 Space Temple</SelectItem>
+                      <SelectItem value="underwater">🌊 Underwater</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Seed Variability: {seedVariability[0]}</Label>
+                  <Label className="text-xs">🎲 Seed Variability: {seedVariability[0]}</Label>
                   <Slider
                     value={seedVariability}
                     onValueChange={setSeedVariability}
@@ -699,27 +718,53 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Predictable</span>
                     <span>Creative Variations</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reference Upload (optional)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="audio/*"
-                      onChange={(e) => setReferenceUpload(e.target.files?.[0] || null)}
-                      className="flex-1"
-                    />
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <Label className="text-xs">📁 Reference Upload (optional)</Label>
+                  {!referenceUpload ? (
+                    <label className="block cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-gray-400 transition-colors">
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <Upload className="h-4 w-4 text-gray-400 mb-2" />
+                          <p className="text-[10px] text-gray-600 mb-1">Click to upload or drag and drop</p>
+                          <p className="text-[9px] text-gray-500">Audio files (MP3, WAV, etc.) • Max 10MB</p>
+                        </div>
+                      </div>
+                      <Input
+                        type="file"
+                        accept="audio/*"
+                        onChange={(e) => setReferenceUpload(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                    </label>
+                  ) : (
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="h-3 w-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-medium text-gray-900 truncate">{referenceUpload.name}</p>
+                          <p className="text-[9px] text-gray-500">{(referenceUpload.size / 1024 / 1024).toFixed(1)} MB</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setReferenceUpload(null)}
+                        className="h-5 w-5 p-0 hover:bg-red-100"
+                      >
+                        <X className="h-3 w-3 text-red-500" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground italic">
+              <div className="text-[10px] text-muted-foreground italic">
                 "For trailer-style impacts, consider using lower prompt variability to ensure repeatable results."
               </div>
             </CardContent>
@@ -727,26 +772,25 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
 
           {/* Acoustic DNA Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Volume2 className="h-5 w-5" />
-                2️⃣ Acoustic DNA
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                🔊 Acoustic DNA
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Define the physical and tonal properties of the sound — its texture, density, and tone.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-3 p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Sound Texture</Label>
+                  <Label className="text-xs">🎨 Sound Texture</Label>
                   <Select value={soundTexture} onValueChange={setSoundTexture}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select texture" />
                     </SelectTrigger>
                     <SelectContent>
                       {SOUND_TEXTURES.map((texture) => (
-                        <SelectItem key={texture} value={texture.toLowerCase()}>
+                        <SelectItem key={texture} value={texture.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {texture}
                         </SelectItem>
                       ))}
@@ -755,7 +799,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Frequency Focus: {frequencyFocus[0]}</Label>
+                  <Label className="text-xs">🎵 Frequency Focus: {frequencyFocus[0]}</Label>
                   <Slider
                     value={frequencyFocus}
                     onValueChange={setFrequencyFocus}
@@ -764,14 +808,14 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Low-end (bass heavy)</span>
                     <span>High-end (crisp detail)</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Density: {density[0]}</Label>
+                  <Label className="text-xs">📊 Density: {density[0]}</Label>
                   <Slider
                     value={density}
                     onValueChange={setDensity}
@@ -780,21 +824,21 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Sparse</span>
                     <span>Rich / Layered</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Attack Type</Label>
+                  <Label className="text-xs">⚡ Attack Type</Label>
                   <Select value={attackType} onValueChange={setAttackType}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select attack" />
                     </SelectTrigger>
                     <SelectContent>
                       {ATTACK_TYPES.map((attack) => (
-                        <SelectItem key={attack} value={attack.toLowerCase()}>
+                        <SelectItem key={attack} value={attack.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {attack}
                         </SelectItem>
                       ))}
@@ -803,7 +847,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tail / Decay: {tailDecay[0]}</Label>
+                  <Label className="text-xs">🌊 Tail / Decay: {tailDecay[0]}</Label>
                   <Slider
                     value={tailDecay}
                     onValueChange={setTailDecay}
@@ -812,21 +856,21 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Short (dry)</span>
                     <span>Long (reverberant)</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Audio Quality</Label>
+                  <Label className="text-xs">🎙️ Audio Quality</Label>
                   <Select value={audioQuality} onValueChange={setAudioQuality}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select quality" />
                     </SelectTrigger>
                     <SelectContent>
                       {AUDIO_QUALITY_OPTIONS.map((quality) => (
-                        <SelectItem key={quality} value={quality.toLowerCase()}>
+                        <SelectItem key={quality} value={quality.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {quality}
                         </SelectItem>
                       ))}
@@ -835,7 +879,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground italic">
+              <div className="text-[10px] text-muted-foreground italic">
                 "A 'metallic' sound with long decay and low frequencies will feel like a deep industrial impact."
               </div>
             </CardContent>
@@ -843,26 +887,25 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
 
           {/* Spatial DNA Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                3️⃣ Spatial DNA
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                🌍 Spatial DNA
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Define where the sound lives — its perceived environment and listener perspective.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-3 p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Environment Type</Label>
+                  <Label className="text-xs">🏠 Environment Type</Label>
                   <Select value={environmentType} onValueChange={setEnvironmentType}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select environment" />
                     </SelectTrigger>
                     <SelectContent>
                       {ENVIRONMENT_TYPES.map((env) => (
-                        <SelectItem key={env} value={env.toLowerCase()}>
+                        <SelectItem key={env} value={env.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {env}
                         </SelectItem>
                       ))}
@@ -871,7 +914,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Distance from Listener: {distanceFromListener[0]}</Label>
+                  <Label className="text-xs">📏 Distance from Listener: {distanceFromListener[0]}</Label>
                   <Slider
                     value={distanceFromListener}
                     onValueChange={setDistanceFromListener}
@@ -880,21 +923,21 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Near-field (ASMR)</span>
                     <span>Far-field (distant echo)</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reverb Character</Label>
+                  <Label className="text-xs">🔊 Reverb Character</Label>
                   <Select value={reverbCharacter} onValueChange={setReverbCharacter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select reverb" />
                     </SelectTrigger>
                     <SelectContent>
                       {REVERB_CHARACTERS.map((reverb) => (
-                        <SelectItem key={reverb} value={reverb.toLowerCase()}>
+                        <SelectItem key={reverb} value={reverb.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {reverb}
                         </SelectItem>
                       ))}
@@ -903,14 +946,14 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Stereo Behavior</Label>
+                  <Label className="text-xs">🎧 Stereo Behavior</Label>
                   <Select value={stereoBehavior} onValueChange={setStereoBehavior}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select stereo" />
                     </SelectTrigger>
                     <SelectContent>
                       {STEREO_BEHAVIORS.map((stereo) => (
-                        <SelectItem key={stereo} value={stereo.toLowerCase()}>
+                        <SelectItem key={stereo} value={stereo.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {stereo}
                         </SelectItem>
                       ))}
@@ -919,14 +962,14 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Ambience Layer (optional)</Label>
+                  <Label className="text-xs">🌊 Ambience Layer (optional)</Label>
                   <Select value={ambienceLayer} onValueChange={setAmbienceLayer}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select ambience" />
                     </SelectTrigger>
                     <SelectContent>
                       {AMBIENCE_LAYERS.map((ambience) => (
-                        <SelectItem key={ambience} value={ambience.toLowerCase()}>
+                        <SelectItem key={ambience} value={ambience.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {ambience}
                         </SelectItem>
                       ))}
@@ -935,7 +978,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground italic">
+              <div className="text-[10px] text-muted-foreground italic">
                 "Adding a circular stereo pan makes this transition sound more cinematic."
               </div>
             </CardContent>
@@ -943,34 +986,37 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
 
           {/* Emotional DNA Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5" />
-                4️⃣ Emotional DNA
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                💝 Emotional DNA
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Embed story-driven emotion and pacing.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-3 p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Mood Context</Label>
-                  <RadioGroup value={moodContext} onValueChange={setMoodContext} className="grid grid-cols-2 gap-3">
-                    {MOOD_OPTIONS.map((mood) => (
-                      <div key={mood.value} className="flex items-center space-x-2">
-                        <RadioGroupItem value={mood.value} id={mood.value} />
-                        <Label htmlFor={mood.value} className="flex items-center gap-2">
-                          <span>{mood.icon}</span>
-                          {mood.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <Label className="text-xs">😊 Mood Context</Label>
+                  <Select value={moodContext} onValueChange={setMoodContext}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Select mood" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MOOD_OPTIONS.map((mood) => (
+                        <SelectItem key={mood.value} value={mood.value}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs">{mood.icon}</span>
+                            <span className="text-xs">{mood.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tension Level: {tensionLevel[0]}</Label>
+                  <Label className="text-xs">⚡ Tension Level: {tensionLevel[0]}</Label>
                   <Slider
                     value={tensionLevel}
                     onValueChange={setTensionLevel}
@@ -979,21 +1025,21 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Calm</span>
                     <span>Intense</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Motion Character</Label>
+                  <Label className="text-xs">🎬 Motion Character</Label>
                   <Select value={motionCharacter} onValueChange={setMotionCharacter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select motion" />
                     </SelectTrigger>
                     <SelectContent>
                       {MOTION_CHARACTERS.map((motion) => (
-                        <SelectItem key={motion} value={motion.toLowerCase()}>
+                        <SelectItem key={motion} value={motion.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {motion}
                         </SelectItem>
                       ))}
@@ -1002,14 +1048,14 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Purpose in Scene</Label>
+                  <Label className="text-xs">🎯 Purpose in Scene</Label>
                   <Select value={purposeInScene} onValueChange={setPurposeInScene}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select purpose" />
                     </SelectTrigger>
                     <SelectContent>
                       {PURPOSE_OPTIONS.map((purpose) => (
-                        <SelectItem key={purpose} value={purpose.toLowerCase()}>
+                        <SelectItem key={purpose} value={purpose.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {purpose}
                         </SelectItem>
                       ))}
@@ -1018,7 +1064,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Prompt Influence: {promptInfluence[0]}</Label>
+                  <Label className="text-xs">📝 Prompt Influence: {promptInfluence[0]}</Label>
                   <Slider
                     value={promptInfluence}
                     onValueChange={setPromptInfluence}
@@ -1027,14 +1073,14 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Creative Freedom</span>
                     <span>Strict Prompt Adherence</span>
                   </div>
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground italic">
+              <div className="text-[10px] text-muted-foreground italic">
                 "Tense + Rising motion produces cinematic whoosh-type build-ups."
               </div>
             </CardContent>
@@ -1042,19 +1088,18 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
 
           {/* Looping & Duration Controls Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                5️⃣ Looping & Duration Controls
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                ⚙️ Looping & Duration Controls
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Define how the sound behaves over time and in repetition.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-3 p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Duration (seconds): {duration[0]}</Label>
+                  <Label className="text-xs">⏱️ Duration (seconds): {duration[0]}</Label>
                   <Slider
                     value={duration}
                     onValueChange={setDuration}
@@ -1063,7 +1108,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     step={0.1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>0.5s</span>
                     <span>30.0s</span>
                   </div>
@@ -1074,20 +1119,21 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                     id="loop-mode"
                     checked={loopMode}
                     onCheckedChange={setLoopMode}
+                    className="scale-75"
                   />
-                  <Label htmlFor="loop-mode">Loop Mode</Label>
+                  <Label htmlFor="loop-mode" className="text-xs">🔄 Loop Mode</Label>
                 </div>
 
                 {loopMode && (
                   <div className="space-y-2">
-                    <Label>Loop Type</Label>
+                    <Label className="text-xs">🔄 Loop Type</Label>
                     <Select value={loopType} onValueChange={setLoopType}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs">
                         <SelectValue placeholder="Select loop type" />
                       </SelectTrigger>
                       <SelectContent>
                         {LOOP_TYPES.map((type) => (
-                          <SelectItem key={type} value={type.toLowerCase()}>
+                          <SelectItem key={type} value={type.replace(/^[^\s]+\s/, '').toLowerCase()}>
                             {type}
                           </SelectItem>
                         ))}
@@ -1097,17 +1143,18 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 )}
 
                 <div className="space-y-2">
-                  <Label>Tempo / BPM (optional)</Label>
+                  <Label className="text-xs">🎵 Tempo / BPM (optional)</Label>
                   <Input
                     value={tempoBpm}
                     onChange={(e) => setTempoBpm(e.target.value)}
                     placeholder="120"
                     type="number"
+                    className="h-7 text-xs"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fade In: {fadeIn[0]}s</Label>
+                  <Label className="text-xs">🌅 Fade In: {fadeIn[0]}s</Label>
                   <Slider
                     value={fadeIn}
                     onValueChange={setFadeIn}
@@ -1119,7 +1166,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fade Out: {fadeOut[0]}s</Label>
+                  <Label className="text-xs">🌇 Fade Out: {fadeOut[0]}s</Label>
                   <Slider
                     value={fadeOut}
                     onValueChange={setFadeOut}
@@ -1131,7 +1178,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground italic">
+              <div className="text-[10px] text-muted-foreground italic">
                 "30-second ambient loop is perfect for background worlds or menu screens."
               </div>
             </CardContent>
@@ -1139,66 +1186,66 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
 
           {/* Preview & Generation Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Play className="h-5 w-5" />
-                6️⃣ Preview & Generation
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                🎵 Preview & Generation
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Generate 3 variations, compare, and fine-tune your sound.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-3 p-2">
               <Button 
                 onClick={handleGeneratePreviews}
                 disabled={isGenerating}
-                className="w-full"
+                className="w-full h-7 text-xs"
               >
                 {isGenerating ? (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                    <Sparkles className="h-3 w-3 mr-2 animate-spin" />
                     🎵 Crafting your sound...
                   </>
                 ) : (
                   <>
-                    <Zap className="h-4 w-4 mr-2" />
+                    <Zap className="h-3 w-3 mr-2" />
                     Generate Sound FX Previews
                   </>
                 )}
               </Button>
 
               {soundPreviews.length > 0 && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {soundPreviews.map((preview) => (
                       <Card key={preview.id} className={cn(
                         "cursor-pointer transition-all",
                         selectedPreview === preview.id && "ring-2 ring-primary"
                       )} onClick={() => setSelectedPreview(preview.id)}>
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <Badge variant="secondary">{preview.variation}</Badge>
+                            <Badge variant="secondary" className="text-xs">{preview.variation}</Badge>
                             <Button
                               size="sm"
                               variant="ghost"
+                              className="h-5 w-5"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handlePlayPreview(preview.id)
                               }}
                             >
                               {isPlaying === preview.id ? (
-                                <Pause className="h-4 w-4" />
+                                <Pause className="h-3 w-3" />
                               ) : (
-                                <Play className="h-4 w-4" />
+                                <Play className="h-3 w-3" />
                               )}
                             </Button>
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-[10px] text-muted-foreground">
                             {preview.duration_secs}s • {preview.category}
                           </div>
                           {/* Waveform visualization would go here */}
-                          <div className="h-8 bg-muted rounded mt-2 flex items-center justify-center">
-                            <span className="text-xs text-muted-foreground">Waveform</span>
+                          <div className="h-5 bg-muted rounded mt-2 flex items-center justify-center">
+                            <span className="text-[9px] text-muted-foreground">Waveform</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -1211,40 +1258,41 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
 
           {/* Export & Save Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Save className="h-5 w-5" />
-                7️⃣ Export & Save
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                💾 Export & Save
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Name, tag, and store the selected sound as a reusable Sound Kit.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-3 p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Sound Name</Label>
+                  <Label className="text-xs">🎵 Sound Name</Label>
                   <Input
                     value={soundName}
                     onChange={(e) => setSoundName(e.target.value)}
                     placeholder="e.g., Cyber Door Slide"
+                    className="h-7 text-xs"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tags</Label>
+                  <Label className="text-xs">🏷️ Tags</Label>
                   <div className="flex gap-2">
                     <Input
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       placeholder="Add tag"
                       onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                      className="h-7 text-xs"
                     />
-                    <Button onClick={addTag} size="sm">Add</Button>
+                    <Button onClick={addTag} size="sm" className="h-7 text-xs">Add</Button>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs">
                         {tag}
                         <X 
                           className="h-3 w-3 cursor-pointer" 
@@ -1256,35 +1304,40 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                 </div>
               </div>
 
-              <Button onClick={handleSaveSound} className="w-full" size="lg">
-                <Save className="h-4 w-4 mr-2" />
+              {/* <Button onClick={handleSaveSound} className="w-full h-7 text-xs">
+                <Save className="h-3 w-3 mr-2" />
                 Save Sound Kit
-              </Button>
+              </Button> */}
             </CardContent>
           </Card>
 
           {/* Smart Message */}
           {smartMessage && (
             <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-              <CardContent className="p-4">
+              <CardContent className="p-2">
                 <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-                  <p className="text-sm text-blue-800 dark:text-blue-200">{smartMessage}</p>
+                  <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <p className="text-[10px] text-blue-800 dark:text-blue-200">{smartMessage}</p>
                 </div>
               </CardContent>
             </Card>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveSound} disabled={!soundName.trim() || !selectedPreview}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Sound
-          </Button>
+          {/* Action Buttons */}
+          <Card className="border shadow-md bg-white dark:bg-gray-900">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-end gap-4">
+                <Button variant="outline" onClick={onClose} className="h-10 text-sm font-semibold min-w-[100px] border-2 border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 shadow-sm">
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveSound} disabled={!soundName.trim() || !selectedPreview} className="h-10 text-sm font-semibold min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Sound
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -127,16 +127,31 @@ export type ProductMockupGenerationRequest = {
 };
 
 // Avatar Selection (from existing AvatarPersonaGeneratorInterface)
+// Updated to support avatar-persona-generation API fields
 export type AvailableAvatar = {
   id: string;
   title: string;
+  persona_name?: string; // Nouveau champ prioritaire
   image: string;
-  description: string;
-  roleArchetype?: string;
+  description?: string;
+  role_archetype?: string; // Format snake_case de l'API
+  roleArchetype?: string; // Rétrocompatibilité
+  age_range?: string;
   ageRange?: string;
+  gender_expression?: string;
   genderExpression?: string;
+  outfit_category?: string;
   outfitCategory?: string;
+  art_direction?: string;
+  visual_influence?: string;
+  mood_context?: string;
+  aspect_ratio?: string;
+  image_count?: number;
+  status?: string;
   created_at: string;
+  updated_at?: string;
+  content?: any;
+  metadata?: any;
 };
 
 // Generation Result

@@ -47,6 +47,7 @@ import {
   PartyPopper
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 interface IllustrationGeneratorInterfaceProps {
   onClose: () => void
@@ -314,6 +315,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
   const { toast } = useToast()
 
   // Entry & Intent
+  const [title, setTitle] = useState("")
   const [prompt, setPrompt] = useState("")
   const [purpose, setPurpose] = useState("")
   const [referenceImages, setReferenceImages] = useState<File[]>([])
@@ -350,6 +352,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
+  const [isPublic, setIsPublic] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
 
   // Smart behavior logic
@@ -506,6 +509,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
       const formData = new FormData()
 
       // Entry & Intent
+      formData.append('title', title)
       formData.append('prompt', prompt)
       formData.append('purpose', purpose)
       formData.append('imageCount', imageCount.toString())
@@ -547,6 +551,9 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
       if (logoImage) {
         formData.append('logoImage', logoImage)
       }
+
+      // Add public/private status
+      formData.append('isPublic', isPublic.toString())
 
       const response = await fetch('/api/illustrations', {
         method: 'POST',
@@ -590,60 +597,90 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
 
   return (
-    <div className="bg-background border border-border rounded-md h-[80vh] flex flex-col">
+    <div className="bg-background border border-border rounded-md max-h-[calc(100vh-8rem)] flex flex-col">
       {/* Header - Fixed */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <h3 className="text-lg font-semibold text-foreground">
-          Generate Illustrations for: {projectTitle}
-        </h3>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-          <X className="h-4 w-4" />
+      <div className="flex items-center justify-between p-2 border-b border-border sticky top-0 bg-background z-10">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <h3 className="text-xs font-semibold text-foreground">
+            Generate Illustrations for: {projectTitle}
+          </h3>
+          {/* Public/Private Toggle */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={cn(
+              "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
+              isPublic 
+                ? "bg-green-100 text-green-700 border border-green-200" 
+                : "bg-gray-100 text-gray-700 border border-gray-200"
+            )}>
+              {isPublic ? "Public" : "Private"}
+            </span>
+            <Switch
+              id="public-toggle"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+              className="scale-75"
+            />
+          </div>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
+          <X className="h-3 w-3" />
         </Button>
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto scrollbar-hover p-4 pb-8 space-y-4">
+      <div className="flex-1 overflow-y-auto scrollbar-hover p-2 pb-4 space-y-2">
         {/* Smart Message */}
         {smartMessage && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs text-blue-800">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3 w-3" />
               {smartMessage}
             </div>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Entry & Intent */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground border-b pb-2">Entry & Intent</h4>
-            <div className="space-y-4">
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold text-foreground border-b pb-1">Entry & Intent</h4>
+            <div className="space-y-2">
               <div>
-                <Label htmlFor="prompt">Prompt</Label>
+                <Label htmlFor="title" className="text-xs">Title</Label>
+                <Input
+                  id="title"
+                  placeholder="Enter illustration title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="mt-1 h-8 text-xs"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="prompt" className="text-xs">Prompt</Label>
                 <Textarea
                   id="prompt"
                   placeholder="Flat vector hero of people planting trees."
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   className="mt-1"
-                  rows={3}
+                  rows={2}
                 />
               </div>
 
               <hr className="" />
 
               <div>
-                <Label htmlFor="purpose">Purpose Selector</Label>
+                <Label htmlFor="purpose" className="text-xs">Purpose Selector</Label>
                 <Select value={purpose} onValueChange={setPurpose}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select purpose" />
                   </SelectTrigger>
                 <SelectContent>
                   {PURPOSE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -652,7 +689,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label>Upload Reference (optional)</Label>
+                <Label className="text-xs">Upload Reference (optional)</Label>
                 <div className="mt-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
@@ -660,7 +697,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                       accept="image/*"
                       multiple
                       onChange={handleReferenceImageUpload}
-                      className="flex-1"
+                      className="flex-1 h-8 text-xs"
                     />
                     <span className="text-xs text-muted-foreground">
                       Max 3 images
@@ -691,7 +728,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label>Number of Images</Label>
+                <Label className="text-xs">Number of Images</Label>
                 <div className="flex items-center gap-2 mt-4">
                   <Button
                     size="icon"
@@ -703,7 +740,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                     <Minus className="h-3 w-3" />
                   </Button>
                   <div className="bg-blue-50 border border-blue-200 rounded-sm px-3">
-                    <span className="text-sm font-medium text-blue-700">{imageCount}</span>
+                    <span className="text-xs font-medium text-blue-700">{imageCount}</span>
                   </div>
                   <Button
                     size="icon"
@@ -719,15 +756,15 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="aspect-ratio">Aspect Ratio</Label>
+                <Label htmlFor="aspect-ratio" className="text-xs">Aspect Ratio</Label>
                 <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select aspect ratio">
                       {aspectRatio && (() => {
                         const selectedOption = ASPECT_RATIOS.find(option => option.value === aspectRatio)
                         return selectedOption ? (
                           <div className="flex items-center gap-2">
-                            <span className="text-lg">{selectedOption.icon}</span>
+                            <span className="text-xs">{selectedOption.icon}</span>
                             <span>{selectedOption.label}</span>
                           </div>
                         ) : null
@@ -737,10 +774,10 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                   <SelectContent>
                     {ASPECT_RATIOS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{option.icon}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{option.icon}</span>
                           <div className="flex flex-col">
-                            <span className="font-medium">{option.label}</span>
+                            <span className="text-xs font-medium">{option.label}</span>
                             <span className="text-xs text-muted-foreground">{option.description}</span>
                             <span className="text-xs text-blue-600">{option.category}</span>
                           </div>
@@ -754,22 +791,22 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
           </div>
 
           {/* Art Direction & Visual Style */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <hr className="" />
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div>
-                <Label htmlFor="art-direction">Art Direction</Label>
+                <Label htmlFor="art-direction" className="text-xs">Art Direction</Label>
                 <Select value={artDirection} onValueChange={setArtDirection}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select art direction" />
                   </SelectTrigger>
                 <SelectContent>
                   {ART_DIRECTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
+                        <span className="text-xs">{option.emoji}</span>
                         <div className="flex flex-col">
-                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs font-medium">{option.label}</span>
                           <span className="text-xs text-muted-foreground">{option.description}</span>
                         </div>
                       </div>
@@ -780,22 +817,22 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label htmlFor="visual-influence">Visual Influence</Label>
+                <Label htmlFor="visual-influence" className="text-xs">Visual Influence</Label>
                 <Select
                   value={visualInfluence}
                   onValueChange={setVisualInfluence}
                   disabled={!artDirection}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select visual influence" />
                   </SelectTrigger>
                 <SelectContent>
                   {getAvailableVisualInfluences().map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
+                        <span className="text-xs">{option.emoji}</span>
                         <div className="flex flex-col">
-                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs font-medium">{option.label}</span>
                           <span className="text-xs text-muted-foreground">{option.description}</span>
                         </div>
                       </div>
@@ -806,18 +843,18 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label htmlFor="medium-texture">Medium Texture</Label>
+                <Label htmlFor="medium-texture" className="text-xs">Medium Texture</Label>
                 <Select value={mediumTexture} onValueChange={setMediumTexture}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select medium texture" />
                   </SelectTrigger>
                 <SelectContent>
                   {MEDIUM_TEXTURES.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
+                        <span className="text-xs">{option.emoji}</span>
                         <div className="flex flex-col">
-                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs font-medium">{option.label}</span>
                           <span className="text-xs text-muted-foreground">{option.description}</span>
                         </div>
                       </div>
@@ -828,22 +865,22 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label htmlFor="lighting-preset">Lighting Preset</Label>
+                <Label htmlFor="lighting-preset" className="text-xs">Lighting Preset</Label>
                 <Select
                   value={lightingPreset}
                   onValueChange={setLightingPreset}
                   disabled={isLightingDisabled()}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select lighting preset" />
                   </SelectTrigger>
                 <SelectContent>
                   {LIGHTING_PRESETS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
+                        <span className="text-xs">{option.emoji}</span>
                         <div className="flex flex-col">
-                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs font-medium">{option.label}</span>
                           <span className="text-xs text-muted-foreground">{option.description}</span>
                         </div>
                       </div>
@@ -859,17 +896,17 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label htmlFor="outline-style">Outline & Edge Style</Label>
+                <Label htmlFor="outline-style" className="text-xs">Outline & Edge Style</Label>
                 <Select value={outlineStyle} onValueChange={setOutlineStyle}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select outline style" />
                   </SelectTrigger>
                 <SelectContent>
                   {OUTLINE_STYLES.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -880,13 +917,13 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
           </div>
 
           {/* Mood Context */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <hr className="" />
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div>
-                <Label htmlFor="mood-context">Mood Context</Label>
+                <Label htmlFor="mood-context" className="text-xs">Mood Context</Label>
                 <Select value={moodContext} onValueChange={setMoodContext}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select mood context" />
                   </SelectTrigger>
                   <SelectContent>
@@ -895,9 +932,9 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                       return (
                         <SelectItem key={mood.value} value={mood.value}>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm">{mood.emoji}</span>
-                            <IconComponent className="h-4 w-4" />
-                            {mood.label}
+                            <span className="text-xs">{mood.emoji}</span>
+                            <IconComponent className="h-3 w-3" />
+                            <span className="text-xs">{mood.label}</span>
                           </div>
                         </SelectItem>
                       )
@@ -907,7 +944,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label>Tone Intensity: {toneIntensity[0]}%</Label>
+                <Label className="text-xs">Tone Intensity: {toneIntensity[0]}%</Label>
                 <Slider
                   value={toneIntensity}
                   onValueChange={setToneIntensity}
@@ -921,7 +958,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label>Palette Warmth: {paletteWarmth[0]}%</Label>
+                <Label className="text-xs">Palette Warmth: {paletteWarmth[0]}%</Label>
                 <Slider
                   value={paletteWarmth}
                   onValueChange={setPaletteWarmth}
@@ -939,8 +976,9 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                   id="expression-harmony"
                   checked={expressionHarmony}
                   onCheckedChange={setExpressionHarmony}
+                  className="scale-75"
                 />
-                <Label htmlFor="expression-harmony">
+                <Label htmlFor="expression-harmony" className="text-xs">
                   Expression Harmony
                 </Label>
               </div>
@@ -951,33 +989,34 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
           </div>
 
           {/* Brand Sync & Palette */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <hr className="" />
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="brand-sync"
                   checked={brandSync}
                   onCheckedChange={setBrandSync}
+                  className="scale-75"
                 />
-                <Label htmlFor="brand-sync">Brand Sync</Label>
+                <Label htmlFor="brand-sync" className="text-xs">Brand Sync</Label>
               </div>
               <p className="text-xs text-muted-foreground">
                 Pulls Brand Kit (colors, fonts, logo)
               </p>
 
               <div className="space-y-2">
-                <Label htmlFor="color-palette-mode">Color Palette Mode</Label>
+                <Label htmlFor="color-palette-mode" className="text-xs">Color Palette Mode</Label>
                 <Select value={colorPaletteMode} onValueChange={setColorPaletteMode}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select color palette mode" />
                   </SelectTrigger>
                 <SelectContent>
                   {COLOR_PALETTE_MODES.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -986,7 +1025,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="accent-color">Accent Control</Label>
+                <Label htmlFor="accent-color" className="text-xs">Accent Control</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Input
                     type="color"
@@ -998,23 +1037,23 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                     value={accentColor}
                     onChange={(e) => setAccentColor(e.target.value)}
                     placeholder="#1E90FF"
-                    className="flex-1"
+                    className="flex-1 h-8 text-xs"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="font-style">Font Style (for text inside illustration)</Label>
+                <Label htmlFor="font-style" className="text-xs">Font Style (for text inside illustration)</Label>
                 <Select value={fontStyle} onValueChange={setFontStyle}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select font style" />
                   </SelectTrigger>
                 <SelectContent>
                   {FONT_STYLES.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1023,17 +1062,17 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="watermark-placement">Logo Placement</Label>
+                <Label htmlFor="watermark-placement" className="text-xs">Logo Placement</Label>
                 <Select value={watermarkPlacement} onValueChange={setWatermarkPlacement}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select watermark placement" />
                   </SelectTrigger>
                 <SelectContent>
                   {WATERMARK_PLACEMENTS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1043,12 +1082,13 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
               {watermarkPlacement !== "none" && (
                 <div>
-                  <Label>Logo Image Upload</Label>
+                  <Label className="text-xs">Logo Image Upload</Label>
                   <div className="mt-1 space-y-2">
                     <Input
                       type="file"
                       accept="image/*"
                       onChange={handleLogoUpload}
+                      className="h-8 text-xs"
                     />
                     {logoImage && (
                       <div className="relative w-20 h-20">
@@ -1074,21 +1114,21 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
           </div>
 
           {/* Composition Template */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <hr className="" />
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="space-y-2">
-                <Label htmlFor="composition-template">Composition Template</Label>
+                <Label htmlFor="composition-template" className="text-xs">Composition Template</Label>
                 <Select value={compositionTemplate} onValueChange={setCompositionTemplate}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select composition template" />
                   </SelectTrigger>
                 <SelectContent>
                   {COMPOSITION_TEMPLATES.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1097,17 +1137,17 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="camera-angle">Camera Angle</Label>
+                <Label htmlFor="camera-angle" className="text-xs">Camera Angle</Label>
                 <Select value={cameraAngle} onValueChange={setCameraAngle}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select camera angle" />
                   </SelectTrigger>
                 <SelectContent>
                   {CAMERA_ANGLES.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1116,7 +1156,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div className="space-y-2">
-                <Label>Depth Control: {depthControl[0]}%</Label>
+                <Label className="text-xs">Depth Control: {depthControl[0]}%</Label>
                 <Slider
                   value={depthControl}
                   onValueChange={setDepthControl}
@@ -1127,17 +1167,17 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subject-placement">Subject Placement</Label>
+                <Label htmlFor="subject-placement" className="text-xs">Subject Placement</Label>
                 <Select value={subjectPlacement} onValueChange={setSubjectPlacement}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select subject placement" />
                   </SelectTrigger>
                 <SelectContent>
                   {SUBJECT_PLACEMENTS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        <span className="text-xs">{option.emoji}</span>
+                        <span className="text-xs">{option.label}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1150,8 +1190,9 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                   id="safe-zone-overlay"
                   checked={safeZoneOverlay}
                   onCheckedChange={setSafeZoneOverlay}
+                  className="scale-75"
                 />
-                <Label htmlFor="safe-zone-overlay">Safe Zone Overlay</Label>
+                <Label htmlFor="safe-zone-overlay" className="text-xs">Safe Zone Overlay</Label>
               </div>
               <p className="text-xs text-muted-foreground">
                 Hero layout centers your subject and keeps 25% safe zone for text overlays

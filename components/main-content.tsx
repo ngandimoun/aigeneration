@@ -283,73 +283,214 @@ export function MainContent() {
           )
         )}
 
-        {/* Product Mockups section - Welcome message */}
-        {selectedSection === 'product-mockups' && !selectedArtifact && (
-          <div className="text-center py-16">
-            <div className="max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                <Package className="h-10 w-10 text-purple-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-foreground mb-4">
-                Welcome to Product Mockups
-              </h2>
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                Create stunning product presentations with AI-powered tools. Design professional mockups with 
-                customizable backgrounds, perfect lighting, and seamless brand integration to showcase your products 
-                in their best light.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4" />
-                <span>Click "New Project" to create your first product mockup</span>
+        {/* Product Mockups section - Project details or Welcome message */}
+        {selectedSection === 'product-mockups' && (
+          selectedArtifact ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={selectedArtifact.image} 
+                    alt={selectedArtifact.title}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {selectedArtifact.title}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {selectedArtifact.isPublic ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {selectedArtifact.description}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <Package className="h-10 w-10 text-purple-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground mb-4">
+                  Welcome to Product Mockups
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  Create stunning product presentations with AI-powered tools. Design professional mockups with 
+                  customizable backgrounds, perfect lighting, and seamless brand integration to showcase your products 
+                  in their best light.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Click "New Project" to create your first product mockup</span>
+                </div>
+              </div>
+            </div>
+          )
         )}
 
-        {/* Concept Worlds section - Welcome message */}
-        {selectedSection === 'concept-worlds' && !selectedArtifact && (
-          <div className="text-center py-16">
-            <div className="max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                <Globe className="h-10 w-10 text-blue-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-foreground mb-4">
-                Welcome to Concept Worlds
-              </h2>
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                Design immersive universes with consistent visual DNA. Create everything from fantasy realms to 
-                futuristic environments with unified art direction, lighting systems, and spatial logic that 
-                brings your creative vision to life.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4" />
-                <span>Click "New Project" to build your first concept world</span>
+        {/* Concept Worlds section - Project details or Welcome message */}
+        {selectedSection === 'concept-worlds' && (
+          selectedArtifact ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={selectedArtifact.image} 
+                    alt={selectedArtifact.title}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {selectedArtifact.title}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {selectedArtifact.isPublic ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {selectedArtifact.description}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Globe className="h-10 w-10 text-blue-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground mb-4">
+                  Welcome to Concept Worlds
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  Design immersive universes with consistent visual DNA. Create everything from fantasy realms to 
+                  futuristic environments with unified art direction, lighting systems, and spatial logic that 
+                  brings your creative vision to life.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Click "New Project" to build your first concept world</span>
+                </div>
+              </div>
+            </div>
+          )
         )}
 
-        {/* Charts & Infographics section - Welcome message */}
-        {selectedSection === 'charts-infographics' && !selectedArtifact && (
-          <div className="text-center py-16">
-            <div className="max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                <BarChart3 className="h-10 w-10 text-green-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-foreground mb-4">
-                Welcome to Charts & Infographics
-              </h2>
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                Transform your data into beautiful visualizations with smart styling and custom branding. 
-                Create compelling charts, infographics, and data stories that communicate insights clearly 
-                and professionally across any platform.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4" />
-                <span>Click "New Project" to create your first chart or infographic</span>
+        {/* Charts & Infographics section - Project details or Welcome message */}
+        {selectedSection === 'charts-infographics' && (
+          selectedArtifact ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={selectedArtifact.image} 
+                    alt={selectedArtifact.title}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {selectedArtifact.title}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {selectedArtifact.isPublic ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {selectedArtifact.description}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <BarChart3 className="h-10 w-10 text-green-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground mb-4">
+                  Welcome to Charts & Infographics
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  Transform your data into beautiful visualizations with smart styling and custom branding. 
+                  Create compelling charts, infographics, and data stories that communicate insights clearly 
+                  and professionally across any platform.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Click "New Project" to create your first chart or infographic</span>
+                </div>
+              </div>
+            </div>
+          )
         )}
 
         {/* Avatars & Personas section - Project details or Welcome message */}

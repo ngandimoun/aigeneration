@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { 
   Mic, 
   Play, 
@@ -72,59 +73,59 @@ interface VoiceoverPreview {
 }
 
 const VOICEOVER_USE_CASES = [
-  "Narration",
-  "Commercial", 
-  "Educational",
-  "Podcast",
-  "Audiobook",
-  "Documentary",
-  "E-learning",
-  "News",
-  "Radio",
-  "Storytelling",
-  "Meditation",
-  "ASMR",
-  "Character Voice",
-  "Brand Voice",
-  "Customer Service",
-  "Virtual Assistant",
-  "Game NPC",
-  "Trailer",
-  "Promo",
-  "Announcement"
+  "📖 Narration",
+  "📢 Commercial", 
+  "🎓 Educational",
+  "🎙️ Podcast",
+  "📚 Audiobook",
+  "🎬 Documentary",
+  "💻 E-learning",
+  "📰 News",
+  "📻 Radio",
+  "📖 Storytelling",
+  "🧘 Meditation",
+  "🤫 ASMR",
+  "🎭 Character Voice",
+  "🏢 Brand Voice",
+  "🎧 Customer Service",
+  "🤖 Virtual Assistant",
+  "🎮 Game NPC",
+  "🎬 Trailer",
+  "📢 Promo",
+  "📢 Announcement"
 ]
 
 const LANGUAGES = [
-  "English",
-  "French", 
-  "Spanish",
-  "Japanese",
-  "Chinese (Mandarin)",
-  "Chinese (Cantonese)",
-  "German",
-  "Italian",
-  "Portuguese",
-  "Russian",
-  "Korean",
-  "Arabic",
-  "Hindi",
-  "Dutch",
-  "Swedish",
-  "Norwegian",
-  "Danish",
-  "Finnish",
-  "Polish",
-  "Czech",
-  "Hungarian",
-  "Turkish",
-  "Greek",
-  "Hebrew",
-  "Thai",
-  "Vietnamese",
-  "Indonesian",
-  "Malay",
-  "Filipino",
-  "Multilingual"
+  "🇺🇸 English",
+  "🇫🇷 French", 
+  "🇪🇸 Spanish",
+  "🇯🇵 Japanese",
+  "🇨🇳 Chinese (Mandarin)",
+  "🇭🇰 Chinese (Cantonese)",
+  "🇩🇪 German",
+  "🇮🇹 Italian",
+  "🇵🇹 Portuguese",
+  "🇷🇺 Russian",
+  "🇰🇷 Korean",
+  "🇸🇦 Arabic",
+  "🇮🇳 Hindi",
+  "🇳🇱 Dutch",
+  "🇸🇪 Swedish",
+  "🇳🇴 Norwegian",
+  "🇩🇰 Danish",
+  "🇫🇮 Finnish",
+  "🇵🇱 Polish",
+  "🇨🇿 Czech",
+  "🇭🇺 Hungarian",
+  "🇹🇷 Turkish",
+  "🇬🇷 Greek",
+  "🇮🇱 Hebrew",
+  "🇹🇭 Thai",
+  "🇻🇳 Vietnamese",
+  "🇮🇩 Indonesian",
+  "🇲🇾 Malay",
+  "🇵🇭 Filipino",
+  "🌍 Multilingual"
 ]
 
 const EMOTION_OPTIONS = [
@@ -150,35 +151,35 @@ const EMOTION_OPTIONS = [
 
 // ElevenLabs API Output Format Options
 const OUTPUT_FORMAT_OPTIONS = [
-  { value: "mp3_22050_32", label: "MP3 22.05kHz 32kbps" },
-  { value: "mp3_44100_32", label: "MP3 44.1kHz 32kbps" },
-  { value: "mp3_44100_64", label: "MP3 44.1kHz 64kbps" },
-  { value: "mp3_44100_96", label: "MP3 44.1kHz 96kbps" },
-  { value: "mp3_44100_128", label: "MP3 44.1kHz 128kbps (Recommended)" },
-  { value: "mp3_44100_192", label: "MP3 44.1kHz 192kbps (Creator+)" },
-  { value: "pcm_8000", label: "PCM 8kHz" },
-  { value: "pcm_16000", label: "PCM 16kHz" },
-  { value: "pcm_22050", label: "PCM 22.05kHz" },
-  { value: "pcm_24000", label: "PCM 24kHz" },
-  { value: "pcm_44100", label: "PCM 44.1kHz (Pro+)" },
-  { value: "pcm_48000", label: "PCM 48kHz (Pro+)" },
-  { value: "ulaw_8000", label: "μ-law 8kHz (Twilio)" },
-  { value: "alaw_8000", label: "A-law 8kHz" },
-  { value: "opus_48000_32", label: "Opus 48kHz 32kbps" },
-  { value: "opus_48000_64", label: "Opus 48kHz 64kbps" },
-  { value: "opus_48000_96", label: "Opus 48kHz 96kbps" },
-  { value: "opus_48000_128", label: "Opus 48kHz 128kbps" },
-  { value: "opus_48000_192", label: "Opus 48kHz 192kbps" }
+  { value: "mp3_22050_32", label: "🎵 MP3 22.05kHz 32kbps" },
+  { value: "mp3_44100_32", label: "🎵 MP3 44.1kHz 32kbps" },
+  { value: "mp3_44100_64", label: "🎵 MP3 44.1kHz 64kbps" },
+  { value: "mp3_44100_96", label: "🎵 MP3 44.1kHz 96kbps" },
+  { value: "mp3_44100_128", label: "⭐ MP3 44.1kHz 128kbps (Recommended)" },
+  { value: "mp3_44100_192", label: "💎 MP3 44.1kHz 192kbps (Creator+)" },
+  { value: "pcm_8000", label: "🔊 PCM 8kHz" },
+  { value: "pcm_16000", label: "🔊 PCM 16kHz" },
+  { value: "pcm_22050", label: "🔊 PCM 22.05kHz" },
+  { value: "pcm_24000", label: "🔊 PCM 24kHz" },
+  { value: "pcm_44100", label: "💎 PCM 44.1kHz (Pro+)" },
+  { value: "pcm_48000", label: "💎 PCM 48kHz (Pro+)" },
+  { value: "ulaw_8000", label: "📞 μ-law 8kHz (Twilio)" },
+  { value: "alaw_8000", label: "📞 A-law 8kHz" },
+  { value: "opus_48000_32", label: "🎧 Opus 48kHz 32kbps" },
+  { value: "opus_48000_64", label: "🎧 Opus 48kHz 64kbps" },
+  { value: "opus_48000_96", label: "🎧 Opus 48kHz 96kbps" },
+  { value: "opus_48000_128", label: "🎧 Opus 48kHz 128kbps" },
+  { value: "opus_48000_192", label: "🎧 Opus 48kHz 192kbps" }
 ]
 
 
 // Streaming Latency Optimization Options
 const LATENCY_OPTIONS = [
-  { value: 0, label: "Default (No optimization)" },
-  { value: 1, label: "Normal optimization (~50% improvement)" },
-  { value: 2, label: "Strong optimization (~75% improvement)" },
-  { value: 3, label: "Max optimization" },
-  { value: 4, label: "Max optimization + No text normalizer" }
+  { value: 0, label: "⚙️ Default (No optimization)" },
+  { value: 1, label: "⚡ Normal optimization (~50% improvement)" },
+  { value: 2, label: "🚀 Strong optimization (~75% improvement)" },
+  { value: 3, label: "🔥 Max optimization" },
+  { value: 4, label: "💥 Max optimization + No text normalizer" }
 ]
 
 export function VoiceoverGeneratorInterface({ onClose, projectTitle }: VoiceoverGeneratorInterfaceProps) {
@@ -200,6 +201,9 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   const [optimizeStreamingLatency, setOptimizeStreamingLatency] = useState(0)
   const [enableLogging, setEnableLogging] = useState(true)
   const [modelId] = useState("eleven_v3") // Hardcoded to eleven_v3
+  
+  // Public/Private toggle
+  const [isPublic, setIsPublic] = useState(true)
   
   const [emotion, setEmotion] = useState("")
   const [useCase, setUseCase] = useState("")
@@ -364,6 +368,7 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
         voice_id: selectedVoice?.voice_id,
         emotion,
         use_case: useCase,
+        is_public: isPublic,
         content: {
           dreamcut_voice: selectedVoice,
           elevenlabs_settings: {
@@ -412,57 +417,64 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-1">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[calc(100vh-1rem)] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-2xl font-bold">Voiceover Studio</h2>
-            <p className="text-muted-foreground">Generate high-quality voiceovers using your DreamCut voice library and ElevenLabs AI.</p>
+        <div className="flex items-center justify-between p-2 border-b sticky top-0 bg-background z-10">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div>
+              <h2 className="text-xs font-bold">Voiceover Studio</h2>
+              <p className="text-[10px] text-muted-foreground">Generate high-quality voiceovers using your DreamCut voice library and ElevenLabs AI.</p>
+            </div>
+            {/* Public/Private Toggle */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={cn(
+                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
+                isPublic 
+                  ? "bg-green-100 text-green-700 border border-green-200" 
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
+              )}>
+                {isPublic ? "Public" : "Private"}
+              </span>
+              <Switch
+                id="public-toggle"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+                className="scale-75"
+              />
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-5 w-5 shrink-0">
+            <X className="h-3 w-3" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6 space-y-8">
+        <div className="overflow-y-auto max-h-[calc(100vh-6rem)] p-2 space-y-3 scrollbar-hover">
           
           {/* Script Input Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mic className="h-5 w-5" />
-                1️⃣ Script & Voice Selection
-              </CardTitle>
-              <CardDescription>
-                Enter your script and select a voice from your DreamCut voice library.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Script</Label>
-                  <Textarea
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    placeholder="Enter your voiceover script here..."
-                    className="min-h-[120px]"
-                  />
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm">
-                        <p className="text-blue-800 font-medium mb-2">💡 Pro Tip: Use Audio Tags for Better Expression</p>
-                        <p className="text-blue-700 mb-3">
+            <CardHeader className="p-3">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                <Mic className="h-3 w-3" />
+                🎤 Script & Voice Selection
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-blue-600 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-md p-3 bg-white border-2 border-blue-200 shadow-xl max-h-[70vh] overflow-y-auto scrollbar-hover">
+                      <div className="text-xs space-y-2 text-gray-800">
+                        <p className="font-bold text-blue-900 text-sm">💡 Pro Tip: Use Audio Tags for Better Expression</p>
+                        <p className="text-gray-700 text-xs">
                           Eleven v3 supports audio tags to control voice delivery and emotion. Here are all available tags:
                         </p>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div className="grid grid-cols-1 gap-2 text-[10px]">
                           <div className="space-y-2">
                             <div>
-                              <p className="text-blue-800 font-semibold mb-1">🎭 Voice & Emotions:</p>
-                              <div className="text-blue-600 space-y-1">
+                              <p className="text-blue-900 font-bold mb-1 text-xs">🎭 Voice & Emotions:</p>
+                              <div className="text-gray-700 space-y-1">
                                 <p><code>[laughs]</code>, <code>[laughs harder]</code>, <code>[starts laughing]</code>, <code>[wheezing]</code></p>
                                 <p><code>[whispers]</code>, <code>[sighs]</code>, <code>[exhales]</code></p>
                                 <p><code>[sarcastic]</code>, <code>[curious]</code>, <code>[excited]</code>, <code>[crying]</code></p>
@@ -473,8 +485,8 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             </div>
                             
                             <div>
-                              <p className="text-blue-800 font-semibold mb-1">🔊 Sound Effects:</p>
-                              <div className="text-blue-600 space-y-1">
+                              <p className="text-blue-900 font-bold mb-1 text-xs">🔊 Sound Effects:</p>
+                              <div className="text-gray-700 space-y-1">
                                 <p><code>[gunshot]</code>, <code>[applause]</code>, <code>[clapping]</code>, <code>[explosion]</code></p>
                                 <p><code>[swallows]</code>, <code>[gulps]</code>, <code>[clears throat]</code></p>
                                 <p><code>[short pause]</code>, <code>[long pause]</code>, <code>[exhales sharply]</code></p>
@@ -485,8 +497,8 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                           
                           <div className="space-y-2">
                             <div>
-                              <p className="text-blue-800 font-semibold mb-1">🌍 Accents & Special:</p>
-                              <div className="text-blue-600 space-y-1">
+                              <p className="text-blue-900 font-bold mb-1 text-xs">🌍 Accents & Special:</p>
+                              <div className="text-gray-700 space-y-1">
                                 <p><code>[strong French accent]</code>, <code>[strong Russian accent]</code></p>
                                 <p><code>[strong British accent]</code>, <code>[strong German accent]</code></p>
                                 <p><code>[strong Spanish accent]</code>, <code>[strong Italian accent]</code></p>
@@ -497,8 +509,8 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             </div>
                             
                             <div>
-                              <p className="text-blue-800 font-semibold mb-1">🎬 Dialogue & Timing:</p>
-                              <div className="text-blue-600 space-y-1">
+                              <p className="text-blue-900 font-bold mb-1 text-xs">🎬 Dialogue & Timing:</p>
+                              <div className="text-gray-700 space-y-1">
                                 <p><code>[starting to speak]</code>, <code>[jumping in]</code></p>
                                 <p><code>[overlapping]</code>, <code>[interrupting]</code></p>
                                 <p><code>[stopping abruptly]</code>, <code>[cautiously]</code></p>
@@ -509,9 +521,9 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                           </div>
                         </div>
                         
-                        <div className="mt-3 p-2 bg-blue-100 rounded border-l-4 border-blue-400">
-                          <p className="text-blue-800 font-semibold text-xs mb-1">📝 Example Usage:</p>
-                          <div className="text-blue-700 text-xs space-y-2">
+                        <div className="mt-2 p-2 bg-blue-50 rounded border-l-4 border-blue-400">
+                          <p className="text-blue-900 font-bold text-xs mb-1">📝 Example Usage:</p>
+                          <div className="text-gray-700 text-[10px] space-y-1">
                             <div>
                               <p className="font-medium mb-1">English Script:</p>
                               <p>"In the ancient land of Eldoria, where skies shimmered and forests whispered secrets to the wind, lived a dragon named Zephyros. [sarcastically] Not the 'burn it all down' kind... [giggles] but he was gentle, wise, with eyes like old stars. [whispers] Even the birds fell silent when he passed."</p>
@@ -523,20 +535,20 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                           </div>
                         </div>
                         
-                        <div className="mt-2 text-xs text-blue-600">
+                        <div className="mt-2 text-[10px] text-gray-700">
                           <p><strong>💡 Tips:</strong> Combine multiple tags, match tags to your voice's character, and experiment with different combinations for best results!</p>
                         </div>
                         
-                        <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded border-l-4 border-l-amber-400">
-                          <div className="flex items-start gap-2">
-                            <span className="text-amber-600 text-sm">⚠️</span>
-                            <div className="text-xs">
-                              <p className="text-amber-800 font-semibold mb-1">Important: Audio Tags Language</p>
-                              <p className="text-amber-700">
+                        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded border-l-4 border-l-amber-400">
+                          <div className="flex items-start gap-1">
+                            <span className="text-amber-600 text-xs">⚠️</span>
+                            <div className="text-[10px]">
+                              <p className="text-amber-900 font-bold mb-1">Important: Audio Tags Language</p>
+                              <p className="text-gray-700">
                                 <strong>Always write audio tags in English</strong>, even if your script is in another language. 
                                 The tags are processed by the AI model and must be in English to work correctly.
                               </p>
-                              <p className="text-amber-700 mt-1">
+                              <p className="text-gray-700 mt-1">
                                 <strong>Example:</strong> "Bonjour, comment allez-vous? [whispers] Je suis très heureux de vous voir." 
                                 ✅ Correct - script in French, tags in English
                               </p>
@@ -544,20 +556,36 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </CardTitle>
+              <CardDescription className="text-[10px]">
+                Enter your script and select a voice from your DreamCut voice library.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 p-3">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">📝 Script</Label>
+                  <Textarea
+                    value={script}
+                    onChange={(e) => setScript(e.target.value)}
+                    placeholder="Enter your voiceover script here..."
+                    className="min-h-[60px] text-xs resize-none"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Language</Label>
+                    <Label className="text-xs">🌍 Language</Label>
                     <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {LANGUAGES.map((lang) => (
-                          <SelectItem key={lang} value={lang}>
+                          <SelectItem key={lang} value={lang.replace(/^[^\s]+\s/, '')}>
                             {lang}
                           </SelectItem>
                         ))}
@@ -566,11 +594,11 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   </div>
 
                   <div className="space-y-2">
-                    <Label>DreamCut Voice Library</Label>
+                    <Label className="text-xs">🎤 DreamCut Voice Library</Label>
                     {loadingVoices ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                        Loading voices...
+                      <div className="flex items-center justify-center p-2">
+                        <Sparkles className="h-3 w-3 mr-2 animate-spin" />
+                        <span className="text-xs">Loading voices...</span>
                       </div>
                     ) : (
                       <Select 
@@ -581,7 +609,7 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                           setSelectedVoice(voice || null)
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-7 text-xs">
                           <SelectValue placeholder="Select a voice from your library" />
                         </SelectTrigger>
                         <SelectContent>
@@ -593,10 +621,10 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             dreamCutVoices.map((voice) => (
                               <SelectItem key={voice.voice_id} value={voice.voice_id}>
                                 <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4" />
+                                  <User className="h-3 w-3" />
                                   <div>
-                                    <div className="font-medium">{voice.name}</div>
-                                    <div className="text-xs text-muted-foreground">
+                                    <div className="font-medium text-xs">{voice.name}</div>
+                                    <div className="text-[10px] text-muted-foreground">
                                       {voice.gender} • {voice.language} • {voice.mood}
                                     </div>
                                   </div>
@@ -613,25 +641,25 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                 {/* Selected Voice Preview */}
                 {selectedVoice && (
                   <Card className="border-primary/20 bg-primary/5">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                          <User className="h-6 w-6 text-primary" />
+                    <CardContent className="p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium">{selectedVoice.name}</h4>
-                          <p className="text-sm text-muted-foreground">{selectedVoice.description}</p>
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant="secondary" className="text-xs">
+                          <h4 className="font-medium text-xs">{selectedVoice.name}</h4>
+                          <p className="text-[10px] text-muted-foreground">{selectedVoice.description}</p>
+                          <div className="flex gap-1 mt-1">
+                            <Badge variant="secondary" className="text-[10px]">
                               {selectedVoice.gender}
                             </Badge>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-[10px]">
                               {selectedVoice.language}
                             </Badge>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-[10px]">
                               {selectedVoice.mood}
                             </Badge>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-[10px]">
                               {selectedVoice.style}
                             </Badge>
                           </div>
@@ -640,12 +668,13 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                           <Button
                             size="sm"
                             variant="outline"
+                            className="h-6 w-6"
                             onClick={() => {
                               const audio = new Audio(selectedVoice.preview_url)
                               audio.play()
                             }}
                           >
-                            <Play className="h-4 w-4" />
+                            <Play className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
@@ -658,19 +687,19 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
           {/* Voice Settings Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                2️⃣ Voice Settings
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                <Settings className="h-3 w-3" />
+                ⚙️ Voice Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Fine-tune the voice characteristics for your voiceover using ElevenLabs parameters.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Stability: {stability[0]}%</Label>
+            <CardContent className="space-y-3 p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">📊 Stability: {stability[0]}%</Label>
                   <Slider
                     value={stability}
                     onValueChange={setStability}
@@ -679,15 +708,15 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Variable</span>
                     <span>Stable</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Controls voice consistency and variation</p>
+                  <p className="text-[10px] text-muted-foreground">Controls voice consistency and variation</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Similarity Boost: {similarityBoost[0]}%</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">🎯 Similarity Boost: {similarityBoost[0]}%</Label>
                   <Slider
                     value={similarityBoost}
                     onValueChange={setSimilarityBoost}
@@ -696,15 +725,15 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Less Similar</span>
                     <span>More Similar</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">How closely the voice matches the original</p>
+                  <p className="text-[10px] text-muted-foreground">How closely the voice matches the original</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Style: {style[0]}%</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">🎭 Style: {style[0]}%</Label>
                   <Slider
                     value={style}
                     onValueChange={setStyle}
@@ -713,32 +742,33 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Neutral</span>
                     <span>Exaggerated</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Exaggeration of the speaking style</p>
+                  <p className="text-[10px] text-muted-foreground">Exaggeration of the speaking style</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Speaker Boost</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">🔊 Speaker Boost</Label>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="speaker-boost"
                       checked={useSpeakerBoost}
                       onCheckedChange={setUseSpeakerBoost}
+                      className="scale-75"
                     />
-                    <Label htmlFor="speaker-boost">
+                    <Label htmlFor="speaker-boost" className="text-xs">
                       {useSpeakerBoost ? "Enabled" : "Disabled"}
                     </Label>
                   </div>
-                  <p className="text-xs text-muted-foreground">Enhances the similarity to the original speaker</p>
+                  <p className="text-[10px] text-muted-foreground">Enhances the similarity to the original speaker</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Emotion</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">😊 Emotion</Label>
                   <Select value={emotion} onValueChange={setEmotion}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select emotion" />
                     </SelectTrigger>
                     <SelectContent>
@@ -754,15 +784,15 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Use Case</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">🎯 Use Case</Label>
                   <Select value={useCase} onValueChange={setUseCase}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs">
                       <SelectValue placeholder="Select use case" />
                     </SelectTrigger>
                     <SelectContent>
                       {VOICEOVER_USE_CASES.map((useCaseOption) => (
-                        <SelectItem key={useCaseOption} value={useCaseOption.toLowerCase()}>
+                        <SelectItem key={useCaseOption} value={useCaseOption.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {useCaseOption}
                         </SelectItem>
                       ))}
@@ -774,22 +804,22 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
               {/* Advanced ElevenLabs API Settings */}
               <Separator />
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium">Advanced ElevenLabs Settings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <h4 className="text-xs font-medium">Advanced ElevenLabs Settings</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Model</Label>
-                    <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-                      <span className="text-sm font-medium">Eleven v3</span>
-                      <Badge variant="secondary" className="text-xs">Fixed</Badge>
+                    <Label className="text-xs">🤖 Model</Label>
+                    <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                      <span className="text-xs font-medium">Eleven v3</span>
+                      <Badge variant="secondary" className="text-[10px]">Fixed</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Using the latest Eleven v3 model for optimal quality</p>
+                    <p className="text-[10px] text-muted-foreground">Using the latest Eleven v3 model for optimal quality</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Output Format</Label>
+                    <Label className="text-xs">📁 Output Format</Label>
                     <Select value={outputFormat} onValueChange={setOutputFormat}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -803,12 +833,12 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Streaming Latency Optimization</Label>
+                    <Label className="text-xs">⚡ Streaming Latency Optimization</Label>
                     <Select 
                       value={optimizeStreamingLatency.toString()} 
                       onValueChange={(value) => setOptimizeStreamingLatency(parseInt(value))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -822,18 +852,19 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Request Logging</Label>
+                    <Label className="text-xs">📝 Request Logging</Label>
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="enable-logging"
                         checked={enableLogging}
                         onCheckedChange={setEnableLogging}
+                        className="scale-75"
                       />
-                      <Label htmlFor="enable-logging">
+                      <Label htmlFor="enable-logging" className="text-xs">
                         {enableLogging ? "Enabled" : "Disabled"}
                       </Label>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       {enableLogging ? "Request history will be saved" : "Zero retention mode (Enterprise only)"}
                     </p>
                   </div>
@@ -844,47 +875,47 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
           {/* Preview & Fine-tuning Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Volume2 className="h-5 w-5" />
-                3️⃣ Preview & Fine-tuning
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                <Volume2 className="h-3 w-3" />
+                🔊 Preview & Fine-tuning
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Generate voiceover using ElevenLabs AI and fine-tune the output.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-3 p-3">
               <Button 
                 onClick={handleGenerateVoiceover}
                 disabled={isGenerating || !script.trim() || !selectedVoice}
-                className="w-full"
+                className="w-full h-7 text-xs"
               >
                 {isGenerating ? (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                    <Sparkles className="h-3 w-3 mr-2 animate-spin" />
                     🎙️ Generating with ElevenLabs AI...
                   </>
                 ) : (
                   <>
-                    <Mic className="h-4 w-4 mr-2" />
+                    <Mic className="h-3 w-3 mr-2" />
                     Generate Voiceover with ElevenLabs
                   </>
                 )}
               </Button>
 
               {voiceoverPreviews.length > 0 && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3">
                     {voiceoverPreviews.map((preview) => (
                       <Card key={preview.id} className={cn(
                         "cursor-pointer transition-all",
                         selectedPreview === preview.id && "ring-2 ring-primary"
                       )} onClick={() => setSelectedPreview(preview.id)}>
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Badge variant="secondary">{preview.variation}</Badge>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="secondary" className="text-[10px]">{preview.variation}</Badge>
+                              <Badge variant="outline" className="text-[10px]">
                                 <FileAudio className="h-3 w-3 mr-1" />
                                 {preview.duration_secs}s
                               </Badge>
@@ -892,19 +923,20 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             <Button
                               size="sm"
                               variant="ghost"
+                              className="h-5 w-5"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handlePlayPreview(preview.id)
                               }}
                             >
                               {isPlaying === preview.id ? (
-                                <Pause className="h-4 w-4" />
+                                <Pause className="h-3 w-3" />
                               ) : (
-                                <Play className="h-4 w-4" />
+                                <Play className="h-3 w-3" />
                               )}
                             </Button>
                           </div>
-                          <div className="text-sm text-muted-foreground mb-2">
+                          <div className="text-[10px] text-muted-foreground mb-2">
                             {preview.language} • Generated with ElevenLabs AI
                           </div>
                           {/* Audio element for playback */}
@@ -928,53 +960,63 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
           {/* Export & Save Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Save className="h-5 w-5" />
-                4️⃣ Export & Save
+            <CardHeader className="p-2">
+              <CardTitle className="flex items-center gap-2 text-xs">
+                <Save className="h-3 w-3" />
+                💾 Export & Save
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[10px]">
                 Name and save your voiceover to your library.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Title</Label>
+            <CardContent className="space-y-3 p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">📝 Title</Label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g., Product Demo Voiceover"
+                    className="h-7 text-xs"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Description</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">📄 Description</Label>
                   <Input
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Brief description of the voiceover"
+                    className="h-7 text-xs"
                   />
                 </div>
               </div>
 
-              <Button onClick={handleSaveVoiceover} className="w-full" size="lg">
-                <Save className="h-4 w-4 mr-2" />
-                Save Voiceover
-              </Button>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveVoiceover} disabled={!title.trim() || !selectedPreview}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Voiceover
-          </Button>
+          {/* Action Buttons */}
+          <Card className="border shadow-md bg-white dark:bg-gray-900">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-end gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={onClose} 
+                  className="h-10 text-sm font-semibold min-w-[100px] border-2 border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 shadow-sm"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveVoiceover} 
+                  disabled={!title.trim() || !selectedPreview} 
+                  className="h-10 text-sm font-semibold min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Voiceover
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

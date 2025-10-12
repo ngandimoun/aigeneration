@@ -34,6 +34,11 @@ interface WorldKit {
   worldPurpose: string
   referenceImages: string[]
   seedVariability: number
+  logoPlacement: string
+  logoFile: string
+  customColor: string
+  aspectRatio: string
+  imagesCount: number
   artDirection: string
   visualInfluence: string
   colorSystem: string
@@ -55,107 +60,104 @@ interface WorldKit {
   storyHook: string
   brandSync: boolean
   brandPaletteMode: string
-  logoPlacement: string
   toneMatch: number
   typographyInWorld: string
-  resolution: string
-  exportType: string
   assets: { preview: string; depthMap?: string }
 }
 
 const WORLD_PURPOSES = [
-  "Storytelling",
-  "Product Context", 
-  "Learning World",
-  "Brand Universe",
-  "Fantasy Realm",
-  "Sci-Fi Environment",
-  "Abstract Space"
+  "📚 Storytelling",
+  "📦 Product Context",
+  "🎓 Learning World",
+  "🏢 Brand Universe",
+  "🧙 Fantasy Realm",
+  "🚀 Sci-Fi Environment",
+  "🎨 Abstract Space"
 ]
 
 const ART_DIRECTIONS = [
-  "Realistic",
-  "Stylized 3D",
-  "Flat Vector",
-  "Concept Matte",
-  "Watercolor",
-  "Clay Render",
-  "Fantasy Painting",
-  "Futuristic Minimal"
+  "📸 Realistic",
+  "🎮 Stylized 3D",
+  "📐 Flat Vector",
+  "🎬 Concept Matte",
+  "🎨 Watercolor",
+  "🏺 Clay Render",
+  "🖼️ Fantasy Painting",
+  "⚡ Futuristic Minimal"
 ]
 
 const VISUAL_INFLUENCES = [
-  "Blade Runner",
-  "Ghibli",
-  "Pixar",
-  "Wes Anderson",
-  "Dune",
-  "Arcane",
-  "Bauhaus",
-  "Ukiyo-e",
-  "Cyberpunk 2077"
+  "🌃 Blade Runner",
+  "🐉 Ghibli",
+  "🎪 Pixar",
+  "🎭 Wes Anderson",
+  "🏜️ Dune",
+  "⚡ Arcane",
+  "🏗️ Bauhaus",
+  "🎋 Ukiyo-e",
+  "🤖 Cyberpunk 2077"
 ]
 
 const COLOR_SYSTEMS = [
-  "Natural Earth",
-  "Neon Holographic",
-  "Muted Editorial",
-  "Warm Cinematic",
-  "Monochrome Contrast"
+  "🌍 Natural Earth",
+  "💎 Neon Holographic",
+  "📰 Muted Editorial",
+  "🎬 Warm Cinematic",
+  "⚫ Monochrome Contrast"
 ]
 
 const LIGHTING_PRESETS = [
-  "Golden Hour",
-  "Dual Tone Neon",
-  "Soft Diffuse",
-  "Ambient Fog",
-  "Spotlight Drama"
+  "🌅 Golden Hour",
+  "💜 Dual Tone Neon",
+  "☁️ Soft Diffuse",
+  "🌫️ Ambient Fog",
+  "🎭 Spotlight Drama"
 ]
 
 const MATERIAL_LANGUAGES = [
-  "Glass",
-  "Metal",
-  "Fabric",
-  "Organic",
-  "Paper",
-  "Digital Plastic",
-  "Concrete"
+  "🪟 Glass",
+  "🔩 Metal",
+  "🧵 Fabric",
+  "🌿 Organic",
+  "📄 Paper",
+  "💿 Digital Plastic",
+  "🧱 Concrete"
 ]
 
 const ENVIRONMENT_TYPES = [
-  "Interior",
-  "Exterior",
-  "Hybrid",
-  "Abstract"
+  "🏠 Interior",
+  "🌍 Exterior",
+  "🔄 Hybrid",
+  "🎨 Abstract"
 ]
 
 const LOCATION_ARCHETYPES = [
-  "Forest",
-  "Space Station",
-  "Underwater City",
-  "Studio Room",
-  "Sky Island",
-  "Desert Bazaar",
-  "Mountain Peak",
-  "Urban Alley",
-  "Garden Oasis",
-  "Crystal Cave"
+  "🌲 Forest",
+  "🚀 Space Station",
+  "🐠 Underwater City",
+  "🎬 Studio Room",
+  "☁️ Sky Island",
+  "🏺 Desert Bazaar",
+  "⛰️ Mountain Peak",
+  "🏙️ Urban Alley",
+  "🌺 Garden Oasis",
+  "💎 Crystal Cave"
 ]
 
 const CAMERA_FRAMINGS = [
-  "Wide",
-  "Aerial",
-  "Ground Level",
-  "Close-up",
-  "Isometric"
+  "📐 Wide",
+  "🚁 Aerial",
+  "👣 Ground Level",
+  "🔍 Close-up",
+  "📐 Isometric"
 ]
 
 const ATMOSPHERIC_MOTIONS = [
-  "Static",
-  "Light Fog",
-  "Particle Flow",
-  "Dynamic Sky",
-  "Water Ripple"
+  "⏸️ Static",
+  "🌫️ Light Fog",
+  "✨ Particle Flow",
+  "🌤️ Dynamic Sky",
+  "🌊 Water Ripple"
 ]
 
 const MOODS = [
@@ -168,82 +170,104 @@ const MOODS = [
 ]
 
 const CULTURAL_INFLUENCES = [
-  "Nordic",
-  "Japanese Zen",
-  "Moroccan",
-  "Afro-futuristic",
-  "Western Retro",
-  "Oceanic",
-  "Middle Eastern",
-  "Global Contemporary"
+  "❄️ Nordic",
+  "🎋 Japanese Zen",
+  "🕌 Moroccan",
+  "🚀 Afro-futuristic",
+  "🤠 Western Retro",
+  "🌊 Oceanic",
+  "🕌 Middle Eastern",
+  "🌍 Global Contemporary"
 ]
 
 const TIME_OF_DAY_OPTIONS = [
-  "Morning",
-  "Sunset",
-  "Night",
-  "Future",
-  "Retro",
-  "Timeless"
+  "🌅 Morning",
+  "🌇 Sunset",
+  "🌙 Night",
+  "🚀 Future",
+  "📺 Retro",
+  "⏰ Timeless"
 ]
 
 const SYMBOLIC_MOTIFS = [
-  "Floating Islands",
-  "Crystals",
-  "Vines",
-  "Digital Aura",
-  "Desert Wind",
-  "Light Beams",
-  "Geometric Patterns",
-  "Organic Growth",
-  "Energy Fields",
-  "Ancient Symbols"
+  "☁️ Floating Islands",
+  "💎 Crystals",
+  "🌿 Vines",
+  "💫 Digital Aura",
+  "🌪️ Desert Wind",
+  "✨ Light Beams",
+  "📐 Geometric Patterns",
+  "🌱 Organic Growth",
+  "⚡ Energy Fields",
+  "🔮 Ancient Symbols"
 ]
 
 const EMOTIONAL_TONES = [
-  "Peaceful",
-  "Tense",
-  "Dreamlike",
-  "Sacred",
-  "Corporate",
-  "Post-Apocalyptic"
+  "😌 Peaceful",
+  "😰 Tense",
+  "💭 Dreamlike",
+  "🙏 Sacred",
+  "💼 Corporate",
+  "💀 Post-Apocalyptic"
 ]
 
 const BRAND_PALETTE_MODES = [
-  "Core",
-  "Analogous",
-  "Complementary",
-  "Neutral"
+  "🎯 Core",
+  "🎨 Analogous",
+  "🌈 Complementary",
+  "⚪ Neutral"
 ]
 
 const LOGO_PLACEMENTS = [
-  "Hidden",
-  "Discrete Signage",
-  "Architectural Element"
+  "👻 Hidden",
+  "🏷️ Discrete Signage",
+  "🏗️ Architectural Element"
 ]
 
 const TYPOGRAPHY_OPTIONS = [
-  "Use brand fonts for signage",
-  "Use brand fonts for UI",
-  "Use brand fonts for posters",
-  "No typography integration"
+  "🏷️ Use brand fonts for signage",
+  "💻 Use brand fonts for UI",
+  "📰 Use brand fonts for posters",
+  "❌ No typography integration"
 ]
 
-const RESOLUTIONS = [
-  "1024x1024",
-  "1024x1792",
-  "1792x1024",
-  "2048x2048"
+
+const LOGO_PLACEMENT_OPTIONS = [
+  "❌ None",
+  "↖️ Top-Left",
+  "↘️ Bottom-Right"
 ]
 
-const EXPORT_TYPES = [
-  "Static Image",
-  "Animated Loop",
-  "3D Scene",
-  "Depth Map"
+const ASPECT_RATIOS = [
+  "⬜ 1:1 (Square)",
+  "📺 4:3 (Standard)",
+  "🖥️ 16:9 (Widescreen)",
+  "📷 3:2 (Photo)",
+  "📱 21:9 (Ultrawide)",
+  "📱 9:16 (Portrait)",
+  "📸 2:3 (Portrait Photo)"
 ]
 
-export function ConceptWorldsGeneratorInterface() {
+const PRESET_COLORS = [
+  { name: "Red", value: "#ef4444", emoji: "🔴" },
+  { name: "Blue", value: "#3b82f6", emoji: "🔵" },
+  { name: "Green", value: "#22c55e", emoji: "🟢" },
+  { name: "Yellow", value: "#eab308", emoji: "🟡" },
+  { name: "Purple", value: "#a855f7", emoji: "🟣" },
+  { name: "Orange", value: "#f97316", emoji: "🟠" },
+  { name: "Pink", value: "#ec4899", emoji: "🩷" },
+  { name: "Gray", value: "#6b7280", emoji: "⚫" }
+]
+
+interface ConceptWorldsGeneratorInterfaceProps {
+  onClose: () => void
+  projectTitle: string
+}
+
+export function ConceptWorldsGeneratorInterface({
+  onClose,
+  projectTitle
+}: ConceptWorldsGeneratorInterfaceProps) {
   const [worldKit, setWorldKit] = useState<Partial<WorldKit>>({
     seedVariability: 50,
     textureDetail: 50,
@@ -257,13 +281,12 @@ export function ConceptWorldsGeneratorInterface() {
   })
   
   const [isGenerating, setIsGenerating] = useState(false)
-  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [smartMessage, setSmartMessage] = useState("")
   const { toast } = useToast()
 
   // Smart conditional logic
   const isFlatVector = worldKit.artDirection === "Flat Vector"
   const isInterior = worldKit.environmentType === "Interior"
-  const isLowDepth = (worldKit.depthLevel || 0) < 30
   const isSurreal = worldKit.mood === "surreal"
   const isBrandSynced = worldKit.brandSync
 
@@ -271,15 +294,15 @@ export function ConceptWorldsGeneratorInterface() {
     const files = event.target.files
     if (files) {
       const newImages: string[] = []
-      for (let i = 0; i < Math.min(files.length, 4); i++) {
+      for (let i = 0; i < Math.min(files.length, 3); i++) {
         const file = files[i]
         const reader = new FileReader()
         reader.onload = (e) => {
           newImages.push(e.target?.result as string)
-          if (newImages.length === Math.min(files.length, 4)) {
+          if (newImages.length === Math.min(files.length, 3)) {
             setWorldKit(prev => ({
               ...prev,
-              referenceImages: [...(prev.referenceImages || []), ...newImages].slice(0, 4)
+              referenceImages: [...(prev.referenceImages || []), ...newImages].slice(0, 3)
             }))
           }
         }
@@ -304,32 +327,40 @@ export function ConceptWorldsGeneratorInterface() {
     }))
   }
 
-  // Handle scroll to show/hide scroll button
+  // Smart behavior logic
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      setShowScrollButton(scrollTop > 100) // Lowered threshold for easier testing
+    let message = ""
+
+    // Art Direction changes
+    if (worldKit.artDirection === "flat-vector") {
+      message = "DreamCut disabled lighting for flat vector style."
     }
 
-    window.addEventListener('scroll', handleScroll)
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
+    if (worldKit.artDirection === "watercolor") {
+      message = "DreamCut selected soft ambient lighting for watercolor style."
     }
-  }, [])
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
-  }
-
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId)
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (worldKit.artDirection === "realistic") {
+      message = "DreamCut applied natural lighting for realistic style."
     }
-  }
+
+    // Environment type changes
+    if (worldKit.environmentType === "interior") {
+      message = "DreamCut limited atmospheric motion for interior environments."
+    }
+
+    // Brand sync changes
+    if (worldKit.brandSync) {
+      message = "DreamCut is applying your brand tones as environmental accents."
+    }
+
+    // Mood context changes
+    if (worldKit.mood === "surreal") {
+      message = "DreamCut enabled symbolic motifs for enhanced creativity in surreal mood."
+    }
+
+    setSmartMessage(message)
+  }, [worldKit.artDirection, worldKit.environmentType, worldKit.brandSync, worldKit.mood])
 
   const generateWorld = async () => {
     if (!worldKit.prompt || !worldKit.name) {
@@ -386,130 +417,80 @@ export function ConceptWorldsGeneratorInterface() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <div className="text-center space-y-2">
-        <div className="flex items-center justify-center gap-2">
-          <Globe className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Concept Worlds Generator</h1>
-        </div>
-        <p className="text-muted-foreground">
-          Design the rules of your universe so everything you create fits naturally inside it.
-        </p>
+    <div className="bg-background border border-border rounded-md h-[80vh] flex flex-col">
+      {/* Header - Fixed */}
+      <div className="flex items-center justify-between p-3 border-b border-border">
+        <h3 className="text-sm font-semibold text-foreground truncate pr-2">
+          Generate Concept World: {projectTitle}
+        </h3>
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
+          <X className="h-3 w-3" />
+        </Button>
       </div>
 
-      {/* Smart Navigation */}
-      <div className="sticky top-4 z-40 mb-6">
-        <Card className="bg-background/95 backdrop-blur-sm border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollToSection('world-intent')}
-                className="text-xs"
-              >
-                1️⃣ World Intent
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollToSection('visual-dna')}
-                className="text-xs"
-              >
-                2️⃣ Visual DNA
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollToSection('spatial-dna')}
-                className="text-xs"
-              >
-                3️⃣ Spatial DNA
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollToSection('narrative-dna')}
-                className="text-xs"
-              >
-                4️⃣ Narrative DNA
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollToSection('brand-integration')}
-                className="text-xs"
-              >
-                5️⃣ Brand Integration
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollToSection('preview-export')}
-                className="text-xs"
-              >
-                6️⃣ Preview & Export
-              </Button>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto scrollbar-hover p-3 pb-6 space-y-3">
+        {/* Smart Message */}
+        {smartMessage && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-2 text-xs text-blue-800">
+            <div className="flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              {smartMessage}
             </div>
-          </CardContent>
-        </Card>
       </div>
+        )}
 
-      <div className="space-y-8">
+        {/* Required Field Info */}
+        {/* <div className="bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-600">
+          <div className="flex items-center gap-1">
+            <Info className="h-3 w-3" />
+            <span>Only the <strong>Prompt</strong> field is required. All other fields are optional.</span>
+            </div>
+      </div> */}
+
+        <div className="space-y-3">
         {/* 1️⃣ World Intent & Prompt */}
-        <Card id="world-intent" className="border rounded-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">1️⃣</span>
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+              1️⃣ World Intent & Prompt
+            </h4>
+            <div className="space-y-3">
               <div>
-                <CardTitle className="text-lg">World Intent & Prompt</CardTitle>
-                <CardDescription>Capture the core idea of the world</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">World Name</label>
+                <label className="block text-xs font-medium mb-1">World Name</label>
                 <Input
                   value={worldKit.name || ""}
                   onChange={(e) => setWorldKit(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter your world name"
+                  className="h-8 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Prompt / Description</label>
+                <label className="block text-xs font-medium mb-1">
+                  Prompt <span className="text-red-500">*</span>
+                </label>
                 <Textarea
                   value={worldKit.prompt || ""}
                   onChange={(e) => setWorldKit(prev => ({ ...prev, prompt: e.target.value }))}
                   placeholder="A floating eco-city above clouds powered by solar crystals..."
-                  rows={3}
+                  rows={2}
+                  className="text-xs resize-none"
+                  required
                 />
-                {worldKit.prompt && worldKit.prompt.includes("serene") && (
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <div className="flex items-start gap-2">
-                      <Sparkles className="h-4 w-4 text-blue-600 mt-0.5" />
-                      <p className="text-sm text-blue-800">
-                        Your world concept sounds serene — I'll bias the lighting and materials toward soft daylight.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">World Purpose</label>
+                <label className="block text-xs font-medium mb-1">🎯 World Purpose</label>
                 <Select
                   value={worldKit.worldPurpose || ""}
                   onValueChange={(value) => setWorldKit(prev => ({ ...prev, worldPurpose: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Select purpose" />
                   </SelectTrigger>
                   <SelectContent>
                     {WORLD_PURPOSES.map((purpose) => (
-                      <SelectItem key={purpose} value={purpose.toLowerCase().replace(/\s+/g, '-')}>
+                      <SelectItem key={purpose} value={purpose.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                         {purpose}
                       </SelectItem>
                     ))}
@@ -518,8 +499,8 @@ export function ConceptWorldsGeneratorInterface() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Reference Upload (Optional) - Max 4 images</label>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                <label className="block text-xs font-medium mb-1">Reference Upload (Optional) - Max 3 images</label>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-2">
                   <input
                     type="file"
                     accept="image/*"
@@ -527,30 +508,30 @@ export function ConceptWorldsGeneratorInterface() {
                     onChange={handleFileUpload}
                     className="hidden"
                     id="reference-upload"
-                    disabled={(worldKit.referenceImages?.length || 0) >= 4}
+                    disabled={(worldKit.referenceImages?.length || 0) >= 3}
                   />
                   <label htmlFor="reference-upload" className="cursor-pointer">
-                    <div className="text-center space-y-2">
-                      <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
-                      <p className="text-sm text-muted-foreground">
-                        Click to upload reference images ({(worldKit.referenceImages?.length || 0)}/4)
+                    <div className="text-center space-y-1">
+                      <Upload className="h-4 w-4 text-muted-foreground mx-auto" />
+                      <p className="text-xs text-muted-foreground">
+                        Upload images ({(worldKit.referenceImages?.length || 0)}/3)
                       </p>
                     </div>
                   </label>
                   
                   {worldKit.referenceImages && worldKit.referenceImages.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div className="grid grid-cols-2 gap-1 mt-2">
                       {worldKit.referenceImages.map((image, index) => (
                         <div key={index} className="relative">
-                          <img src={image} alt={`Reference ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
+                          <img src={image} alt={`Reference ${index + 1}`} className="w-full h-16 object-cover rounded-sm" />
                           <Button
                             type="button"
                             variant="destructive"
                             size="icon"
-                            className="absolute -top-2 -right-2 h-6 w-6"
+                            className="absolute -top-1 -right-1 h-4 w-4"
                             onClick={() => removeReferenceImage(index)}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-2 w-2" />
                           </Button>
                         </div>
                       ))}
@@ -560,7 +541,170 @@ export function ConceptWorldsGeneratorInterface() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs font-medium mb-1">🏷️ Logo Placement</label>
+                <Select
+                  value={worldKit.logoPlacement || "None"}
+                  onValueChange={(value) => setWorldKit(prev => ({ ...prev, logoPlacement: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select logo placement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOGO_PLACEMENT_OPTIONS.map((placement) => (
+                      <SelectItem key={placement} value={placement.replace(/^[^\s]+\s/, '')}>
+                        {placement}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {(worldKit.logoPlacement === "Top-Left" || worldKit.logoPlacement === "Bottom-Right") && (
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const reader = new FileReader()
+                          reader.onload = (e) => {
+                            setWorldKit(prev => ({ ...prev, logoFile: e.target?.result as string }))
+                          }
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <label htmlFor="logo-upload" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-2 text-center">
+                        <Upload className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">
+                          {worldKit.logoFile ? "Logo uploaded" : "Upload logo"}
+                        </p>
+                      </div>
+                    </label>
+                    {worldKit.logoFile && (
+                      <div className="mt-2">
+                        <img src={worldKit.logoFile} alt="Logo preview" className="w-16 h-16 object-cover rounded-md" />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1">🎨 Color</label>
+                <Select
+                  value={worldKit.customColor || "#3b82f6"}
+                  onValueChange={(value) => setWorldKit(prev => ({ ...prev, customColor: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select color">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded border border-border"
+                          style={{ backgroundColor: worldKit.customColor || "#3b82f6" }}
+                        />
+                        <span>{PRESET_COLORS.find(c => c.value === (worldKit.customColor || "#3b82f6"))?.name || "Custom"}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRESET_COLORS.map((color) => (
+                      <SelectItem key={color.value} value={color.value}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-4 h-4 rounded border border-border"
+                            style={{ backgroundColor: color.value }}
+                          />
+                          <span>{color.emoji} {color.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded border border-border bg-gradient-to-r from-red-500 to-blue-500" />
+                        <span>🎨 Custom Color</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {worldKit.customColor && !PRESET_COLORS.find(c => c.value === worldKit.customColor) && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={worldKit.customColor}
+                      onChange={(e) => setWorldKit(prev => ({ ...prev, customColor: e.target.value }))}
+                      className="w-8 h-8 rounded border border-border cursor-pointer"
+                    />
+                    <Input
+                      value={worldKit.customColor}
+                      onChange={(e) => setWorldKit(prev => ({ ...prev, customColor: e.target.value }))}
+                      placeholder="#3b82f6"
+                      className="h-8 text-xs flex-1"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1">📐 Aspect Ratio</label>
+                <Select
+                  value={worldKit.aspectRatio || ""}
+                  onValueChange={(value) => setWorldKit(prev => ({ ...prev, aspectRatio: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select aspect ratio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASPECT_RATIOS.map((ratio) => (
+                      <SelectItem key={ratio} value={ratio.replace(/^[^\s]+\s/, '')}>
+                        {ratio}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1">🖼️ Images Count</label>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setWorldKit(prev => ({
+                      ...prev,
+                      imagesCount: Math.max(1, (prev.imagesCount || 4) - 1)
+                    }))}
+                    disabled={(worldKit.imagesCount || 4) <= 1}
+                  >
+                    <span className="text-xs">-</span>
+                  </Button>
+                  <div className="flex-1 text-center min-w-[2rem]">
+                    <span className="text-sm font-medium">{worldKit.imagesCount || 4}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setWorldKit(prev => ({
+                      ...prev,
+                      imagesCount: Math.min(4, (prev.imagesCount || 4) + 1)
+                    }))}
+                    disabled={(worldKit.imagesCount || 4) >= 4}
+                  >
+                    <span className="text-xs">+</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1">
                   Seed Variability: {worldKit.seedVariability}%
                 </label>
                 <Slider
@@ -576,35 +720,29 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <hr />
 
         {/* 2️⃣ Visual DNA */}
-        <Card id="visual-dna" className="border rounded-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">2️⃣</span>
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+              2️⃣ Visual DNA
+            </h4>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3">
               <div>
-                <CardTitle className="text-lg">Visual DNA</CardTitle>
-                <CardDescription>Define art direction, palette, and lighting rules</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Art Direction</label>
+                  <label className="block text-xs font-medium mb-1">🎨 Art Direction</label>
                   <Select
                     value={worldKit.artDirection || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, artDirection: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select art direction" />
                     </SelectTrigger>
                     <SelectContent>
                       {ART_DIRECTIONS.map((direction) => (
-                        <SelectItem key={direction} value={direction.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={direction} value={direction.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {direction}
                         </SelectItem>
                       ))}
@@ -613,39 +751,37 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Visual Influence</label>
+                  <label className="block text-xs font-medium mb-1">✨ Visual Influence</label>
                   <Select
                     value={worldKit.visualInfluence || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, visualInfluence: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select influence" />
                     </SelectTrigger>
                     <SelectContent>
                       {VISUAL_INFLUENCES.map((influence) => (
-                        <SelectItem key={influence} value={influence.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={influence} value={influence.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {influence}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Color System</label>
+                  <label className="block text-xs font-medium mb-1">🌈 Color System</label>
                   <Select
                     value={worldKit.colorSystem || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, colorSystem: value }))}
                     disabled={isBrandSynced}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select color system" />
                     </SelectTrigger>
                     <SelectContent>
                       {COLOR_SYSTEMS.map((system) => (
-                        <SelectItem key={system} value={system.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={system} value={system.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {system}
                         </SelectItem>
                       ))}
@@ -654,18 +790,18 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Lighting Preset</label>
+                  <label className="block text-xs font-medium mb-1">💡 Lighting Preset</label>
                   <Select
                     value={worldKit.lighting || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, lighting: value }))}
                     disabled={isFlatVector}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select lighting" />
                     </SelectTrigger>
                     <SelectContent>
                       {LIGHTING_PRESETS.map((preset) => (
-                        <SelectItem key={preset} value={preset.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={preset} value={preset.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {preset}
                         </SelectItem>
                       ))}
@@ -673,25 +809,23 @@ export function ConceptWorldsGeneratorInterface() {
                   </Select>
                   {isFlatVector && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Lighting preset disabled for Flat Vector art direction
+                      Lighting disabled for Flat Vector
                     </p>
                   )}
-                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Material Language</label>
+                  <label className="block text-xs font-medium mb-1">🏗️ Material Language</label>
                   <Select
                     value={worldKit.materialLanguage || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, materialLanguage: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select material" />
                     </SelectTrigger>
                     <SelectContent>
                       {MATERIAL_LANGUAGES.map((material) => (
-                        <SelectItem key={material} value={material.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={material} value={material.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {material}
                         </SelectItem>
                       ))}
@@ -700,7 +834,7 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-xs font-medium mb-1">
                     Texture Detail: {worldKit.textureDetail}%
                   </label>
                   <Slider
@@ -716,45 +850,30 @@ export function ConceptWorldsGeneratorInterface() {
                   </div>
                 </div>
               </div>
-
-              <div className="p-3 bg-muted/50 rounded-md">
-                <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <p className="text-sm text-muted-foreground">
-                    Set lighting tone and material logic for your entire universe.
-                  </p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+          <hr />
 
         {/* 3️⃣ Spatial DNA */}
-        <Card id="spatial-dna" className="border rounded-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">3️⃣</span>
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+              3️⃣ Spatial DNA
+            </h4>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3">
               <div>
-                <CardTitle className="text-lg">Spatial DNA</CardTitle>
-                <CardDescription>Define environment type, camera, and spatial logic</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Environment Type</label>
+                  <label className="block text-xs font-medium mb-1">🌍 Environment Type</label>
                   <Select
                     value={worldKit.environmentType || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, environmentType: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select environment" />
                     </SelectTrigger>
                     <SelectContent>
                       {ENVIRONMENT_TYPES.map((type) => (
-                        <SelectItem key={type} value={type.toLowerCase()}>
+                        <SelectItem key={type} value={type.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {type}
                         </SelectItem>
                       ))}
@@ -763,38 +882,36 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Location Archetype</label>
+                  <label className="block text-xs font-medium mb-1">📍 Location Archetype</label>
                   <Select
                     value={worldKit.locationArchetype || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, locationArchetype: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select location" />
                     </SelectTrigger>
                     <SelectContent>
                       {LOCATION_ARCHETYPES.map((archetype) => (
-                        <SelectItem key={archetype} value={archetype.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={archetype} value={archetype.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {archetype}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Camera Framing</label>
+                  <label className="block text-xs font-medium mb-1">📷 Camera Framing</label>
                   <Select
                     value={worldKit.cameraFraming || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, cameraFraming: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select framing" />
                     </SelectTrigger>
                     <SelectContent>
                       {CAMERA_FRAMINGS.map((framing) => (
-                        <SelectItem key={framing} value={framing.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={framing} value={framing.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {framing}
                         </SelectItem>
                       ))}
@@ -803,18 +920,18 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Atmospheric Motion</label>
+                  <label className="block text-xs font-medium mb-1">🌪️ Atmospheric Motion</label>
                   <Select
                     value={worldKit.atmosphericMotion || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, atmosphericMotion: value }))}
                     disabled={isInterior}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select motion" />
                     </SelectTrigger>
                     <SelectContent>
                       {ATMOSPHERIC_MOTIONS.map((motion) => (
-                        <SelectItem key={motion} value={motion.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={motion} value={motion.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {motion}
                         </SelectItem>
                       ))}
@@ -822,15 +939,13 @@ export function ConceptWorldsGeneratorInterface() {
                   </Select>
                   {isInterior && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Atmospheric motion limited for interior environments
+                      Motion limited for interior
                     </p>
                   )}
-                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-xs font-medium mb-1">
                     Depth Level: {worldKit.depthLevel}%
                   </label>
                   <Slider
@@ -847,7 +962,7 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-xs font-medium mb-1">
                     Composition Scale: {worldKit.compositionScale}%
                   </label>
                   <Slider
@@ -860,7 +975,6 @@ export function ConceptWorldsGeneratorInterface() {
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>Micro (object)</span>
                     <span>Macro (world)</span>
-                  </div>
                 </div>
               </div>
 
@@ -870,70 +984,57 @@ export function ConceptWorldsGeneratorInterface() {
                   checked={worldKit.spatialConsistencyLock || false}
                   onCheckedChange={(checked) => setWorldKit(prev => ({ ...prev, spatialConsistencyLock: checked }))}
                 />
-                <label htmlFor="spatial-consistency" className="text-sm font-medium">
+                  <label htmlFor="spatial-consistency" className="text-xs font-medium">
                   Spatial Consistency Lock
                 </label>
-                <span className="text-xs text-muted-foreground">Keeps geometry coherent across scenes</span>
               </div>
-
-              {worldKit.cameraFraming === "aerial" && (worldKit.depthLevel || 0) > 70 && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="h-4 w-4 text-blue-600 mt-0.5" />
-                    <p className="text-sm text-blue-800">
-                      A wide aerial framing pairs well with volumetric depth for cinematic motion shots.
-                    </p>
                   </div>
                 </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
+
+          <hr />
 
         {/* 4️⃣ Narrative DNA */}
-        <Card id="narrative-dna" className="border rounded-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">4️⃣</span>
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+              4️⃣ Narrative DNA
+            </h4>
+            <div className="space-y-3">
               <div>
-                <CardTitle className="text-lg">Narrative DNA</CardTitle>
-                <CardDescription>Encode meaning, emotion, and culture of the world</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-3">Mood Context</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {MOODS.map((mood) => (
-                    <Button
-                      key={mood.value}
-                      type="button"
-                      variant={worldKit.mood === mood.value ? "default" : "outline"}
-                      className="h-auto p-4 flex flex-col items-center gap-2"
-                      onClick={() => setWorldKit(prev => ({ ...prev, mood: mood.value }))}
-                    >
-                      <span className="text-2xl">{mood.emoji}</span>
-                      <span className="text-sm">{mood.label}</span>
-                    </Button>
-                  ))}
-                </div>
+                <label className="block text-xs font-medium mb-1">🎭 Mood Context</label>
+                <Select
+                  value={worldKit.mood || ""}
+                  onValueChange={(value) => setWorldKit(prev => ({ ...prev, mood: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select mood" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOODS.map((mood) => (
+                      <SelectItem key={mood.value} value={mood.value}>
+                        <div className="flex items-center gap-2">
+                          <span>{mood.emoji}</span>
+                          <span>{mood.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Cultural Influence</label>
+                  <label className="block text-xs font-medium mb-1">🏛️ Cultural Influence</label>
                   <Select
                     value={worldKit.culturalInfluence || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, culturalInfluence: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select culture" />
                     </SelectTrigger>
                     <SelectContent>
                       {CULTURAL_INFLUENCES.map((culture) => (
-                        <SelectItem key={culture} value={culture.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={culture} value={culture.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                           {culture}
                         </SelectItem>
                       ))}
@@ -942,59 +1043,36 @@ export function ConceptWorldsGeneratorInterface() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Time of Day / Era</label>
+                  <label className="block text-xs font-medium mb-1">⏰ Time of Day / Era</label>
                   <Select
                     value={worldKit.timeOfDay || ""}
                     onValueChange={(value) => setWorldKit(prev => ({ ...prev, timeOfDay: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
                     <SelectContent>
                       {TIME_OF_DAY_OPTIONS.map((time) => (
-                        <SelectItem key={time} value={time.toLowerCase()}>
+                        <SelectItem key={time} value={time.replace(/^[^\s]+\s/, '').toLowerCase()}>
                           {time}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-3">Symbolic Motifs</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {SYMBOLIC_MOTIFS.map((motif) => (
-                    <Button
-                      key={motif}
-                      type="button"
-                      variant={worldKit.symbolicMotifs?.includes(motif) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleMotif(motif)}
-                    >
-                      {motif}
-                    </Button>
-                  ))}
-                </div>
-                {isSurreal && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Surreal mood automatically enables symbolic motifs for enhanced creativity
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Emotional Tone</label>
+                  <label className="block text-xs font-medium mb-1">💭 Emotional Tone</label>
                 <Select
                   value={worldKit.emotionalTone || ""}
                   onValueChange={(value) => setWorldKit(prev => ({ ...prev, emotionalTone: value }))}
                 >
-                  <SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Select tone" />
                   </SelectTrigger>
                   <SelectContent>
                     {EMOTIONAL_TONES.map((tone) => (
-                      <SelectItem key={tone} value={tone.toLowerCase().replace(/\s+/g, '-')}>
+                        <SelectItem key={tone} value={tone.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                         {tone}
                       </SelectItem>
                     ))}
@@ -1003,69 +1081,104 @@ export function ConceptWorldsGeneratorInterface() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Story Hook (Optional)</label>
+                  <label className="block text-xs font-medium mb-1">🔮 Symbolic Motifs</label>
+                  <Select
+                    value=""
+                    onValueChange={(value) => {
+                      const motifText = value.replace(/^[^\s]+\s/, '');
+                      if (!worldKit.symbolicMotifs?.includes(motifText)) {
+                        setWorldKit(prev => ({
+                          ...prev,
+                          symbolicMotifs: [...(prev.symbolicMotifs || []), motifText]
+                        }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Add symbolic motif" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SYMBOLIC_MOTIFS.filter(motif => !worldKit.symbolicMotifs?.includes(motif.replace(/^[^\s]+\s/, ''))).map((motif) => (
+                        <SelectItem key={motif} value={motif}>
+                          {motif}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {worldKit.symbolicMotifs && worldKit.symbolicMotifs.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {worldKit.symbolicMotifs.map((motif) => (
+                        <Badge key={motif} variant="secondary" className="text-xs">
+                          {SYMBOLIC_MOTIFS.find(m => m.replace(/^[^\s]+\s/, '') === motif) || motif}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-3 w-3 ml-1 hover:bg-destructive hover:text-destructive-foreground"
+                            onClick={() => toggleMotif(motif)}
+                          >
+                            <X className="h-2 w-2" />
+                          </Button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {isSurreal && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Surreal mood enables symbolic motifs
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">Story Hook (Optional)</label>
                 <Textarea
                   value={worldKit.storyHook || ""}
                   onChange={(e) => setWorldKit(prev => ({ ...prev, storyHook: e.target.value }))}
                   placeholder="A society that grows gardens in the sky..."
                   rows={2}
+                    className="text-xs resize-none"
                 />
               </div>
-
-              {worldKit.culturalInfluence === "afro-futuristic" && worldKit.lighting === "dual-tone-neon" && (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="h-4 w-4 text-purple-600 mt-0.5" />
-                    <p className="text-sm text-purple-800">
-                      Your Afro-futuristic tone blends best with Neon Lighting + Organic Materials.
-                    </p>
                   </div>
                 </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
+
+          <hr />
 
         {/* 5️⃣ Brand Integration */}
-        <Card id="brand-integration" className="border rounded-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">5️⃣</span>
-              <div>
-                <CardTitle className="text-lg">Brand Integration</CardTitle>
-                <CardDescription>Apply brand kit to the world (Optional)</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+              5️⃣ Brand Integration
+            </h4>
+            <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="brand-sync"
                   checked={worldKit.brandSync || false}
                   onCheckedChange={(checked) => setWorldKit(prev => ({ ...prev, brandSync: checked }))}
                 />
-                <label htmlFor="brand-sync" className="text-sm font-medium">
+                <label htmlFor="brand-sync" className="text-xs font-medium">
                   Brand Sync
                 </label>
-                <span className="text-xs text-muted-foreground">Pull Brand Kit for palette, fonts, watermark</span>
               </div>
 
               {isBrandSynced && (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Brand Palette Mode</label>
+                    <label className="block text-xs font-medium mb-1">Brand Palette Mode</label>
                       <Select
                         value={worldKit.brandPaletteMode || ""}
                         onValueChange={(value) => setWorldKit(prev => ({ ...prev, brandPaletteMode: value }))}
                       >
-                        <SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Select palette mode" />
                         </SelectTrigger>
                         <SelectContent>
                           {BRAND_PALETTE_MODES.map((mode) => (
-                            <SelectItem key={mode} value={mode.toLowerCase()}>
+                          <SelectItem key={mode} value={mode.replace(/^[^\s]+\s/, '').toLowerCase()}>
                               {mode}
                             </SelectItem>
                           ))}
@@ -1074,28 +1187,26 @@ export function ConceptWorldsGeneratorInterface() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">Logo Placement (Optional)</label>
+                    <label className="block text-xs font-medium mb-1">Logo Placement (Optional)</label>
                       <Select
                         value={worldKit.logoPlacement || ""}
                         onValueChange={(value) => setWorldKit(prev => ({ ...prev, logoPlacement: value }))}
                       >
-                        <SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Select placement" />
                         </SelectTrigger>
                         <SelectContent>
                           {LOGO_PLACEMENTS.map((placement) => (
-                            <SelectItem key={placement} value={placement.toLowerCase().replace(/\s+/g, '-')}>
+                          <SelectItem key={placement} value={placement.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                               {placement}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                    <label className="block text-xs font-medium mb-1">
                         Tone Match: {worldKit.toneMatch}%
                       </label>
                       <Slider
@@ -1112,17 +1223,17 @@ export function ConceptWorldsGeneratorInterface() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">Typography in World</label>
+                    <label className="block text-xs font-medium mb-1">Typography in World</label>
                       <Select
                         value={worldKit.typographyInWorld || ""}
                         onValueChange={(value) => setWorldKit(prev => ({ ...prev, typographyInWorld: value }))}
                       >
-                        <SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Select typography" />
                         </SelectTrigger>
                         <SelectContent>
                           {TYPOGRAPHY_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option.toLowerCase().replace(/\s+/g, '-')}>
+                          <SelectItem key={option} value={option.replace(/^[^\s]+\s/, '').toLowerCase().replace(/\s+/g, '-')}>
                               {option}
                             </SelectItem>
                           ))}
@@ -1130,153 +1241,33 @@ export function ConceptWorldsGeneratorInterface() {
                       </Select>
                     </div>
                   </div>
-
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                    <div className="flex items-start gap-2">
-                      <Building2 className="h-4 w-4 text-green-600 mt-0.5" />
-                      <p className="text-sm text-green-800">
-                        DreamCut is applying your brand tones as environmental accents.
-                      </p>
-                    </div>
-                  </div>
-                </>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 6️⃣ Preview & Export */}
-        <Card id="preview-export" className="border rounded-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">6️⃣</span>
-              <div>
-                <CardTitle className="text-lg">Preview & Export</CardTitle>
-                <CardDescription>Generate and save the world as a reusable kit</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Resolution</label>
-                  <Select
-                    value={worldKit.resolution || ""}
-                    onValueChange={(value) => setWorldKit(prev => ({ ...prev, resolution: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select resolution" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RESOLUTIONS.map((resolution) => (
-                        <SelectItem key={resolution} value={resolution}>
-                          {resolution}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Export Type</label>
-                  <Select
-                    value={worldKit.exportType || ""}
-                    onValueChange={(value) => setWorldKit(prev => ({ ...prev, exportType: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select export type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EXPORT_TYPES.map((type) => (
-                        <SelectItem key={type} value={type.toLowerCase().replace(/\s+/g, '-')}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
-              {worldKit.exportType === "animated-loop" && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-yellow-600 mt-0.5" />
-                    <p className="text-sm text-yellow-800">
-                      Animated export will show motion parameters (loop duration, camera path) in the next step.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {isLowDepth && worldKit.exportType === "3d-scene" && (
-                <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-orange-600 mt-0.5" />
-                    <p className="text-sm text-orange-800">
-                      3D Scene export disabled for low depth levels. Consider increasing depth level for 3D export.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-4">
+        {/* Generate Button - Fixed at bottom */}
+        <div className="flex justify-end pt-3 border-t">
                 <Button
                   onClick={generateWorld}
-                  disabled={isGenerating || !worldKit.name || !worldKit.prompt}
-                  className="flex-1"
-                  size="lg"
+            disabled={isGenerating || !worldKit.prompt?.trim()}
+            className="min-w-[120px] h-8 text-xs bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {isGenerating ? (
                     <>
-                      <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                      Generating World...
+                <Sparkles className="h-3 w-3 mr-1 animate-spin" />
+                Generating...
                     </>
                   ) : (
                     <>
-                      <Globe className="mr-2 h-4 w-4" />
-                      Generate World Kit
+                <Sparkles className="h-3 w-3 mr-1" />
+                ✨ Generate
                     </>
                   )}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* World DNA Summary */}
-      {getWorldDNASummary() && (
-        <Card className="mt-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              World DNA Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {getWorldDNASummary().split(" • ").map((item, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {item}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Scroll to Top Button */}
-      {showScrollButton && (
-        <Button
-          onClick={scrollToTop}
-          size="icon"
-          className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90"
-          aria-label="Scroll to top"
-        >
-          <ChevronUp className="h-5 w-5" />
-        </Button>
-      )}
     </div>
   )
 }

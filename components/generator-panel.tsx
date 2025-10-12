@@ -18,6 +18,7 @@ import { VoiceCreationInterface } from "@/components/voice-creation-interface"
 import { VoiceoverGeneratorInterface } from "@/components/voiceover-generator-interface"
 import { SoundFxInterface } from "@/components/sound-fx-interface"
 import { TalkingAvatarsGeneratorInterface } from "@/components/talking-avatars-generator-interface"
+import { MusicJingleGeneratorInterface } from "@/components/music-jingle-generator-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
 import { AvatarsForm } from "@/components/forms/avatars-form"
 import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
@@ -56,6 +57,9 @@ export function GeneratorPanel() {
   // États locaux pour l'interface de création de voix
   const [showVoiceCreation, setShowVoiceCreation] = useState(false)
   
+  // États locaux pour l'interface de génération de musique
+  const [showMusicJingleGenerator, setShowMusicJingleGenerator] = useState(false)
+  
   // États locaux pour l'interface de création de voiceovers
   const [showVoiceover, setShowVoiceover] = useState(false)
   
@@ -84,6 +88,9 @@ export function GeneratorPanel() {
   // Sections qui supportent la création de Sound FX
   const soundFxSections = ['sound-fx']
   
+  // Sections qui supportent la génération de musique
+  const musicJingleSections = ['music-jingles']
+  
   // Sections qui supportent les nouveaux formulaires
   const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound']
   
@@ -96,11 +103,12 @@ export function GeneratorPanel() {
   const isVoiceCreationSection = (section: string) => voiceCreationSections.includes(section)
   const isVoiceoverSection = (section: string) => voiceoverSections.includes(section)
   const isSoundFxSection = (section: string) => soundFxSections.includes(section)
+  const isMusicJingleSection = (section: string) => musicJingleSections.includes(section)
   const isNewFormSection = (section: string) => newFormSections.includes(section)
   const isTalkingAvatarsSection = (section: string) => talkingAvatarsSections.includes(section)
-  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars
-  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars
-  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars
+  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
+  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
+  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
 
   useEffect(() => {
     setIsMounted(true)
@@ -145,6 +153,13 @@ export function GeneratorPanel() {
     }
   }, [selectedSection, showSoundFx])
 
+  // Fermer l'interface de génération de musique quand on change de section
+  useEffect(() => {
+    if (showMusicJingleGenerator && selectedSection !== 'music-jingles') {
+      setShowMusicJingleGenerator(false)
+    }
+  }, [selectedSection, showMusicJingleGenerator])
+
   // Fermer l'interface de génération de talking avatars quand on change de section
   useEffect(() => {
     if (showTalkingAvatars && selectedSection !== 'talking-avatars') {
@@ -160,8 +175,8 @@ export function GeneratorPanel() {
 
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const handleProjectClick = (artifact: any) => {
-    if (selectedSection === 'illustration' || selectedSection === 'avatars-personas') {
-      // For illustration and avatars-personas sections, show project details in MainContent AND open generator
+    if (selectedSection === 'illustration' || selectedSection === 'avatars-personas' || selectedSection === 'product-mockups' || selectedSection === 'concept-worlds' || selectedSection === 'charts-infographics') {
+      // For illustration, avatars-personas, product-mockups, concept-worlds, and charts-infographics sections, show project details in MainContent AND open generator
       setSelectedArtifact(artifact)
       setSelectedProject(artifact)
       setImageGeneratorSection(selectedSection)
@@ -185,7 +200,7 @@ export function GeneratorPanel() {
     setSelectedProject(null)
     setImageGeneratorSection(null)
     // Clear selectedArtifact when closing generator to return to welcome message
-    if (selectedSection === 'illustration' || selectedSection === 'avatars-personas') {
+    if (selectedSection === 'illustration' || selectedSection === 'avatars-personas' || selectedSection === 'product-mockups' || selectedSection === 'concept-worlds' || selectedSection === 'charts-infographics') {
       setSelectedArtifact(null)
     }
   }
@@ -217,7 +232,36 @@ export function GeneratorPanel() {
   const NewProjectButton = () => (
     <Button
       size="sm"
-      onClick={() => setShowProjectForm(true)}
+      onClick={() => {
+        if (selectedSection === 'illustration') {
+          // Créer un projet temporaire pour ouvrir le générateur
+          setSelectedProject({ title: 'New Illustration', image: '', description: '', isPublic: true })
+          setImageGeneratorSection('illustration')
+          setShowImageGenerator(true)
+        } else if (selectedSection === 'avatars-personas') {
+          // Créer un projet temporaire pour ouvrir le générateur
+          setSelectedProject({ title: 'New Avatar & Persona', image: '', description: '', isPublic: true })
+          setImageGeneratorSection('avatars-personas')
+          setShowImageGenerator(true)
+        } else if (selectedSection === 'product-mockups') {
+          // Créer un projet temporaire pour ouvrir le générateur
+          setSelectedProject({ title: 'New Product Mockup', image: '', description: '', isPublic: true })
+          setImageGeneratorSection('product-mockups')
+          setShowImageGenerator(true)
+        } else if (selectedSection === 'concept-worlds') {
+          // Créer un projet temporaire pour ouvrir le générateur
+          setSelectedProject({ title: 'New Concept World', image: '', description: '', isPublic: true })
+          setImageGeneratorSection('concept-worlds')
+          setShowImageGenerator(true)
+        } else if (selectedSection === 'charts-infographics') {
+          // Créer un projet temporaire pour ouvrir le générateur
+          setSelectedProject({ title: 'New Chart & Infographic', image: '', description: '', isPublic: true })
+          setImageGeneratorSection('charts-infographics')
+          setShowImageGenerator(true)
+        } else {
+          setShowProjectForm(true)
+        }
+      }}
       className="flex items-center gap-2"
     >
       <FolderPlus className="h-4 w-4" />
@@ -575,7 +619,10 @@ export function GeneratorPanel() {
               projectTitle={selectedProject.title}
             />
           ) : selectedSection === 'concept-worlds' ? (
-            <ConceptWorldsGeneratorInterface />
+            <ConceptWorldsGeneratorInterface 
+              onClose={handleCloseImageGenerator}
+              projectTitle={selectedProject.title}
+            />
           ) : (
             <ImageGeneratorInterface 
               onClose={handleCloseImageGenerator}
@@ -614,13 +661,12 @@ export function GeneratorPanel() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Voice Creation</h2>
-                <p className="text-muted-foreground">Craft unique, emotionally intelligent voices that match your world's DNA.</p>
+                <p className="text-muted-foreground text-xs">Craft unique, emotionally intelligent voices that match your world's DNA.</p>
               </div>
               <Button
                 size="sm"
                 onClick={() => setShowVoiceCreation(true)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-xs"
               >
                 <Plus className="h-4 w-4" />
                 New Voice
@@ -641,13 +687,12 @@ export function GeneratorPanel() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Voiceover Studio</h2>
-                <p className="text-muted-foreground">Generate high-quality voiceovers for your videos and projects.</p>
+                <p className="text-muted-foreground text-xs">Generate high-quality voiceovers for your videos and projects.</p>
               </div>
               <Button
                 size="sm"
                 onClick={() => setShowVoiceover(true)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-xs"
               >
                 <Plus className="h-4 w-4" />
                 New Voiceover
@@ -668,13 +713,12 @@ export function GeneratorPanel() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Sound FX Studio</h2>
-                <p className="text-muted-foreground">Craft emotionally intelligent sound design synchronized with your world's mood and story.</p>
+                <p className="text-muted-foreground text-xs">Craft emotionally intelligent sound design synchronized with your world's mood and story.</p>
               </div>
               <Button
                 size="sm"
                 onClick={() => setShowSoundFx(true)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-xs"
               >
                 <Plus className="h-4 w-4" />
                 New Sound FX
@@ -685,6 +729,32 @@ export function GeneratorPanel() {
               <SoundFxInterface 
                 onClose={handleCloseSoundFx}
                 projectTitle="Sound FX Studio"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Music & Jingles Interface */}
+        {isMusicJingleSection(selectedSection) && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-muted-foreground text-xs">Create custom music and jingles that perfectly match your brand and content needs.</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowMusicJingleGenerator(true)}
+                className="flex items-center gap-2 text-xs"
+              >
+                <Plus className="h-4 w-4" />
+                New Music Jingle
+              </Button>
+            </div>
+            
+            {showMusicJingleGenerator && (
+              <MusicJingleGeneratorInterface 
+                onClose={() => setShowMusicJingleGenerator(false)}
+                projectTitle="Music & Jingle Studio"
               />
             )}
           </div>

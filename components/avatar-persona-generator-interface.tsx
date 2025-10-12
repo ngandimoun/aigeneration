@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import { 
   X, 
   Sparkles, 
@@ -996,6 +997,17 @@ const ROLE_ARCHETYPE_MAP = {
   }
 }
 
+// Ethnicity options
+const ETHNICITY_OPTIONS = [
+  { value: "Caucasian", label: "Caucasian", icon: "👱" },
+  { value: "African", label: "African", icon: "👨🏿" },
+  { value: "Asian", label: "Asian", icon: "👨🏻" },
+  { value: "Hispanic", label: "Hispanic", icon: "👨🏽" },
+  { value: "Middle Eastern", label: "Middle Eastern", icon: "👳" },
+  { value: "Mixed", label: "Mixed", icon: "👥" },
+  { value: "Other", label: "Other", icon: "👤" }
+]
+
 // Age range options
 const AGE_RANGES = [
   { value: "Teen", label: "Teen (13-19)", icon: "👦" },
@@ -1224,9 +1236,10 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   const [lightingPreset, setLightingPreset] = useState<string>("")
   const [backgroundEnvironment, setBackgroundEnvironment] = useState<string>("")
   const [moodContext, setMoodContext] = useState<string>("")
+  const [isPublic, setIsPublic] = useState(true)
   
   // Identity & Role
-  const [personaName, setPersonaName] = useState<string>("")
+  const [ethnicity, setEthnicity] = useState<string>("")
   const [roleArchetype, setRoleArchetype] = useState<string>("")
   const [ageRange, setAgeRange] = useState<string>("")
   const [genderExpression, setGenderExpression] = useState<string>("")
@@ -1474,7 +1487,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         moodContext,
         
         // Identity & Role
-        personaName,
+        ethnicity,
         roleArchetype,
         ageRange,
         genderExpression,
@@ -1504,7 +1517,10 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           name: logoImage.name,
           size: logoImage.size,
           type: logoImage.type
-        } : null
+        } : null,
+        
+        // Public/Private status
+        isPublic
       }
 
       console.log("Generating avatar/persona with:", generationData)
@@ -1540,12 +1556,31 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
   return (
     <TooltipProvider>
-      <div className="bg-background border border-border rounded-lg p-4 space-y-4 max-h-[80vh] overflow-y-auto scrollbar-hover w-full max-w-full">
+      <div className="bg-background border border-border rounded-lg p-2 space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover w-full max-w-full">
         {/* Header */}
-        <div className="flex items-center justify-between sticky top-0 bg-background z-10 pt-4 pb-2  py-10 mb-10 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground pr-2 flex-1 min-w-0">
-            Generate Avatar/Persona for: {projectTitle}
-          </h3>
+        <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2 border-b border-border">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <h3 className="text-xs font-semibold text-foreground pr-2">
+              Generate Avatar/Persona for: {projectTitle}
+            </h3>
+            {/* Public/Private Toggle */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={cn(
+                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
+                isPublic 
+                  ? "bg-green-100 text-green-700 border border-green-200" 
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
+              )}>
+                {isPublic ? "Public" : "Private"}
+              </span>
+              <Switch
+                id="public-toggle"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+                className="scale-75"
+              />
+            </div>
+          </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
             <X className="h-3 w-3" />
           </Button>
@@ -1553,19 +1588,19 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
         {/* Name Input Area */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Name *</label>
+          <label className="text-xs font-medium text-foreground">Name *</label>
           <Input
             placeholder="Enter avatar/persona name..."
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-8 text-sm"
+            className="h-8 text-xs"
           />
         </div>
 
         {/* Prompt Input Area */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-foreground">Prompt *</label>
+            <label className="text-xs font-medium text-foreground">Prompt *</label>
             <div className="flex items-center gap-2">
               <Switch
                 checked={aiPromptEnabled}
@@ -1578,33 +1613,43 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             placeholder="Describe your avatar or persona in detail..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[80px] resize-none"
+            className="min-h-[60px] resize-none text-xs"
           />
         </div>
 
         {/* Identity & Role Section */}
-        <div className="space-y-4 border-t border-border pt-4">
+        <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold text-foreground">🧠 Identity & Role</h4>
+            <Brain className="h-3 w-3 text-primary" />
+            <h4 className="text-xs font-semibold text-foreground">🧠 Identity & Role</h4>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Persona Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* Ethnicity */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Ethnicity</label>
-              <Input
-                placeholder="e.g., Luna"
-                value={personaName}
-                onChange={(e) => setPersonaName(e.target.value)}
-              />
+              <Select value={ethnicity} onValueChange={setEthnicity}>
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
+                  <SelectValue placeholder="Select ethnicity..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {ETHNICITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{option.icon}</span>
+                        <span className="text-sm">{option.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Role/Archetype */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Role / Archetype</label>
               <Select value={roleArchetype} onValueChange={setRoleArchetype}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select role..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -1624,12 +1669,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Age Range */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Age Range</label>
               <Select value={ageRange} onValueChange={setAgeRange}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select age..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -1649,7 +1694,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Gender Expression</label>
               <Select value={genderExpression} onValueChange={setGenderExpression}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select gender..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -1692,7 +1737,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold text-foreground">🎨 Visual Style Stack</h4>
+            <h4 className="text-xs font-semibold text-foreground">🎨 Visual Style Stack</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             DreamCut adapts lighting and mood automatically to match your chosen style.
@@ -1935,15 +1980,15 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold text-foreground">👕 Physical Traits & Outfits</h4>
+            <h4 className="text-xs font-semibold text-foreground">👕 Physical Traits & Outfits</h4>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Body Type */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Body Type</label>
               <Select value={bodyType} onValueChange={setBodyType}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select body type..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -1963,7 +2008,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Skin Tone</label>
               <Select value={skinTone} onValueChange={setSkinTone}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select skin tone..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -1988,7 +2033,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Hair Style</label>
               <Select value={hairStyle} onValueChange={setHairStyle}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select hair style..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -2018,7 +2063,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Hair Color</label>
               <Select value={hairColor} onValueChange={setHairColor}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select hair color..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -2043,7 +2088,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Eye Color</label>
               <Select value={eyeColor} onValueChange={setEyeColor}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select eye color..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -2066,7 +2111,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Eye Shape</label>
               <Select value={eyeShape} onValueChange={setEyeShape}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select eye shape..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -2088,7 +2133,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">Outfit Category</label>
               <Select value={outfitCategory} onValueChange={setOutfitCategory}>
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select outfit..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -2111,7 +2156,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                 value={accessories.length > 0 ? accessories[0] : ""} 
                 onValueChange={(value) => setAccessories([value])}
               >
-                <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
                   <SelectValue placeholder="Select accessories..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -2130,10 +2175,10 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Reference Images Section */}
-        <div className="space-y-4 border-t border-border pt-4">
+        <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold text-foreground">📸 Reference Images</h4>
+            <h4 className="text-xs font-semibold text-foreground">📸 Reference Images</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             Upload up to 3 reference images to guide the avatar/persona generation (max 10MB each)
@@ -2184,7 +2229,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
           {/* Image Previews */}
           {imagePreviewUrls.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {imagePreviewUrls.map((url, index) => (
                 <div key={index} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden border border-border">
@@ -2212,10 +2257,10 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
 
         {/* Logo Placement Section */}
-        <div className="space-y-4 border-t border-border pt-4">
+        <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold text-foreground">🏷️ Logo Placement</h4>
+            <h4 className="text-xs font-semibold text-foreground">🏷️ Logo Placement</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             Add a logo overlay to your avatar/persona (optional)
@@ -2294,13 +2339,13 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold text-foreground">⚙️ Generation Settings</h4>
+            <h4 className="text-xs font-semibold text-foreground">⚙️ Generation Settings</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             Configure the output format and number of variations for your avatar/persona
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Image Variations */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
