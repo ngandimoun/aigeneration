@@ -64,18 +64,17 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         title: validatedData.title,
-        description: validatedData.prompt,
-        status: 'draft',
+        prompt: validatedData.prompt,
+        has_voiceover: validatedData.hasVoiceover,
+        voice_style: validatedData.voiceStyle,
         duration: validatedData.duration,
+        aspect_ratio: validatedData.aspectRatio,
+        resolution: validatedData.resolution,
         style: validatedData.style,
+        status: 'draft',
         metadata: {
-          prompt: validatedData.prompt,
-          hasVoiceover: validatedData.hasVoiceover,
-          voiceStyle: validatedData.voiceStyle,
           language: validatedData.language,
-          aspectRatio: validatedData.aspectRatio,
-          resolution: validatedData.resolution,
-          style: validatedData.style
+          original_prompt: validatedData.prompt
         }
       })
       .select()
@@ -154,11 +153,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update job with upload URL
+    // Update job with upload URL and storage path
     await supabase
       .from('explainers')
       .update({ 
         output_url: fileName,
+        storage_path: fileName,
         status: 'processing'
       })
       .eq('id', jobId)
@@ -168,7 +168,8 @@ export async function POST(request: NextRequest) {
       validatedData as ManimGenerationOptions,
       supabase,
       jobId,
-      uploadData.signedUrl
+      uploadData.signedUrl,
+      user.id
     ).catch(error => {
       console.error('❌ Async generation failed:', error)
       // Update job status to failed
@@ -176,8 +177,10 @@ export async function POST(request: NextRequest) {
         .from('explainers')
         .update({ 
           status: 'failed',
+          last_error: error.message,
           metadata: {
-            last_error: error.message
+            async_generation_failed: true,
+            error_type: 'async_generation_error'
           }
         })
         .eq('id', jobId)
@@ -207,7 +210,8 @@ async function generateExplainerAsync(
   options: ManimGenerationOptions,
   supabase: any,
   jobId: string,
-  uploadUrl: string
+  uploadUrl: string,
+  userId: string
 ) {
   try {
     console.log(`🎬 Starting generation for job ${jobId}`)
@@ -235,15 +239,35 @@ async function generateExplainerAsync(
         .from('explainers')
         .update({
           status: 'completed',
+          manim_code: result.code,
+          logs: result.logs,
+          stderr: result.stderr,
+          retry_count: result.retryCount,
           metadata: {
-            manim_code: result.code,
-            logs: result.logs,
-            stderr: result.stderr,
-            retry_count: result.retryCount
-          },
-          updated_at: new Date().toISOString()
+            generation_completed: true,
+            final_retry_count: result.retryCount
+          }
         })
         .eq('id', jobId)
+
+      // Add to library_items table
+      const { error: libraryError } = await supabase
+        .from('library_items')
+        .insert({
+          user_id: userId,
+          item_id: jobId,
+          item_type: 'explainer',
+          title: validatedData.title,
+          description: validatedData.prompt,
+          image_url: null, // No image for explainers
+          created_at: new Date().toISOString()
+        })
+
+      if (libraryError) {
+        console.error('Failed to add explainer to library:', libraryError)
+      } else {
+        console.log(`✅ Explainer ${jobId} added to library`)
+      }
     } else {
       console.log(`❌ Generation failed for job ${jobId}: ${result.error}`)
       
@@ -300,18 +324,17 @@ async function generateExplainerAsync(
         .from('explainers')
         .update({
           status: 'failed',
-          error: friendlyError.message,
+          last_error: friendlyError.message,
+          retry_count: result.retryCount,
           metadata: {
-            last_error: result.error,
-            retry_count: result.retryCount,
+            technical_error: result.error,
             error_details: {
               technical: process.env.NODE_ENV === 'development' ? result.error : undefined,
               suggestion: friendlyError.suggestion,
               category: friendlyError.category,
               severity: friendlyError.severity
             }
-          },
-          updated_at: new Date().toISOString()
+          }
         })
         .eq('id', jobId)
     }
@@ -323,10 +346,11 @@ async function generateExplainerAsync(
       .from('explainers')
       .update({
         status: 'failed',
+        last_error: (error as Error).message,
         metadata: {
-          last_error: (error as Error).message
-        },
-        updated_at: new Date().toISOString()
+          unexpected_error: true,
+          error_type: 'unexpected_error'
+        }
       })
       .eq('id', jobId)
   }

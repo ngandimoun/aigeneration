@@ -193,7 +193,6 @@ export function ChartsInfographicsGeneratorInterface({
   const [chartState, setChartState] = useState<ChartState>(initialChartState)
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewMode, setPreviewMode] = useState(false)
-  const [isPublic, setIsPublic] = useState(true)
 
   // Smart visibility helpers
   const is3DStyle = () => chartState.style.artDirection === "3D Data Art"
@@ -259,26 +258,113 @@ export function ChartsInfographicsGeneratorInterface({
   }
 
 
-  // Generate chart (placeholder for full pipeline)
+  // Generate chart
   const handleGenerate = async () => {
     setIsGenerating(true)
     
-    // Prepare the generation data including isPublic
-    const generationData = {
-      ...chartState,
-      isPublic,
-      projectTitle
-    }
-    
-    // TODO: Implement full pipeline:
-    // 1. Code Interpreter (data processing)
-    // 2. Visual Engine (AI beautification)
-    // 3. Export
-    console.log('Generation data:', generationData)
-    
-    setTimeout(() => {
+    try {
+      // Prepare FormData for file uploads
+      const formData = new FormData()
+      
+      // Add all chart state fields
+      formData.append('title', chartState.data.title || `Chart ${new Date().toLocaleDateString()}`)
+      formData.append('description', chartState.narrative.caption || '')
+      formData.append('prompt', chartState.data.textData || '')
+      formData.append('dataSource', chartState.data.source)
+      formData.append('autoDetected', chartState.data.autoDetected.toString())
+      formData.append('aggregationType', chartState.data.aggregationType)
+      formData.append('units', chartState.data.units || '')
+      formData.append('labels', chartState.data.labels || '')
+      
+      // Purpose & Chart Configuration
+      formData.append('purpose', chartState.purpose.purpose || '')
+      formData.append('chartType', chartState.purpose.chartType || '')
+      formData.append('axisMapping', JSON.stringify(chartState.purpose.axisMapping))
+      formData.append('multiSeries', chartState.purpose.multiSeries.toString())
+      formData.append('orientation', chartState.purpose.orientation)
+      
+      // Visual Style
+      formData.append('artDirection', chartState.style.artDirection || '')
+      formData.append('visualInfluence', chartState.style.visualInfluence || '')
+      formData.append('chartDepth', chartState.style.chartDepth.toString())
+      formData.append('backgroundTexture', chartState.style.backgroundTexture || '')
+      formData.append('accentShapes', chartState.style.accentShapes.toString())
+      
+      // Mood & Atmosphere
+      formData.append('moodContext', chartState.mood.moodContext || '')
+      formData.append('toneIntensity', chartState.mood.toneIntensity.toString())
+      formData.append('lightingTemperature', chartState.mood.lightingTemperature.toString())
+      formData.append('motionAccent', chartState.mood.motionAccent)
+      
+      // Branding
+      formData.append('brandSync', chartState.branding.brandSync.toString())
+      formData.append('paletteMode', chartState.branding.paletteMode)
+      formData.append('backgroundType', chartState.branding.background)
+      formData.append('fontFamily', chartState.branding.fontFamily)
+      formData.append('logoPlacement', chartState.branding.logoPlacement)
+      
+      // Annotations & Labels
+      formData.append('dataLabels', chartState.annotations.dataLabels.toString())
+      formData.append('labelPlacement', chartState.annotations.labelPlacement)
+      formData.append('legends', chartState.annotations.legends)
+      formData.append('callouts', chartState.annotations.callouts.toString())
+      formData.append('calloutThreshold', chartState.annotations.calloutThreshold.toString())
+      formData.append('tooltipStyle', chartState.annotations.tooltipStyle)
+      formData.append('axisTitles', chartState.annotations.axisTitles || '')
+      formData.append('gridlines', chartState.annotations.gridlines)
+      
+      // Layout
+      formData.append('layoutTemplate', chartState.layout.layoutTemplate)
+      formData.append('aspectRatio', chartState.layout.aspectRatio)
+      formData.append('marginDensity', chartState.layout.marginDensity.toString())
+      formData.append('safeZoneOverlay', chartState.layout.safeZoneOverlay.toString())
+      
+      // Narrative
+      formData.append('headline', chartState.narrative.headline || '')
+      formData.append('caption', chartState.narrative.caption || '')
+      formData.append('tone', chartState.narrative.tone)
+      formData.append('platform', chartState.narrative.platform)
+      
+      // Metadata
+      formData.append('metadata', JSON.stringify({
+        projectTitle,
+        timestamp: new Date().toISOString()
+      }))
+      
+      // Add CSV file if present
+      if (chartState.data.csvFile) {
+        formData.append('csvFile', chartState.data.csvFile)
+      }
+      
+      // Add logo file if present
+      if (chartState.branding.logoUpload) {
+        formData.append('logoFile', chartState.branding.logoUpload)
+      }
+
+      console.log('Generating chart with FormData')
+
+      // Call the API
+      const response = await fetch('/api/charts-infographics', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate chart')
+      }
+
+      const result = await response.json()
+      console.log('Chart generated successfully:', result)
+      
+      // TODO: Handle success (show preview, add to library, etc.)
+      
+    } catch (error) {
+      console.error('Error generating chart:', error)
+      // TODO: Show error toast
+    } finally {
       setIsGenerating(false)
-    }, 5000)
+    }
   }
 
   return (
@@ -287,29 +373,12 @@ export function ChartsInfographicsGeneratorInterface({
       <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-5 p-2 border-b border-border">
         <div className="flex items-center gap-3">
           <div>
-            <h3 className="text-xs font-semibold text-foreground">
+            <h3 className="text-xs font-semibold bg-gradient-to-r from-lime-600 via-green-500 to-emerald-500 bg-clip-text text-transparent">
               📊 Generator
             </h3>
             <p className="text-xs text-muted-foreground">
               Create data-driven visuals for: {projectTitle}
             </p>
-          </div>
-          {/* Public/Private Toggle */}
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-[9px] font-medium px-2 rounded-full transition-colors",
-              isPublic 
-                ? "bg-green-100 text-green-700 border border-green-200" 
-                : "bg-gray-100 text-gray-700 border border-gray-200"
-            )}>
-              {isPublic ? "Public" : "Private"}
-            </span>
-            <Switch
-              id="public-toggle"
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-              className="scale-75"
-            />
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -1159,7 +1228,7 @@ export function ChartsInfographicsGeneratorInterface({
           <Button 
             onClick={handleGenerate}
             disabled={isGenerating || !chartState.data.textData.trim()}
-            className="flex items-center gap-1 h-8 text-xs"
+            className="flex items-center gap-1 h-8 text-xs bg-gradient-to-r from-lime-500 via-green-500 to-emerald-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isGenerating ? (
               <>

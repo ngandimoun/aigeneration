@@ -2,18 +2,19 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+// Cache for 30 seconds
+export const revalidate = 30
+
 // Validation schema for comic creation
 const createComicSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
-  selected_artifact: z.string().optional(),
   comic_type: z.string().optional(), // black-white, color
   vibe: z.array(z.string()).optional(), // Array of vibe options
   inspiration_style: z.array(z.string()).optional(), // Array of inspiration styles
   characters: z.array(z.any()).optional(), // Array of character objects
   character_variations: z.array(z.string()).optional(), // Generated character variation URLs
   selected_character_variations: z.array(z.any()).optional(), // Selected character variations with metadata
-  has_public_artifact: z.boolean().optional().default(false),
   panel_count: z.number().optional().default(1),
   style: z.string().optional(),
   genre: z.string().optional(),
@@ -64,7 +65,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch comics' }, { status: 500 })
     }
 
-    return NextResponse.json({ comics }, { status: 200 })
+    return NextResponse.json({ comics }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'max-age=30'
+      }
+    })
   } catch (error) {
     console.error('Unexpected error in GET /api/comics:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -93,14 +100,12 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         title: validatedData.title,
         description: validatedData.description,
-        selected_artifact: validatedData.selected_artifact,
         comic_type: validatedData.comic_type,
         vibe: validatedData.vibe,
         inspiration_style: validatedData.inspiration_style,
         characters: validatedData.characters,
         character_variations: validatedData.character_variations,
         selected_character_variations: validatedData.selected_character_variations,
-        has_public_artifact: validatedData.has_public_artifact,
         panel_count: validatedData.panel_count,
         style: validatedData.style,
         genre: validatedData.genre,
@@ -119,6 +124,22 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('❌ Error creating comic:', error)
       return NextResponse.json({ error: 'Failed to create comic' }, { status: 500 })
+    }
+
+    // Add to library_items table
+    const { error: libraryError } = await supabase
+      .from('library_items')
+      .insert({
+        user_id: user.id,
+        content_type: 'comics',
+        content_id: comic.id,
+        date_added_to_library: new Date().toISOString()
+      })
+
+    if (libraryError) {
+      console.error('Failed to add comic to library:', libraryError)
+    } else {
+      console.log(`✅ Comic ${comic.id} added to library`)
     }
 
     return NextResponse.json({ comic }, { status: 201 })

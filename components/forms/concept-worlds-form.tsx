@@ -1,83 +1,24 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, Loader2, ChevronsUpDown, Globe, Image as ImageIcon, CheckCircle, Check } from "lucide-react"
+import { Plus, X, Loader2, Globe, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
-import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface ConceptWorldsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string }) => void
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: ConceptWorldsFormProps) {
+export function ConceptWorldsForm({ onSave, onCancel }: ConceptWorldsFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [selectedArtifact, setSelectedArtifact] = useState<string>("")
-  const [artifactDialogOpen, setArtifactDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
-  const [artifactOpen, setArtifactOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
-  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
 
-  // Fetch real artifacts from the database
-  useEffect(() => {
-    const loadArtifacts = async () => {
-      try {
-        // Fetch all artifacts for the user (both public and private)
-        const artifacts = await fetchArtifacts({})
-        const formattedArtifacts = artifacts.map(artifact => ({
-          id: artifact.id,
-          title: artifact.title,
-          image: artifact.metadata?.image || "/placeholder.jpg",
-          description: artifact.description || "No description available"
-        }))
-        setRealArtifacts(formattedArtifacts)
-      } catch (error) {
-        console.error('Failed to load artifacts:', error)
-        toast({
-          title: "Error loading artifacts",
-          description: "Could not load artifacts from database. Please try again.",
-          variant: "destructive"
-        })
-      }
-    }
-
-    loadArtifacts()
-  }, [fetchArtifacts, toast])
-
-  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
-  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
-  const selectedArtifactData = artifactsToShow.find(artifact => artifact.id === selectedArtifact)
-  
-  // Filter artifacts based on search term
-  const filteredArtifacts = artifactsToShow.filter(artifact =>
-    artifact.title.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setArtifactOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -91,7 +32,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
   }
 
   const handleSave = async () => {
-    if (title.trim() && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim()) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -100,14 +41,12 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
       onSave({
         title: title.trim(),
         image: imagePreview || "/placeholder.jpg", // Use placeholder if no image provided
-        description: description.trim(),
-        selectedArtifact
+        description: description.trim()
       })
       
       setTitle("")
       setDescription("")
       setImagePreview(null)
-      setSelectedArtifact("")
       setIsLoading(false)
       
       toast({
@@ -175,74 +114,6 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
-            Artifact(s)
-          </label>
-          {availableArtifacts.length === 0 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              Using demo artifacts for testing. Create real artifacts in the "Artifacts" section.
-            </p>
-          )}
-          
-          {/* Version simplifiée avec Select natif */}
-          <div className="relative" ref={dropdownRef}>
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => {
-                console.log('Concept Worlds Button clicked, current state:', artifactOpen)
-                setArtifactOpen(!artifactOpen)
-              }}
-            >
-              {selectedArtifact
-                ? artifactsToShow.find((artifact) => artifact.id === selectedArtifact)?.title
-                : "Select artifact..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-            
-            {artifactOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto scrollbar-hover">
-                <div className="p-2">
-                  <input
-                    type="text"
-                    placeholder="Search artifact..."
-                    className="w-full px-3 py-2 text-sm border border-border rounded-md mb-2"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <div className="space-y-1">
-                    {filteredArtifacts.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">
-                        No artifacts found matching "{searchTerm}"
-                      </div>
-                    ) : (
-                      filteredArtifacts.map((artifact) => (
-                        <div
-                          key={artifact.id}
-                          className="flex items-center px-3 py-2 text-sm hover:bg-accent rounded-md cursor-pointer"
-                          onClick={() => {
-                            setSelectedArtifact(artifact.id)
-                            setArtifactOpen(false)
-                            setSearchTerm("") // Reset search when selecting
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedArtifact === artifact.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {artifact.title}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
@@ -262,7 +133,7 @@ export function ConceptWorldsForm({ onSave, onCancel, availableArtifacts }: Conc
           type="button"
           onClick={handleSave} 
           className="flex-1" 
-          disabled={isLoading || !title.trim() || !description.trim() || !selectedArtifact}
+          disabled={isLoading || !title.trim() || !description.trim()}
         >
           {isLoading ? (
             <>

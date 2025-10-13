@@ -32,13 +32,12 @@ interface WorldKit {
   name: string
   prompt: string
   worldPurpose: string
-  referenceImages: string[]
+  referenceImages: File[]
   seedVariability: number
   logoPlacement: string
-  logoFile: string
+  logoFile: File | null
   customColor: string
   aspectRatio: string
-  imagesCount: number
   artDirection: string
   visualInfluence: string
   colorSystem: string
@@ -293,21 +292,14 @@ export function ConceptWorldsGeneratorInterface({
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (files) {
-      const newImages: string[] = []
+      const newFiles: File[] = []
       for (let i = 0; i < Math.min(files.length, 3); i++) {
-        const file = files[i]
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          newImages.push(e.target?.result as string)
-          if (newImages.length === Math.min(files.length, 3)) {
-            setWorldKit(prev => ({
-              ...prev,
-              referenceImages: [...(prev.referenceImages || []), ...newImages].slice(0, 3)
-            }))
-          }
-        }
-        reader.readAsDataURL(file)
+        newFiles.push(files[i])
       }
+      setWorldKit(prev => ({
+        ...prev,
+        referenceImages: [...(prev.referenceImages || []), ...newFiles].slice(0, 3)
+      }))
     }
   }
 
@@ -375,31 +367,91 @@ export function ConceptWorldsGeneratorInterface({
     setIsGenerating(true)
     
     try {
-      // Simulate generation process
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Prepare FormData for file uploads
+      const formData = new FormData()
       
-      toast({
-        title: "World generated successfully!",
-        description: `"${worldKit.name}" has been created and saved to your collection.`,
+      // Add all form fields
+      formData.append('name', worldKit.name)
+      formData.append('prompt', worldKit.prompt)
+      formData.append('worldPurpose', worldKit.worldPurpose || '')
+      formData.append('logoPlacement', worldKit.logoPlacement || '')
+      formData.append('customColor', worldKit.customColor || '#3b82f6')
+      formData.append('aspectRatio', worldKit.aspectRatio || '1:1')
+      formData.append('seedVariability', (worldKit.seedVariability || 50).toString())
+      formData.append('artDirection', worldKit.artDirection || '')
+      formData.append('visualInfluence', worldKit.visualInfluence || '')
+      formData.append('colorSystem', worldKit.colorSystem || '')
+      formData.append('lighting', worldKit.lighting || '')
+      formData.append('materialLanguage', worldKit.materialLanguage || '')
+      formData.append('textureDetail', (worldKit.textureDetail || 50).toString())
+      formData.append('environmentType', worldKit.environmentType || '')
+      formData.append('locationArchetype', worldKit.locationArchetype || '')
+      formData.append('cameraFraming', worldKit.cameraFraming || '')
+      formData.append('atmosphericMotion', worldKit.atmosphericMotion || '')
+      formData.append('depthLevel', (worldKit.depthLevel || 50).toString())
+      formData.append('compositionScale', (worldKit.compositionScale || 50).toString())
+      formData.append('spatialConsistencyLock', (worldKit.spatialConsistencyLock || false).toString())
+      formData.append('mood', worldKit.mood || '')
+      formData.append('culturalInfluence', worldKit.culturalInfluence || '')
+      formData.append('timeOfDay', worldKit.timeOfDay || '')
+      formData.append('emotionalTone', worldKit.emotionalTone || '')
+      formData.append('symbolicMotifs', JSON.stringify(worldKit.symbolicMotifs || []))
+      formData.append('storyHook', worldKit.storyHook || '')
+      formData.append('brandSync', (worldKit.brandSync || false).toString())
+      formData.append('brandPaletteMode', worldKit.brandPaletteMode || '')
+      formData.append('toneMatch', (worldKit.toneMatch || 50).toString())
+      formData.append('typographyInWorld', worldKit.typographyInWorld || '')
+      formData.append('metadata', JSON.stringify({
+        projectTitle,
+        timestamp: new Date().toISOString()
+      }))
+      
+      // Add reference images
+      worldKit.referenceImages?.forEach((file, index) => {
+        formData.append(`referenceImage_${index}`, file)
       })
       
-      // Reset form
-      setWorldKit({
-        seedVariability: 50,
-        textureDetail: 50,
-        depthLevel: 50,
-        compositionScale: 50,
-        toneMatch: 50,
-        spatialConsistencyLock: false,
-        brandSync: false,
-        symbolicMotifs: [],
-        referenceImages: []
+      // Add logo file if present
+      if (worldKit.logoFile) {
+        formData.append('logoFile', worldKit.logoFile)
+      }
+
+      console.log("Generating concept world with FormData")
+
+      // Call the API
+      const response = await fetch('/api/concept-world-generation', {
+        method: 'POST',
+        body: formData,
       })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate concept world')
+      }
+
+      const result = await response.json()
+      console.log("Concept world generation result:", result)
+      
+      if (result.success) {
+        toast({
+          title: "Concept World Generated!",
+          description: `"${worldKit.name}" has been created and saved to your collection.`,
+        })
+        
+        // Close the interface to return to the generator panel
+        // This will trigger a refresh of the concept worlds list
+        setTimeout(() => {
+          onClose()
+        }, 2000) // Wait 2 seconds to show the success message
+      } else {
+        throw new Error(result.error || 'Generation failed')
+      }
       
     } catch (error) {
+      console.error('Generation failed:', error)
       toast({
-        title: "Generation failed",
-        description: "There was an error generating your world. Please try again.",
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate concept world. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -420,7 +472,7 @@ export function ConceptWorldsGeneratorInterface({
     <div className="bg-background border border-border rounded-md h-[80vh] flex flex-col">
       {/* Header - Fixed */}
       <div className="flex items-center justify-between p-3 border-b border-border">
-        <h3 className="text-sm font-semibold text-foreground truncate pr-2">
+        <h3 className="text-sm font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent truncate pr-2">
           Generate Concept World: {projectTitle}
         </h3>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
@@ -451,7 +503,7 @@ export function ConceptWorldsGeneratorInterface({
         <div className="space-y-3">
         {/* 1️⃣ World Intent & Prompt */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent border-b pb-1">
               1️⃣ World Intent & Prompt
             </h4>
             <div className="space-y-3">
@@ -523,7 +575,7 @@ export function ConceptWorldsGeneratorInterface({
                     <div className="grid grid-cols-2 gap-1 mt-2">
                       {worldKit.referenceImages.map((image, index) => (
                         <div key={index} className="relative">
-                          <img src={image} alt={`Reference ${index + 1}`} className="w-full h-16 object-cover rounded-sm" />
+                          <img src={URL.createObjectURL(image)} alt={`Reference ${index + 1}`} className="w-full h-16 object-cover rounded-sm" />
                           <Button
                             type="button"
                             variant="destructive"
@@ -566,11 +618,7 @@ export function ConceptWorldsGeneratorInterface({
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (file) {
-                          const reader = new FileReader()
-                          reader.onload = (e) => {
-                            setWorldKit(prev => ({ ...prev, logoFile: e.target?.result as string }))
-                          }
-                          reader.readAsDataURL(file)
+                          setWorldKit(prev => ({ ...prev, logoFile: file }))
                         }
                       }}
                       className="hidden"
@@ -586,7 +634,7 @@ export function ConceptWorldsGeneratorInterface({
                     </label>
                     {worldKit.logoFile && (
                       <div className="mt-2">
-                        <img src={worldKit.logoFile} alt="Logo preview" className="w-16 h-16 object-cover rounded-md" />
+                        <img src={URL.createObjectURL(worldKit.logoFile)} alt="Logo preview" className="w-16 h-16 object-cover rounded-md" />
                       </div>
                     )}
                   </div>
@@ -668,40 +716,6 @@ export function ConceptWorldsGeneratorInterface({
                 </Select>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium mb-1">🖼️ Images Count</label>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setWorldKit(prev => ({
-                      ...prev,
-                      imagesCount: Math.max(1, (prev.imagesCount || 4) - 1)
-                    }))}
-                    disabled={(worldKit.imagesCount || 4) <= 1}
-                  >
-                    <span className="text-xs">-</span>
-                  </Button>
-                  <div className="flex-1 text-center min-w-[2rem]">
-                    <span className="text-sm font-medium">{worldKit.imagesCount || 4}</span>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setWorldKit(prev => ({
-                      ...prev,
-                      imagesCount: Math.min(4, (prev.imagesCount || 4) + 1)
-                    }))}
-                    disabled={(worldKit.imagesCount || 4) >= 4}
-                  >
-                    <span className="text-xs">+</span>
-                  </Button>
-                </div>
-              </div>
 
               <div>
                 <label className="block text-xs font-medium mb-1">
@@ -726,7 +740,7 @@ export function ConceptWorldsGeneratorInterface({
 
         {/* 2️⃣ Visual DNA */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent border-b pb-1">
               2️⃣ Visual DNA
             </h4>
             <div className="space-y-3">
@@ -857,7 +871,7 @@ export function ConceptWorldsGeneratorInterface({
 
         {/* 3️⃣ Spatial DNA */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent border-b pb-1">
               3️⃣ Spatial DNA
             </h4>
             <div className="space-y-3">
@@ -996,7 +1010,7 @@ export function ConceptWorldsGeneratorInterface({
 
         {/* 4️⃣ Narrative DNA */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent border-b pb-1">
               4️⃣ Narrative DNA
             </h4>
             <div className="space-y-3">
@@ -1150,7 +1164,7 @@ export function ConceptWorldsGeneratorInterface({
 
         {/* 5️⃣ Brand Integration */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-foreground border-b pb-1">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent border-b pb-1">
               5️⃣ Brand Integration
             </h4>
             <div className="space-y-3">
@@ -1262,7 +1276,7 @@ export function ConceptWorldsGeneratorInterface({
                   ) : (
                     <>
                 <Sparkles className="h-3 w-3 mr-1" />
-                ✨ Generate
+                 Generate Concept World
                     </>
                   )}
                 </Button>

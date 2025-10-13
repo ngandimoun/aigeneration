@@ -186,7 +186,7 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   const { toast } = useToast()
   
   // Voiceover Configuration
-  const [script, setScript] = useState("")
+  const [prompt, setPrompt] = useState("")
   const [language, setLanguage] = useState("English")
   const [selectedVoice, setSelectedVoice] = useState<DreamCutVoice | null>(null)
   
@@ -202,8 +202,6 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   const [enableLogging, setEnableLogging] = useState(true)
   const [modelId] = useState("eleven_v3") // Hardcoded to eleven_v3
   
-  // Public/Private toggle
-  const [isPublic, setIsPublic] = useState(true)
   
   const [emotion, setEmotion] = useState("")
   const [useCase, setUseCase] = useState("")
@@ -249,19 +247,10 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   }, [toast])
 
   const handleGenerateVoiceover = async () => {
-    if (!script.trim()) {
+    if (!prompt.trim()) {
       toast({
-        title: "Script required",
-        description: "Please enter a script for the voiceover.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (!selectedVoice) {
-      toast({
-        title: "Voice selection required",
-        description: "Please select a voice from your DreamCut voice library.",
+        title: "Prompt required",
+        description: "Please enter a prompt describing the voiceover you want to create.",
         variant: "destructive"
       })
       return
@@ -274,8 +263,8 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: script,
-          voice_id: selectedVoice.voice_id,
+          text: prompt,
+          voice_id: selectedVoice?.voice_id || "default",
           model_id: modelId,
           language_code: language === "English" ? "en" : language.toLowerCase(),
           voice_settings: {
@@ -340,35 +329,55 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   }
 
   const handleSaveVoiceover = async () => {
-    if (!title.trim()) {
+    if (!prompt.trim()) {
       toast({
-        title: "Title required",
-        description: "Please enter a title for your voiceover.",
+        title: "Prompt required",
+        description: "Please enter a prompt describing the voiceover you want to create.",
         variant: "destructive"
       })
       return
     }
 
-    if (!selectedPreview) {
-      toast({
-        title: "Select a preview",
-        description: "Please select a voiceover preview to save.",
-        variant: "destructive"
-      })
-      return
-    }
-
+    // Generate voiceover first
+    setIsGenerating(true)
     try {
+      // Call ElevenLabs API to generate voiceover with proper parameter mapping
+      const elevenLabsResponse = await fetch('/api/elevenlabs/text-to-voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: prompt,
+          voice_id: selectedVoice?.voice_id || "default",
+          model_id: modelId,
+          language_code: language === "English" ? "en" : language.toLowerCase(),
+          voice_settings: {
+            stability: stability[0] / 100, // Convert 0-100 to 0-1
+            similarity_boost: similarityBoost[0] / 100, // Convert 0-100 to 0-1
+            style: style[0] / 100, // Convert 0-100 to 0-1
+            use_speaker_boost: useSpeakerBoost
+          },
+          output_format: outputFormat,
+          optimize_streaming_latency: optimizeStreamingLatency,
+          enable_logging: enableLogging
+        })
+      })
+
+      if (!elevenLabsResponse.ok) {
+        throw new Error('ElevenLabs API call failed')
+      }
+
+      const audioBlob = await elevenLabsResponse.blob()
+      const audioUrl = URL.createObjectURL(audioBlob)
+      
       const voiceoverData = {
-        title,
+        title: title || `Voiceover_${Date.now()}`,
         description,
-        selected_artifact: selectedPreview,
-        script,
+        prompt,
         language,
         voice_id: selectedVoice?.voice_id,
         emotion,
         use_case: useCase,
-        is_public: isPublic,
+        audio_url: audioUrl,
         content: {
           dreamcut_voice: selectedVoice,
           elevenlabs_settings: {
@@ -400,19 +409,22 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
       if (response.ok) {
         toast({
-          title: "Voiceover saved successfully!",
-          description: `Voiceover '${title}' has been saved to your library.`
+          title: "Voiceover generated successfully!",
+          description: `Voiceover '${title || 'Unnamed Voiceover'}' has been generated and saved to your library.`
         })
         onClose()
       } else {
         throw new Error('Failed to save voiceover')
       }
     } catch (error) {
+      console.error('Voiceover generation failed:', error)
       toast({
-        title: "Save failed",
-        description: "Please try again.",
+        title: "Generation failed",
+        description: "Please try again or check your ElevenLabs API configuration.",
         variant: "destructive"
       })
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -425,23 +437,6 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
             <div>
               <h2 className="text-xs font-bold">Voiceover Studio</h2>
               <p className="text-[10px] text-muted-foreground">Generate high-quality voiceovers using your DreamCut voice library and ElevenLabs AI.</p>
-            </div>
-            {/* Public/Private Toggle */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className={cn(
-                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
-                isPublic 
-                  ? "bg-green-100 text-green-700 border border-green-200" 
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              )}>
-                {isPublic ? "Public" : "Private"}
-              </span>
-              <Switch
-                id="public-toggle"
-                checked={isPublic}
-                onCheckedChange={setIsPublic}
-                className="scale-75"
-              />
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-5 w-5 shrink-0">
@@ -567,12 +562,23 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
             <CardContent className="space-y-3 p-3">
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">📝 Script</Label>
+                  <Label className="text-xs">📝 Title</Label>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g., Product Demo Voiceover"
+                    className="h-7 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">📝 Prompt *</Label>
                   <Textarea
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    placeholder="Enter your voiceover script here..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe the voiceover you want to create... (e.g., A professional female voice narrating a product demo with enthusiasm)"
                     className="min-h-[60px] text-xs resize-none"
+                    required
                   />
                 </div>
 
@@ -873,127 +879,7 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
             </CardContent>
           </Card>
 
-          {/* Preview & Fine-tuning Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Volume2 className="h-3 w-3" />
-                🔊 Preview & Fine-tuning
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Generate voiceover using ElevenLabs AI and fine-tune the output.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-3">
-              <Button 
-                onClick={handleGenerateVoiceover}
-                disabled={isGenerating || !script.trim() || !selectedVoice}
-                className="w-full h-7 text-xs"
-              >
-                {isGenerating ? (
-                  <>
-                    <Sparkles className="h-3 w-3 mr-2 animate-spin" />
-                    🎙️ Generating with ElevenLabs AI...
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-3 w-3 mr-2" />
-                    Generate Voiceover with ElevenLabs
-                  </>
-                )}
-              </Button>
 
-              {voiceoverPreviews.length > 0 && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3">
-                    {voiceoverPreviews.map((preview) => (
-                      <Card key={preview.id} className={cn(
-                        "cursor-pointer transition-all",
-                        selectedPreview === preview.id && "ring-2 ring-primary"
-                      )} onClick={() => setSelectedPreview(preview.id)}>
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-[10px]">{preview.variation}</Badge>
-                              <Badge variant="outline" className="text-[10px]">
-                                <FileAudio className="h-3 w-3 mr-1" />
-                                {preview.duration_secs}s
-                              </Badge>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handlePlayPreview(preview.id)
-                              }}
-                            >
-                              {isPlaying === preview.id ? (
-                                <Pause className="h-3 w-3" />
-                              ) : (
-                                <Play className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground mb-2">
-                            {preview.language} • Generated with ElevenLabs AI
-                          </div>
-                          {/* Audio element for playback */}
-                          <audio
-                            ref={(el) => {
-                              if (el) audioRefs.current[preview.id] = el
-                            }}
-                            src={preview.audio_base_64}
-                            onEnded={() => setIsPlaying(null)}
-                            className="w-full"
-                            controls
-                          />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Export & Save Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Save className="h-3 w-3" />
-                💾 Export & Save
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Name and save your voiceover to your library.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">📝 Title</Label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g., Product Demo Voiceover"
-                    className="h-7 text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">📄 Description</Label>
-                  <Input
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief description of the voiceover"
-                    className="h-7 text-xs"
-                  />
-                </div>
-              </div>
-
-            </CardContent>
-          </Card>
 
           {/* Action Buttons */}
           <Card className="border shadow-md bg-white dark:bg-gray-900">
@@ -1008,11 +894,15 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                 </Button>
                 <Button 
                   onClick={handleSaveVoiceover} 
-                  disabled={!title.trim() || !selectedPreview} 
-                  className="h-10 text-sm font-semibold min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!prompt.trim() || isGenerating} 
+                  className="h-10 text-sm font-semibold min-w-[120px] bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Voiceover
+                  {isGenerating ? (
+                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Generate Voiceover
                 </Button>
               </div>
             </CardContent>

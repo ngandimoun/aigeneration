@@ -4,9 +4,8 @@ import { useState } from "react"
 import { Globe, Lock, Palette, Sparkles, Package, BarChart3, User } from "lucide-react"
 import { useNavigation } from "@/hooks/use-navigation"
 import { CharacterVariations } from "@/components/character-variations"
-import { ArtifactCard } from "@/components/artifact-card"
-import { ArtifactCardSkeleton } from "@/components/artifact-card-skeleton"
-import { ArtifactGenerationHistory } from "@/components/artifact-generation-history"
+import { LibraryInterface } from "@/components/library-interface"
+import { LibraryGrid } from "@/components/library-grid"
 import { Button } from "@/components/ui/button"
 
 export function MainContent() {
@@ -15,12 +14,7 @@ export function MainContent() {
     selectedSection, 
     characterVariations = [], 
     characterVariationsMetadata,
-    isGeneratingVariations = false,
-    getArtifactsBySection,
-    isLoadingArtifacts,
-    deleteArtifact,
-    selectedArtifact,
-    setSelectedArtifact
+    isGeneratingVariations = false
   } = useNavigation()
   const [selectedVariation, setSelectedVariation] = useState<number | undefined>(undefined)
 
@@ -40,8 +34,6 @@ export function MainContent() {
     console.log('🔄 Selected variation state updated to:', index)
   }
 
-  // Get template artifacts for Templates section
-  const templateArtifacts = getArtifactsBySection('templates')
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-hover">
@@ -64,235 +56,45 @@ export function MainContent() {
           </div>
         )}
         
-        {/* Templates section */}
-        {selectedSection === 'templates' && (
-          <div className="space-y-6">
-            {isLoadingArtifacts ? (
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <ArtifactCardSkeleton key={index} />
-                ))}
-              </div>
-            ) : templateArtifacts.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {templateArtifacts.map((artifact) => (
-                  <ArtifactCard
-                    key={artifact.id}
-                    id={artifact.id}
-                    title={artifact.title}
-                    image={artifact.image}
-                    description={artifact.description}
-                    isPublic={artifact.isPublic}
-                    isDefault={artifact.isDefault}
-                    onDelete={deleteArtifact}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground mb-4">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                    <span className="text-2xl">🎨</span>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">No templates yet</h3>
-                  <p className="text-sm">Character variations and other templates will appear here when you generate them.</p>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Library section */}
+        {selectedSection === 'library' && (
+          <LibraryGrid columns={3} />
         )}
         
-        {/* Artifacts section */}
-        {selectedSection === 'artifacts' && (
-          <div className="space-y-6">
-            {selectedArtifact ? (
-              <div className="space-y-6">
-                {/* Artifact Details */}
-                <div className="bg-background border border-border rounded-lg p-6">
-                  <div className="flex items-start gap-6">
-                    <div className="flex-shrink-0">
-                      <img 
-                        src={selectedArtifact.image} 
-                        alt={selectedArtifact.title}
-                        className="w-48 h-48 object-cover rounded-lg"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h2 className="text-2xl font-bold text-foreground mb-2">
-                            {selectedArtifact.title}
-                          </h2>
-                          <div className="flex items-center gap-2 mb-3">
-                            {selectedArtifact.isPublic ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <Globe className="h-3 w-3 mr-1" />
-                                Public
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                <Lock className="h-3 w-3 mr-1" />
-                                Private
-                              </span>
-                            )}
-                            {selectedArtifact.isDefault && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                Default
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedArtifact(null)}
-                        >
-                          Close
-                        </Button>
-                      </div>
-                      <p className="text-muted-foreground mb-4">
-                        {selectedArtifact.description}
-                      </p>
-                      <div className="text-sm text-muted-foreground">
-                        <p><strong>Type:</strong> {selectedArtifact.type}</p>
-                        <p><strong>Section:</strong> {selectedArtifact.section}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Generation History */}
-                <div className="bg-background border border-border rounded-lg p-6">
-                  <ArtifactGenerationHistory 
-                    artifactId={selectedArtifact.id}
-                    artifactTitle={selectedArtifact.title}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Artifacts Grid */}
-                {isLoadingArtifacts ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    {Array.from({ length: 2 }).map((_, index) => (
-                      <ArtifactCardSkeleton key={index} />
-                    ))}
-                  </div>
-                ) : (() => {
-                  
-                  const artifacts = getArtifactsBySection('artifacts')
-                  return artifacts.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      {artifacts.map((artifact) => (
-                        <ArtifactCard
-                          key={artifact.id}
-                          id={artifact.id}
-                          title={artifact.title}
-                          image={artifact.image}
-                          description={artifact.description}
-                          isPublic={artifact.isPublic}
-                          isDefault={artifact.isDefault}
-                          onDelete={deleteArtifact}
-                          onClick={() => setSelectedArtifact(artifact)}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="text-muted-foreground mb-4">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                          <span className="text-2xl">🎨</span>
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">No artifacts yet</h3>
-                        <p className="text-sm">Create your first artifact to get started.</p>
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
-            )}
-          </div>
-        )}
         
-        {/* Illustration section - Project details or Welcome message */}
+        
+        {/* Illustration section - Welcome message */}
         {selectedSection === 'illustration' && (
-          selectedArtifact ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Project Image */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <img 
-                    src={selectedArtifact.image} 
-                    alt={selectedArtifact.title}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-                
-                {/* Project Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {selectedArtifact.title}
-                    </h2>
-                  </div>
-                  
-                  {/* Project Status */}
-                  <div className="flex items-center gap-2">
-                    {selectedArtifact.isPublic ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
-                        <Globe className="h-4 w-4" />
-                        Public
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
-                        <Lock className="h-4 w-4" />
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Project Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {selectedArtifact.description}
-                    </p>
-                  </div>
-                </div>
+          <div className="text-center py-8">
+            <div className="max-w-lg mx-auto">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                <Palette className="h-6 w-6 text-purple-600" />
+              </div>
+              <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent">
+                Welcome to Illustrations
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                Create stunning custom illustrations with AI-powered tools. Choose from various art styles, 
+                from flat vector designs to photorealistic renders, and bring your creative vision to life.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                <span>Click "New Project" to start creating your first illustration</span>
               </div>
             </div>
-          ) : (
-            <div className="text-center py-16">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-                  <Palette className="h-10 w-10 text-purple-600" />
-                </div>
-                <h2 className="text-3xl font-bold text-foreground mb-4">
-                  Welcome to Illustrations
-                </h2>
-                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                  Create stunning custom illustrations with AI-powered tools. Choose from various art styles, 
-                  from flat vector designs to photorealistic renders, and bring your creative vision to life.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4" />
-                  <span>Click "New Project" to start creating your first illustration</span>
-                </div>
-              </div>
-            </div>
-          )
+          </div>
         )}
 
         {/* Product Mockups section - Project details or Welcome message */}
         {selectedSection === 'product-mockups' && (
-          selectedArtifact ? (
+          false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Project Image */}
                 <div className="overflow-hidden rounded-lg border border-border">
                   <img 
-                    src={selectedArtifact.image} 
-                    alt={selectedArtifact.title}
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
                     className="w-full h-auto object-contain"
                   />
                 </div>
@@ -301,13 +103,13 @@ export function MainContent() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {selectedArtifact.title}
+                      {"Placeholder Title"}
                     </h2>
                   </div>
                   
                   {/* Project Status */}
                   <div className="flex items-center gap-2">
-                    {selectedArtifact.isPublic ? (
+                    {false ? (
                       <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
                         <Globe className="h-4 w-4" />
                         Public
@@ -324,28 +126,28 @@ export function MainContent() {
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      {selectedArtifact.description}
+                      {"Placeholder description"}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-16">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                  <Package className="h-10 w-10 text-purple-600" />
+            <div className="text-center py-8">
+              <div className="max-w-lg mx-auto">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-violet-600" />
                 </div>
-                <h2 className="text-3xl font-bold text-foreground mb-4">
+                <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
                   Welcome to Product Mockups
                 </h2>
-                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                   Create stunning product presentations with AI-powered tools. Design professional mockups with 
                   customizable backgrounds, perfect lighting, and seamless brand integration to showcase your products 
                   in their best light.
                 </p>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
                   <span>Click "New Project" to create your first product mockup</span>
                 </div>
               </div>
@@ -355,14 +157,14 @@ export function MainContent() {
 
         {/* Concept Worlds section - Project details or Welcome message */}
         {selectedSection === 'concept-worlds' && (
-          selectedArtifact ? (
+          false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Project Image */}
                 <div className="overflow-hidden rounded-lg border border-border">
                   <img 
-                    src={selectedArtifact.image} 
-                    alt={selectedArtifact.title}
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
                     className="w-full h-auto object-contain"
                   />
                 </div>
@@ -371,13 +173,13 @@ export function MainContent() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {selectedArtifact.title}
+                      {"Placeholder Title"}
                     </h2>
                   </div>
                   
                   {/* Project Status */}
                   <div className="flex items-center gap-2">
-                    {selectedArtifact.isPublic ? (
+                    {false ? (
                       <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
                         <Globe className="h-4 w-4" />
                         Public
@@ -394,28 +196,28 @@ export function MainContent() {
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      {selectedArtifact.description}
+                      {"Placeholder description"}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-16">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                  <Globe className="h-10 w-10 text-blue-600" />
+            <div className="text-center py-8">
+              <div className="max-w-lg mx-auto">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center">
+                  <Globe className="h-6 w-6 text-sky-600" />
                 </div>
-                <h2 className="text-3xl font-bold text-foreground mb-4">
+                <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
                   Welcome to Concept Worlds
                 </h2>
-                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                   Design immersive universes with consistent visual DNA. Create everything from fantasy realms to 
                   futuristic environments with unified art direction, lighting systems, and spatial logic that 
                   brings your creative vision to life.
                 </p>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
                   <span>Click "New Project" to build your first concept world</span>
                 </div>
               </div>
@@ -425,14 +227,14 @@ export function MainContent() {
 
         {/* Charts & Infographics section - Project details or Welcome message */}
         {selectedSection === 'charts-infographics' && (
-          selectedArtifact ? (
+          false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Project Image */}
                 <div className="overflow-hidden rounded-lg border border-border">
                   <img 
-                    src={selectedArtifact.image} 
-                    alt={selectedArtifact.title}
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
                     className="w-full h-auto object-contain"
                   />
                 </div>
@@ -441,13 +243,13 @@ export function MainContent() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {selectedArtifact.title}
+                      {"Placeholder Title"}
                     </h2>
                   </div>
                   
                   {/* Project Status */}
                   <div className="flex items-center gap-2">
-                    {selectedArtifact.isPublic ? (
+                    {false ? (
                       <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
                         <Globe className="h-4 w-4" />
                         Public
@@ -464,28 +266,28 @@ export function MainContent() {
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      {selectedArtifact.description}
+                      {"Placeholder description"}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-16">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                  <BarChart3 className="h-10 w-10 text-green-600" />
+            <div className="text-center py-8">
+              <div className="max-w-lg mx-auto">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-lime-100 to-green-100 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-lime-600" />
                 </div>
-                <h2 className="text-3xl font-bold text-foreground mb-4">
+                <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-lime-600 via-green-500 to-emerald-500 bg-clip-text text-transparent">
                   Welcome to Charts & Infographics
                 </h2>
-                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                   Transform your data into beautiful visualizations with smart styling and custom branding. 
                   Create compelling charts, infographics, and data stories that communicate insights clearly 
                   and professionally across any platform.
                 </p>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
                   <span>Click "New Project" to create your first chart or infographic</span>
                 </div>
               </div>
@@ -495,14 +297,14 @@ export function MainContent() {
 
         {/* Avatars & Personas section - Project details or Welcome message */}
         {selectedSection === 'avatars-personas' && (
-          selectedArtifact ? (
+          false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Project Image */}
                 <div className="overflow-hidden rounded-lg border border-border">
                   <img 
-                    src={selectedArtifact.image} 
-                    alt={selectedArtifact.title}
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
                     className="w-full h-auto object-contain"
                   />
                 </div>
@@ -511,13 +313,13 @@ export function MainContent() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {selectedArtifact.title}
+                      {"Placeholder Title"}
                     </h2>
                   </div>
                   
                   {/* Project Status */}
                   <div className="flex items-center gap-2">
-                    {selectedArtifact.isPublic ? (
+                    {false ? (
                       <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
                         <Globe className="h-4 w-4" />
                         Public
@@ -534,28 +336,28 @@ export function MainContent() {
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      {selectedArtifact.description}
+                      {"Placeholder description"}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-16">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
-                  <User className="h-10 w-10 text-orange-600" />
+            <div className="text-center py-8">
+              <div className="max-w-lg mx-auto">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                  <User className="h-6 w-6 text-emerald-600" />
                 </div>
-                <h2 className="text-3xl font-bold text-foreground mb-4">
+                <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 bg-clip-text text-transparent">
                   Welcome to Avatars & Personas
                 </h2>
-                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                   Create AI-powered character avatars with unique personalities and appearances. Design custom personas 
                   with specific roles, demographics, and visual styles to bring your creative projects to life with 
                   authentic and engaging characters.
                 </p>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
                   <span>Click "New Project" to create your first avatar or persona</span>
                 </div>
               </div>
@@ -563,47 +365,524 @@ export function MainContent() {
           )
         )}
 
-        {/* Content area for other sections */}
-        {selectedSection !== 'comics' && selectedSection !== 'templates' && selectedSection !== 'artifacts' && selectedSection !== 'illustration' && selectedSection !== 'product-mockups' && selectedSection !== 'concept-worlds' && selectedSection !== 'charts-infographics' && selectedSection !== 'avatars-personas' && (() => {
-            if (isLoadingArtifacts) {
-              return (
-                <div className="grid grid-cols-2 gap-4">
-                  {Array.from({ length: 2 }).map((_, index) => (
-                    <ArtifactCardSkeleton key={index} />
-                  ))}
+        {/* Music & Jingles section - Project details or Welcome message */}
+        {selectedSection === 'music-jingles' && (
+          false ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
+                    className="w-full h-auto object-contain"
+                  />
                 </div>
-              )
-            }
-          
-          const sectionArtifacts = getArtifactsBySection(selectedSection)
-          return sectionArtifacts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {sectionArtifacts.map((artifact) => (
-                <ArtifactCard
-                  key={artifact.id}
-                  id={artifact.id}
-                  title={artifact.title}
-                  image={artifact.image}
-                  description={artifact.description}
-                  isPublic={artifact.isPublic}
-                  isDefault={artifact.isDefault}
-                  onDelete={deleteArtifact}
-                  onClick={() => setSelectedArtifact(artifact)}
-                />
-              ))}
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {"Placeholder Title"}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {false ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {"Placeholder description"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="text-muted-foreground mb-4">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <span className="text-2xl">🎨</span>
+              <div className="max-w-lg mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                  <span className="text-2xl">🎵</span>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No {getDisplayTitle().toLowerCase()} yet</h3>
-                <p className="text-sm">Create your first {getDisplayTitle().toLowerCase().slice(0, -1)} to get started.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  🎵 No music jingles yet
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create your first music jingle to get started.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Click "New Music Jingle" to create your first musical piece</span>
+                </div>
               </div>
             </div>
           )
-        })()}
+        )}
+
+        {/* Social Cuts section - Coming Soon */}
+        {selectedSection === 'social-cuts' && (
+          <div className="text-center py-16">
+            <div className="max-w-2xl mx-auto">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+                <span className="text-4xl">✂️</span>
+              </div>
+              <h2 className="text-3xl font-bold text-foreground mb-4">
+                Social Cuts
+              </h2>
+              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                Create engaging social media clips and viral content that captures attention and drives engagement.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-full text-sm font-medium">
+                <span>🚧</span>
+                <span>Coming Soon</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cinematic Clips section - Coming Soon */}
+        {selectedSection === 'cinematic-clips' && (
+          <div className="text-center py-16">
+            <div className="max-w-2xl mx-auto">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                <span className="text-4xl">🎬</span>
+              </div>
+              <h2 className="text-3xl font-bold text-foreground mb-4">
+                Cinematic Clips
+              </h2>
+              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                Create stunning cinematic video clips with professional effects and dramatic storytelling.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm font-medium">
+                <span>🚧</span>
+                <span>Coming Soon</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Explainers section - Project details or Attention Message */}
+        {selectedSection === 'explainers' && (
+          false ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image/Video */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  {false ? (
+                    <video
+                      src={"/placeholder.jpg"}
+                      controls
+                      className="w-full h-auto object-contain"
+                      poster="/placeholder.jpg"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <img 
+                      src={"/placeholder.jpg"} 
+                      alt={"Placeholder Title"}
+                      className="w-full h-auto object-contain"
+                    />
+                  )}
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {"Placeholder Title"}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {false ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {"Placeholder description"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                  🎯 Explainers Studio
+                </h2>
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-amber-800 font-medium">
+                    ✨ Transform complex ideas into engaging animated explanations that captivate your audience!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  Create professional explainer videos with AI-powered animations, custom voiceovers, and dynamic visual effects. 
+                  Perfect for product demos, educational content, and marketing campaigns.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Click "New Project" to start creating your first explainer video</span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Talking Avatars section - Project details or Attention Message */}
+        {selectedSection === 'talking-avatars' && (
+          false ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {"Placeholder Title"}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {false ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {"Placeholder description"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
+                  <span className="text-2xl">🗣️</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 bg-clip-text text-transparent">
+                  🗣️ Talking Avatars
+                </h2>
+                <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-pink-800 font-medium">
+                    🎭 Bring your avatars to life with realistic speech and natural expressions!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  Create engaging talking avatar videos with synchronized lip-sync, facial expressions, and natural voice synthesis. 
+                  Perfect for presentations, tutorials, and interactive content.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Click "New Project" to create your first talking avatar</span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Product in Motion section - Project details or Attention Message */}
+        {selectedSection === 'product-motion' && (
+          false ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {"Placeholder Title"}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {false ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {"Placeholder description"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center">
+                  <span className="text-2xl">🎬</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  🎬 Product in Motion
+                </h2>
+                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-cyan-800 font-medium">
+                    🚀 Showcase your products with stunning motion graphics and 3D animations!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  Create dynamic product showcases with smooth animations, 360° rotations, and cinematic effects. 
+                  Perfect for e-commerce, marketing campaigns, and product presentations.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Click "New Project" to animate your first product</span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Add Subtitles section - Project details or Attention Message */}
+        {selectedSection === 'add-subtitles' && (
+          false ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {"Placeholder Title"}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {false ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {"Placeholder description"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <span className="text-2xl">🎬</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-blue-500 via-purple-500 to-violet-500 bg-clip-text text-transparent">
+                  🎬 Subtitles Studio
+                </h2>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800 font-medium">
+                    ✨ Transform your videos with professional, AI-powered subtitles that engage your audience!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  Create accurate, customizable subtitles with AI transcription, emoji enrichment, keyword emphasis, 
+                  and stunning visual styles. Perfect for social media content, tutorials, and professional videos.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Click "New Project" to add subtitles to your first video</span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Video Translation section */}
+        {selectedSection === 'video-translate' && (
+          <div className="text-center py-12">
+            <div className="max-w-2xl mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+                <span className="text-2xl">🌍</span>
+              </div>
+              <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+                🌍 Video Translation
+              </h2>
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-green-800 font-medium">
+                  ✨ Translate videos into over 150 languages with AI-powered technology!
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                Break language barriers and reach global audiences. Upload your video, select your target language, 
+                and get professional translations with synchronized audio and subtitles.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                <span>Click "New Translation" to translate your first video</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* UGC Ads section - Project details or Attention Message */}
+        {selectedSection === 'ugc-ads' && (
+          false ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Project Image */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <img 
+                    src={"/placeholder.jpg"} 
+                    alt={"Placeholder Title"}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                
+                {/* Project Details */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
+                      {"Placeholder Title"}
+                    </h2>
+                  </div>
+                  
+                  {/* Project Status */}
+                  <div className="flex items-center gap-2">
+                    {false ? (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+                        <Globe className="h-4 w-4" />
+                        Public
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
+                        <Lock className="h-4 w-4" />
+                        Private
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {"Placeholder description"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                  <span className="text-2xl">📱</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent">
+                  📱 UGC Ads
+                </h2>
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-emerald-800 font-medium">
+                    💫 Create authentic user-generated content ads that drive real engagement!
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  Generate authentic-looking user-generated content for social media ads with realistic scenarios, 
+                  natural testimonials, and engaging storytelling that converts.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Click "New Project" to create your first UGC ad</span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
       </div>
     </div>
   )

@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { 
   X, 
   Upload, 
@@ -31,7 +32,9 @@ import {
   ImageIcon,
   Link,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Play,
+  Database
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -47,13 +50,17 @@ interface SubtitleFormProps {
   onSubmit: (data: AutocaptionModelInputs) => void
   onCancel: () => void
   isLoading?: boolean
+  isOpen?: boolean
 }
 
-export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: SubtitleFormProps) {
+export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = true }: SubtitleFormProps) {
   const [formData, setFormData] = useState<AutocaptionModelInputs>(DEFAULT_AUTOCAPTION_INPUTS)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
-  const [transcriptPreview, setTranscriptPreview] = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [videoSource, setVideoSource] = useState<'upload' | 'supabase'>('upload')
+  const [selectedVideo, setSelectedVideo] = useState<{id: string, title: string, image: string, video_url: string} | null>(null)
+  const [availableVideos, setAvailableVideos] = useState<Array<{id: string, title: string, image: string, video_url: string}>>([])
+  const [loadingVideos, setLoadingVideos] = useState(false)
   const [emojiMapEntries, setEmojiMapEntries] = useState<Array<{ key: string; value: string }>>([
     { key: "fire", value: "🔥" },
     { key: "wow", value: "🤯" },
@@ -63,11 +70,73 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
   const [selectedPreset, setSelectedPreset] = useState<string>("")
   
   const videoInputRef = useRef<HTMLInputElement>(null)
-  const transcriptInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+
+  // Load videos from Library API
+  useEffect(() => {
+    const loadVideosFromLibrary = async () => {
+      setLoadingVideos(true)
+      try {
+        const response = await fetch('/api/library?category=motions')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📊 Library API response:', data)
+          
+          const libraryItems = data.libraryItems || []
+          const videos = libraryItems.map((item: any) => ({
+            id: `${item.content_type}_${item.content_id}`,
+            title: item.title || `Video from ${item.content_type}`,
+            image: item.image || '/placeholder.jpg',
+            video_url: item.video_url || ''
+          })).filter((video: any) => video.video_url && video.video_url.trim() !== '')
+          
+          console.log(`🎬 Total videos loaded from library: ${videos.length}`)
+          setAvailableVideos(videos)
+        } else {
+          console.error('❌ Failed to fetch library:', response.status, response.statusText)
+          toast({
+            title: "Error loading videos",
+            description: "Failed to load videos from your library. Please try again.",
+            variant: "destructive"
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error loading videos from library:', error)
+        toast({
+          title: "Error loading videos",
+          description: "Failed to load videos from your library. Please try again.",
+          variant: "destructive"
+        })
+      } finally {
+        setLoadingVideos(false)
+      }
+    }
+
+    if (videoSource === 'supabase') {
+      loadVideosFromLibrary()
+    }
+  }, [videoSource])
 
   const handleInputChange = (field: keyof AutocaptionModelInputs, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleVideoSourceChange = (source: 'upload' | 'supabase') => {
+    setVideoSource(source)
+    if (source === 'upload') {
+      setSelectedVideo(null)
+      setVideoPreview(null)
+      handleInputChange("video_file_input", "")
+    } else {
+      setVideoPreview(null)
+      handleInputChange("video_file_input", "")
+    }
+  }
+
+  const handleVideoSelect = (video: {id: string, title: string, image: string, video_url: string}) => {
+    setSelectedVideo(video)
+    setVideoPreview(video.video_url)
+    handleInputChange("video_file_input", video.video_url)
   }
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,13 +160,6 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
     }
   }
 
-  const handleTranscriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setTranscriptPreview(file.name)
-      handleInputChange("transcript_file_input", file)
-    }
-  }
 
   const handlePresetSelect = (presetName: string) => {
     const preset = PRESETS.find(p => p.name === presetName)
@@ -158,141 +220,200 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Add Subtitles</h2>
-          <p className="text-muted-foreground">Upload a video and customize your captions</p>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="w-[95vw] max-w-none sm:w-[90vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl h-[95vh] max-h-[95vh] overflow-hidden p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
+          <DialogTitle className="text-lg sm:text-xl font-bold">Add Subtitles</DialogTitle>
+          <DialogDescription className="text-sm">
+            Upload a video and customize your captions
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex-1 overflow-y-auto scrollbar-hover">
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {/* Step 1: Upload */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Upload className="h-4 w-4" />
               Step 1: Upload
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Upload your video and optionally provide a transcript
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Video Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="video-upload">Video File *</Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                  id="video-upload"
-                />
-                <label htmlFor="video-upload" className="cursor-pointer">
-                  {videoPreview ? (
-                    <div className="space-y-2">
-                      <video 
-                        src={videoPreview} 
-                        className="w-full h-32 object-cover rounded-md mx-auto"
-                        controls
-                      />
-                      <p className="text-sm text-muted-foreground">Click to change video</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Video className="h-8 w-8 text-muted-foreground mx-auto" />
-                      <p className="text-sm text-muted-foreground">Click to upload video</p>
-                    </div>
-                  )}
-                </label>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Or paste a public URL: <Input 
-                  placeholder="https://example.com/video.mp4" 
-                  className="mt-1"
-                  onChange={(e) => handleInputChange("video_file_input", e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Transcript Upload */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="has-transcript"
-                  checked={!!formData.transcript_file_input}
-                  onCheckedChange={(checked) => {
-                    if (!checked) {
-                      handleInputChange("transcript_file_input", undefined)
-                      setTranscriptPreview(null)
-                    }
-                  }}
-                />
-                <Label htmlFor="has-transcript">I already have a transcript JSON</Label>
-              </div>
+          <CardContent className="space-y-2 sm:space-y-3">
+            {/* Video Source */}
+            <div className="space-y-3 max-w-2xl">
+              <Label className="text-sm font-medium">🎬 Video Source *</Label>
               
-              {formData.transcript_file_input && (
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+              {/* Source Selection */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={videoSource === 'upload' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleVideoSourceChange('upload')}
+                  className="flex-1"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload File
+                </Button>
+                <Button
+                  type="button"
+                  variant={videoSource === 'supabase' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleVideoSourceChange('supabase')}
+                  className="flex-1"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  From Library
+                </Button>
+              </div>
+
+              {/* Upload Section */}
+              {videoSource === 'upload' && (
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 sm:p-4 text-center hover:border-muted-foreground/50 transition-colors">
                   <input
-                    ref={transcriptInputRef}
+                    ref={videoInputRef}
                     type="file"
-                    accept=".json"
-                    onChange={handleTranscriptUpload}
+                    accept="video/*"
+                    onChange={handleVideoUpload}
                     className="hidden"
-                    id="transcript-upload"
+                    id="video-upload"
                   />
-                  <label htmlFor="transcript-upload" className="cursor-pointer">
-                    {transcriptPreview ? (
+                  <label htmlFor="video-upload" className="cursor-pointer">
+                    {videoPreview ? (
                       <div className="space-y-2">
-                        <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
-                        <p className="text-sm text-muted-foreground">{transcriptPreview}</p>
-                        <p className="text-xs text-muted-foreground">Click to change transcript</p>
+                        <video 
+                          src={videoPreview} 
+                          className="w-full h-20 sm:h-24 object-cover rounded-md mx-auto"
+                          controls
+                        />
+                        <p className="text-xs text-muted-foreground">Click to change video</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
-                        <p className="text-sm text-muted-foreground">Click to upload transcript JSON</p>
+                        <Video className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground mx-auto" />
+                        <p className="text-xs sm:text-sm text-muted-foreground">Click to upload video</p>
                       </div>
                     )}
                   </label>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">
-                If provided, model uses your words/timestamps instead of transcribing.
-              </p>
+
+              {/* Supabase Videos Section */}
+              {videoSource === 'supabase' && (
+                <div className="space-y-3">
+                  {loadingVideos ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                      <p className="text-sm">Loading videos from your library...</p>
+                    </div>
+                  ) : availableVideos.length > 0 ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        {availableVideos.length} video{availableVideos.length > 1 ? 's' : ''} available from Motions category
+                      </Label>
+                      <div className="grid grid-cols-1 gap-3 max-h-80 overflow-y-auto pr-2">
+                        {availableVideos.map((video) => (
+                          <div
+                            key={video.id}
+                            className={`group border rounded-lg overflow-hidden cursor-pointer transition-all duration-200 ${
+                              selectedVideo?.id === video.id 
+                                ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200' 
+                                : 'border-muted-foreground/25 hover:border-blue-300 hover:shadow-sm'
+                            }`}
+                            onClick={() => handleVideoSelect(video)}
+                          >
+                            <div className="flex gap-3 p-3">
+                              {/* Video Thumbnail */}
+                              <div className="flex-shrink-0 relative">
+                                {video.video_url ? (
+                                  <div className="relative w-24 h-16 bg-black rounded overflow-hidden">
+                                    <video 
+                                      src={video.video_url}
+                                      className="w-full h-full object-cover"
+                                      muted
+                                      playsInline
+                                      onMouseEnter={(e) => e.currentTarget.play()}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.pause()
+                                        e.currentTarget.currentTime = 0
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                                      <Play className="h-6 w-6 text-white opacity-80" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <img 
+                                    src={video.image} 
+                                    alt={video.title}
+                                    className="w-24 h-16 object-cover rounded"
+                                  />
+                                )}
+                                {selectedVideo?.id === video.id && (
+                                  <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Video Info */}
+                              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <p className="text-sm font-semibold text-foreground truncate mb-0.5">
+                                  {video.title}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Video className="h-3 w-3" />
+                                  <span>Motion video</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Database className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm font-medium">No videos found in your library</p>
+                      <p className="text-xs mt-1">Create videos in your Motions library first:</p>
+                      <p className="text-xs text-muted-foreground/80">UGC Ads, Talking Avatars, Product Motion, Explainers</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
           </CardContent>
         </Card>
 
         {/* Step 2: Core Options */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Settings className="h-4 w-4" />
               Step 2: Core Options
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Configure basic subtitle settings
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-3 sm:space-y-4">
             {/* Presets */}
             <div className="space-y-2">
-              <Label>Quick Presets</Label>
-              <div className="flex flex-wrap gap-2">
+              <Label className="text-sm font-medium">Quick Presets</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 sm:gap-2">
                 {PRESETS.map((preset) => (
                   <Button
                     key={preset.name}
                     type="button"
                     variant={selectedPreset === preset.name ? "default" : "outline"}
                     size="sm"
+                    className="h-7 sm:h-8 text-xs px-2 sm:px-3"
                     onClick={() => handlePresetSelect(preset.name)}
                   >
                     {preset.name}
@@ -302,15 +423,15 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
             </div>
 
             {/* Output Type */}
-            <div className="space-y-3">
-              <Label>Output Type</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Output Type</Label>
               <div className="flex items-center space-x-2">
                 <Switch
                   id="output-video"
                   checked={formData.output_video}
                   onCheckedChange={(checked) => handleInputChange("output_video", checked)}
                 />
-                <Label htmlFor="output-video">Render captioned video</Label>
+                <Label htmlFor="output-video" className="text-sm">Render captioned video</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -318,120 +439,141 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
                   checked={formData.output_transcript}
                   onCheckedChange={(checked) => handleInputChange("output_transcript", checked)}
                 />
-                <Label htmlFor="output-transcript">Also return transcript JSON</Label>
+                <Label htmlFor="output-transcript" className="text-sm">Also return transcript JSON</Label>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Enable both to iterate quickly.
-              </p>
             </div>
 
             {/* Font & Size */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="font">Font Family</Label>
-                <Input
-                  id="font"
-                  value={formData.font}
-                  onChange={(e) => handleInputChange("font", e.target.value)}
-                  placeholder="Poppins/Poppins-ExtraBold.ttf"
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="space-y-1 max-w-xs">
+                <Label htmlFor="font" className="text-sm">🎨 Font Family</Label>
+                <Select value={formData.font} onValueChange={(value) => handleInputChange("font", value)}>
+                  <SelectTrigger className="h-8 text-xs sm:text-sm">
+                    <SelectValue placeholder="Select a font..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Poppins/Poppins-ExtraBold.ttf">🎯 Poppins ExtraBold</SelectItem>
+                    <SelectItem value="Poppins/Poppins-Bold.ttf">💪 Poppins Bold</SelectItem>
+                    <SelectItem value="Poppins/Poppins-BoldItalic.ttf">✨ Poppins Bold Italic</SelectItem>
+                    <SelectItem value="Poppins/Poppins-ExtraBoldItalic.ttf">🚀 Poppins ExtraBold Italic</SelectItem>
+                    <SelectItem value="Poppins/Poppins-Black.ttf">⚡ Poppins Black</SelectItem>
+                    <SelectItem value="Poppins/Poppins-BlackItalic.ttf">🔥 Poppins Black Italic</SelectItem>
+                    <SelectItem value="Atkinson_Hyperlegible/AtkinsonHyperlegible-Bold.ttf">👁️ Atkinson Hyperlegible Bold</SelectItem>
+                    <SelectItem value="Atkinson_Hyperlegible/AtkinsonHyperlegible-BoldItalic.ttf">📖 Atkinson Hyperlegible Bold Italic</SelectItem>
+                    <SelectItem value="M_PLUS_Rounded_1c/MPLUSRounded1c-ExtraBold.ttf">🎪 M+ Rounded ExtraBold</SelectItem>
+                    <SelectItem value="Arial/Arial_Bold.ttf">📝 Arial Bold</SelectItem>
+                    <SelectItem value="Arial/Arial_BoldItalic.ttf">📄 Arial Bold Italic</SelectItem>
+                    <SelectItem value="Tajawal/Tajawal-Bold.ttf">🌍 Tajawal Bold</SelectItem>
+                    <SelectItem value="Tajawal/Tajawal-ExtraBold.ttf">🌎 Tajawal ExtraBold</SelectItem>
+                    <SelectItem value="Tajawal/Tajawal-Black.ttf">🌏 Tajawal Black</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="fontsize">Font Size</Label>
+              <div className="space-y-1 max-w-xs">
+                <Label htmlFor="fontsize" className="text-sm">📏 Font Size</Label>
                 <Input
                   id="fontsize"
                   type="number"
                   step="0.1"
                   value={formData.fontsize}
                   onChange={(e) => handleInputChange("fontsize", parseFloat(e.target.value))}
+                  className="h-8 text-xs sm:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  7.0 is good for landscape videos, 4.0 for reels.
+                  7.0 for landscape, 4.0 for reels
                 </p>
               </div>
             </div>
 
             {/* Position & Characters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="subs-position">Subtitles Position</Label>
-                <Input
-                  id="subs-position"
-                  value={formData.subs_position}
-                  onChange={(e) => handleInputChange("subs_position", e.target.value)}
-                  placeholder="bottom75"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Larger number = lower on screen.
-                </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="space-y-1 max-w-xs">
+                <Label htmlFor="subs-position" className="text-sm">📍 Subtitles Position</Label>
+                <Select value={formData.subs_position} onValueChange={(value) => handleInputChange("subs_position", value)}>
+                  <SelectTrigger id="subs-position" className="h-8 text-xs sm:text-sm">
+                    <SelectValue placeholder="Select position..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bottom75">⬇️ Bottom 75%</SelectItem>
+                    <SelectItem value="center">↔️ Center</SelectItem>
+                    <SelectItem value="top">⬆️ Top</SelectItem>
+                    <SelectItem value="bottom">🔽 Bottom</SelectItem>
+                    <SelectItem value="left">⬅️ Left</SelectItem>
+                    <SelectItem value="right">➡️ Right</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-chars">Max Characters Per Line</Label>
+              <div className="space-y-1 max-w-xs">
+                <Label htmlFor="max-chars" className="text-sm">📝 Max Characters Per Line</Label>
                 <Input
                   id="max-chars"
                   type="number"
                   value={formData.MaxChars}
                   onChange={(e) => handleInputChange("MaxChars", parseInt(e.target.value))}
+                  className="h-8 text-xs sm:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Keep lines readable.
+                  Keep lines readable
                 </p>
               </div>
             </div>
 
             {/* Style */}
-            <div className="space-y-4">
-              <Label>Style</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="color">Text Color</Label>
+            <div className="space-y-2 sm:space-y-3">
+              <Label className="text-sm font-medium">🎨 Style</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div className="space-y-1 max-w-xs">
+                  <Label htmlFor="color" className="text-sm">🎨 Text Color</Label>
                   <div className="flex gap-2">
                     <Input
                       id="color"
                       value={formData.color}
                       onChange={(e) => handleInputChange("color", e.target.value)}
                       placeholder="white"
+                      className="h-8 text-xs sm:text-sm flex-1"
                     />
                     <input
                       type="color"
                       value={formData.color === "white" ? "#ffffff" : formData.color}
                       onChange={(e) => handleInputChange("color", e.target.value)}
-                      className="w-10 h-10 rounded border"
+                      className="w-8 h-8 rounded border flex-shrink-0"
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stroke-color">Stroke Color</Label>
+                <div className="space-y-1 max-w-xs">
+                  <Label htmlFor="stroke-color" className="text-sm">🖌️ Stroke Color</Label>
                   <div className="flex gap-2">
                     <Input
                       id="stroke-color"
                       value={formData.stroke_color}
                       onChange={(e) => handleInputChange("stroke_color", e.target.value)}
                       placeholder="black"
+                      className="h-8 text-xs sm:text-sm flex-1"
                     />
                     <input
                       type="color"
                       value={formData.stroke_color === "black" ? "#000000" : formData.stroke_color}
                       onChange={(e) => handleInputChange("stroke_color", e.target.value)}
-                      className="w-10 h-10 rounded border"
+                      className="w-8 h-8 rounded border flex-shrink-0"
                     />
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="stroke-width">Stroke Width</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                <div className="space-y-1 max-w-xs">
+                  <Label htmlFor="stroke-width" className="text-sm">📐 Stroke Width</Label>
                   <Input
                     id="stroke-width"
                     type="number"
                     step="0.1"
                     value={formData.stroke_width}
                     onChange={(e) => handleInputChange("stroke_width", parseFloat(e.target.value))}
+                    className="h-8 text-xs sm:text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="opacity">Background Opacity</Label>
+                <div className="space-y-1 max-w-xs">
+                  <Label htmlFor="opacity" className="text-sm">👻 Background Opacity</Label>
                   <div className="space-y-1">
                     <Slider
                       value={[formData.opacity]}
@@ -445,28 +587,29 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
                     </p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="kerning">Character Spacing</Label>
+                <div className="space-y-1 sm:col-span-2 lg:col-span-1 max-w-xs">
+                  <Label htmlFor="kerning" className="text-sm">📏 Character Spacing</Label>
                   <Input
                     id="kerning"
                     type="number"
                     step="0.1"
                     value={formData.kerning}
                     onChange={(e) => handleInputChange("kerning", parseFloat(e.target.value))}
+                    className="h-8 text-xs sm:text-sm"
                   />
                 </div>
               </div>
             </div>
 
             {/* Language & Direction */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="right-to-left"
                   checked={formData.right_to_left}
                   onCheckedChange={(checked) => handleInputChange("right_to_left", checked)}
                 />
-                <Label htmlFor="right-to-left">Right-to-left</Label>
+                <Label htmlFor="right-to-left" className="text-sm">Right-to-left</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -474,10 +617,10 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
                   checked={formData.translate}
                   onCheckedChange={(checked) => handleInputChange("translate", checked)}
                 />
-                <Label htmlFor="translate">Translate to English</Label>
+                <Label htmlFor="translate" className="text-sm">Translate to English</Label>
               </div>
               <p className="text-xs text-muted-foreground">
-                Only Arial fonts supported when RTL is on.
+                Only Arial fonts supported when RTL is on
               </p>
             </div>
           </CardContent>
@@ -487,63 +630,64 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
         <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
           <Card>
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardTitle className="flex items-center justify-between">
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-2 sm:pb-3">
+                <CardTitle className="flex items-center justify-between text-base sm:text-lg">
                   <div className="flex items-center gap-2">
-                    <Wand2 className="h-5 w-5" />
+                    <Wand2 className="h-4 w-4" />
                     Step 3: Advanced Options
                   </div>
                   {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Power user settings and AI enhancements
                 </CardDescription>
               </CardHeader>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-3 sm:space-y-4">
                 {/* Highlight Color */}
-                <div className="space-y-2">
-                  <Label htmlFor="highlight-color">Highlight Color</Label>
+                <div className="space-y-1 max-w-xs">
+                  <Label htmlFor="highlight-color" className="text-sm">✨ Highlight Color</Label>
                   <div className="flex gap-2">
                     <Input
                       id="highlight-color"
                       value={formData.highlight_color}
                       onChange={(e) => handleInputChange("highlight_color", e.target.value)}
                       placeholder="yellow"
+                      className="h-8"
                     />
                     <input
                       type="color"
                       value={formData.highlight_color === "yellow" ? "#ffff00" : formData.highlight_color}
                       onChange={(e) => handleInputChange("highlight_color", e.target.value)}
-                      className="w-10 h-10 rounded border"
+                      className="w-8 h-8 rounded border"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Used for the model's highlight style.
+                    Used for the model's highlight style
                   </p>
                 </div>
 
                 {/* Emoji Enrichment */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="emoji-enrichment"
                       checked={formData.emoji_enrichment}
                       onCheckedChange={(checked) => handleInputChange("emoji_enrichment", checked)}
                     />
-                    <Label htmlFor="emoji-enrichment">🎯 Add Emojis to Captions (AI-powered)</Label>
+                    <Label htmlFor="emoji-enrichment" className="text-sm">🎯 Add Emojis to Captions (AI-powered)</Label>
                   </div>
                   
                   {formData.emoji_enrichment && (
-                    <div className="space-y-3 pl-6">
-                      <div className="space-y-2">
-                        <Label>Emoji Strategy</Label>
+                    <div className="space-y-2 pl-4">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Emoji Strategy</Label>
                         <Select
                           value={formData.emoji_strategy}
                           onValueChange={(value) => handleInputChange("emoji_strategy", value as "AI" | "manualMap")}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-8">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -558,26 +702,29 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
 
                       {formData.emoji_strategy === "manualMap" && (
                         <div className="space-y-2">
-                          <Label>Custom Emoji Map</Label>
+                          <Label className="text-sm">Custom Emoji Map</Label>
                           {emojiMapEntries.map((entry, index) => (
                             <div key={index} className="flex gap-2">
                               <Input
                                 placeholder="keyword"
                                 value={entry.key}
                                 onChange={(e) => updateEmojiMapEntry(index, 'key', e.target.value)}
+                                className="h-8"
                               />
                               <Input
                                 placeholder="emoji"
                                 value={entry.value}
                                 onChange={(e) => updateEmojiMapEntry(index, 'value', e.target.value)}
+                                className="h-8"
                               />
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="icon"
+                                className="h-8 w-8"
                                 onClick={() => removeEmojiMapEntry(index)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>
                           ))}
@@ -585,50 +732,52 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="h-8 text-xs"
                             onClick={addEmojiMapEntry}
                           >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-3 w-3 mr-1" />
                             Add Entry
                           </Button>
                         </div>
                       )}
                       
                       <p className="text-xs text-muted-foreground">
-                        Adds relevant emojis next to words. Slightly increases processing time.
+                        Adds relevant emojis next to words. Slightly increases processing time
                       </p>
                     </div>
                   )}
                 </div>
 
                 {/* Keyword Emphasis */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="keyword-emphasis"
                       checked={formData.keyword_emphasis}
                       onCheckedChange={(checked) => handleInputChange("keyword_emphasis", checked)}
                     />
-                    <Label htmlFor="keyword-emphasis">💡 Emphasize Important Words</Label>
+                    <Label htmlFor="keyword-emphasis" className="text-sm">💡 Emphasize Important Words</Label>
                   </div>
                   
                   {formData.keyword_emphasis && (
-                    <div className="space-y-3 pl-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="keywords">Keywords (comma-separated)</Label>
+                    <div className="space-y-2 pl-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="keywords" className="text-sm">Keywords (comma-separated)</Label>
                         <Input
                           id="keywords"
                           value={keywordsInput}
                           onChange={(e) => handleKeywordsChange(e.target.value)}
                           placeholder="AI, powerful, fast"
+                          className="h-8"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Emphasis Style</Label>
+                      <div className="space-y-1">
+                        <Label className="text-sm">Emphasis Style</Label>
                         <Select
                           value={formData.keyword_style}
                           onValueChange={(value) => handleInputChange("keyword_style", value as "CAPS" | "EMOJI_WRAP" | "ASTERISKS")}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-8">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -644,67 +793,40 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false }: Subtitle
                   )}
                 </div>
 
-                {/* Output Management */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="save-to-supabase"
-                      checked={formData.save_to_supabase}
-                      onCheckedChange={(checked) => handleInputChange("save_to_supabase", checked)}
-                    />
-                    <Label htmlFor="save-to-supabase">Save Outputs to Supabase</Label>
-                  </div>
-                  
-                  {formData.save_to_supabase && (
-                    <div className="space-y-3 pl-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="supabase-bucket">Bucket</Label>
-                          <Input
-                            id="supabase-bucket"
-                            value={formData.supabase_bucket}
-                            onChange={(e) => handleInputChange("supabase_bucket", e.target.value)}
-                            placeholder="videos"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="supabase-path">Path Prefix</Label>
-                          <Input
-                            id="supabase-path"
-                            value={formData.supabase_pathPrefix}
-                            onChange={(e) => handleInputChange("supabase_pathPrefix", e.target.value)}
-                            placeholder="captioned/"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </CollapsibleContent>
           </Card>
         </Collapsible>
 
-        {/* Submit Buttons */}
-        <div className="flex gap-3 justify-end">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isLoading || !formData.video_file_input}>
-            {isLoading ? (
-              <>
-                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Captions
-              </>
-            )}
-          </Button>
+        </form>
         </div>
-      </form>
-    </div>
+
+        <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 border-t bg-muted/30 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 justify-end w-full">
+            <Button type="button" variant="outline" onClick={onCancel} className="h-9 w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !formData.video_file_input} 
+              className="h-9 w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+              onClick={handleSubmit}
+            >
+              {isLoading ? (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Captions
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -1,117 +1,191 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { AutocaptionModelInputs } from '@/lib/types/subtitles'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
-export async function GET() {
+// Helper to convert null to undefined for Zod optional()
+const nullToUndefined = z.literal('null').transform(() => undefined);
+
+const createSubtitleSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Status
+  status: z.enum(['draft', 'processing', 'completed', 'failed']).default('draft'),
+  
+  // Input Files
+  video_file_input: z.string().min(1, "Video file is required"),
+  transcript_file_input: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Generation Options
+  emoji_enrichment: z.boolean().default(false),
+  keyword_emphasis: z.boolean().default(false),
+  
+  // Output
+  generated_subtitle_file: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  storage_path: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Metadata
+  metadata: z.object({
+    projectTitle: z.string().optional(),
+    timestamp: z.string().optional(),
+  }).optional(),
+});
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const supabase = await createClient()
-    
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const body = await request.json();
+    const validatedData = createSubtitleSchema.parse(body);
 
-    // Fetch user's subtitles
-    const { data: subtitles, error } = await supabase
+    // Simulate subtitle generation and get a placeholder path
+    const generatedSubtitleFileName = `${uuidv4()}-subtitles.srt`;
+    const generatedStoragePath = `renders/subtitles/${user.id}/generated/${generatedSubtitleFileName}`;
+
+    const { data, error } = await supabase
       .from('subtitles')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .insert([
+        {
+          user_id: user.id,
+          title: validatedData.title,
+          description: validatedData.description,
+          status: validatedData.status,
+          video_file_input: validatedData.video_file_input,
+          transcript_file_input: validatedData.transcript_file_input,
+          emoji_enrichment: validatedData.emoji_enrichment,
+          keyword_emphasis: validatedData.keyword_emphasis,
+          generated_subtitle_file: generatedStoragePath,
+          storage_path: generatedStoragePath,
+          metadata: validatedData.metadata || {},
+          content: {}, // Can be expanded later if needed
+        },
+      ])
+      .select();
 
     if (error) {
-      console.error('Error fetching subtitles:', error)
-      return NextResponse.json({ error: 'Failed to fetch subtitles' }, { status: 500 })
+      console.error('Error inserting subtitle:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ subtitles })
-  } catch (error) {
-    console.error('Error in GET /api/subtitles:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Add to library_items
+    const { error: libraryError } = await supabase
+      .from('library_items')
+      .insert([
+        {
+          user_id: user.id,
+          item_id: data[0].id,
+          item_type: 'subtitle',
+          title: validatedData.title,
+          description: validatedData.description || `Subtitle project with ${validatedData.emoji_enrichment ? 'emoji enrichment' : 'no emoji enrichment'} and ${validatedData.keyword_emphasis ? 'keyword emphasis' : 'no keyword emphasis'}`,
+          image_url: null, // No image for subtitles
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (libraryError) {
+      console.error('Error inserting into library_items:', libraryError);
+      // Decide if this should be a hard fail or just log the error
+    }
+
+    return NextResponse.json({ 
+      message: 'Subtitle project created successfully', 
+      data,
+      success: true
+    }, { status: 200 });
+  } catch (validationError) {
+    console.error('Validation error:', validationError);
+    return NextResponse.json({ error: (validationError as z.ZodError).errors }, { status: 400 });
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+// GET endpoint to fetch subtitles by user
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    const body = await request.json()
-    const subtitleData: AutocaptionModelInputs = body
-
-    // Validate required fields
-    if (!subtitleData.video_file_input) {
-      return NextResponse.json({ error: 'Video file is required' }, { status: 400 })
-    }
-
-    // Create subtitle record
-    const { data: subtitle, error } = await supabase
-      .from('subtitles')
-      .insert({
-        user_id: user.id,
-        title: body.title || `Subtitle Project - ${new Date().toLocaleDateString()}`,
-        description: body.description || 'Video subtitle generation project',
-        video_file_input: subtitleData.video_file_input,
-        transcript_file_input: subtitleData.transcript_file_input,
-        output_video: subtitleData.output_video,
-        output_transcript: subtitleData.output_transcript,
-        subs_position: subtitleData.subs_position,
-        color: subtitleData.color,
-        highlight_color: subtitleData.highlight_color,
-        fontsize: subtitleData.fontsize,
-        max_chars: subtitleData.MaxChars,
-        opacity: subtitleData.opacity,
-        font: subtitleData.font,
-        stroke_color: subtitleData.stroke_color,
-        stroke_width: subtitleData.stroke_width,
-        kerning: subtitleData.kerning,
-        right_to_left: subtitleData.right_to_left,
-        translate: subtitleData.translate,
-        emoji_enrichment: subtitleData.emoji_enrichment,
-        emoji_strategy: subtitleData.emoji_strategy,
-        emoji_map: subtitleData.emoji_map,
-        keyword_emphasis: subtitleData.keyword_emphasis,
-        keywords: subtitleData.keywords,
-        keyword_style: subtitleData.keyword_style,
-        save_to_supabase: subtitleData.save_to_supabase,
-        supabase_bucket: subtitleData.supabase_bucket,
-        supabase_path_prefix: subtitleData.supabase_pathPrefix,
-        status: 'processing',
-        content: subtitleData,
-        metadata: {
-          videoFile: subtitleData.video_file_input,
-          hasTranscript: !!subtitleData.transcript_file_input,
-          emojiEnrichment: subtitleData.emoji_enrichment,
-          keywordEmphasis: subtitleData.keyword_emphasis,
-          createdAt: new Date().toISOString()
-        }
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating subtitle:', error)
-      return NextResponse.json({ error: 'Failed to create subtitle project' }, { status: 500 })
-    }
-
-    // TODO: Here you would typically call your subtitle generation service
-    // For now, we'll just return the created record
-    // In a real implementation, you might:
-    // 1. Upload the video to your processing service
-    // 2. Call a subtitle generation API (like Replicate, etc.)
-    // 3. Process the results and update the record
-
-    return NextResponse.json({ 
-      subtitle,
-      message: 'Subtitle project created successfully. Processing will begin shortly.'
-    })
-  } catch (error) {
-    console.error('Error in POST /api/subtitles:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const { data: subtitles, error } = await supabase
+    .from('subtitles')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching subtitles:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ subtitles }, { status: 200 });
+}
+
+// PUT endpoint to update a subtitle project
+export async function PUT(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id, ...updates } = await request.json();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Subtitle ID is required for update' }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from('subtitles')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select();
+
+  if (error) {
+    console.error('Error updating subtitle:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Subtitle not found or unauthorized' }, { status: 404 });
+  }
+
+  return NextResponse.json({ message: 'Subtitle updated successfully', data }, { status: 200 });
+}
+
+// DELETE endpoint to delete a subtitle project
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await request.json();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Subtitle ID is required for deletion' }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from('subtitles')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error deleting subtitle:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ message: 'Subtitle deleted successfully' }, { status: 200 });
 }

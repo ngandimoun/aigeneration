@@ -400,7 +400,6 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
   
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
-  const [isPublic, setIsPublic] = useState(true)
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({})
 
   // Smart behavior logic
@@ -512,71 +511,65 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
   }
 
   const handleSaveSound = async () => {
-    if (!soundName.trim()) {
+    if (!prompt.trim()) {
       toast({
-        title: "Sound name required",
-        description: "Please enter a name for your sound.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (!selectedPreview) {
-      toast({
-        title: "Select a preview",
-        description: "Please select a sound preview to save.",
+        title: "Prompt required",
+        description: "Please enter a prompt describing the sound you want to create.",
         variant: "destructive"
       })
       return
     }
 
     try {
-      const soundData = {
-        name: soundName,
-        generated_sound_id: selectedPreview,
-        prompt,
-        category,
-        usage_context: usageContext,
-        world_link: worldLink,
-        seed_variability: seedVariability[0],
-        sound_texture: soundTexture,
-        frequency_focus: frequencyFocus[0],
-        density: density[0],
-        attack_type: attackType,
-        tail_decay: tailDecay[0],
-        audio_quality: audioQuality,
-        environment_type: environmentType,
-        distance_from_listener: distanceFromListener[0],
-        reverb_character: reverbCharacter,
-        stereo_behavior: stereoBehavior,
-        ambience_layer: ambienceLayer,
-        mood_context: moodContext,
-        tension_level: tensionLevel[0],
-        motion_character: motionCharacter,
-        purpose_in_scene: purposeInScene,
-        prompt_influence: promptInfluence[0],
-        duration: duration[0],
-        loop_mode: loopMode,
-        loop_type: loopType,
-        tempo_bpm: tempoBpm,
-        fade_in: fadeIn[0],
-        fade_out: fadeOut[0],
-        tags,
-        is_public: isPublic,
-        created_at: new Date().toISOString()
+      // Create FormData for file uploads
+      const formData = new FormData()
+      
+      // Add all form fields
+      formData.append('name', soundName || `Sound_${Date.now()}`)
+      formData.append('prompt', prompt)
+      formData.append('category', category || '')
+      formData.append('usage_context', usageContext || '')
+      formData.append('world_link', worldLink || '')
+      formData.append('seed_variability', seedVariability[0].toString())
+      formData.append('sound_texture', soundTexture || '')
+      formData.append('frequency_focus', frequencyFocus[0].toString())
+      formData.append('density', density[0].toString())
+      formData.append('attack_type', attackType || '')
+      formData.append('tail_decay', tailDecay[0].toString())
+      formData.append('audio_quality', audioQuality || '')
+      formData.append('environment_type', environmentType || '')
+      formData.append('distance_from_listener', distanceFromListener[0].toString())
+      formData.append('reverb_character', reverbCharacter || '')
+      formData.append('stereo_behavior', stereoBehavior || '')
+      formData.append('ambience_layer', ambienceLayer || '')
+      formData.append('mood_context', moodContext || '')
+      formData.append('tension_level', tensionLevel[0].toString())
+      formData.append('motion_character', motionCharacter || '')
+      formData.append('purpose_in_scene', purposeInScene || '')
+      formData.append('prompt_influence', promptInfluence[0].toString())
+      formData.append('duration', duration[0].toString())
+      formData.append('loop_mode', loopMode.toString())
+      formData.append('loop_type', loopType || '')
+      formData.append('tempo_bpm', tempoBpm || '')
+      formData.append('fade_in', fadeIn[0].toString())
+      formData.append('fade_out', fadeOut[0].toString())
+      formData.append('tags', JSON.stringify(tags))
+      
+      // Add reference audio file if uploaded
+      if (referenceUpload) {
+        formData.append('referenceAudio', referenceUpload)
       }
 
       // API call to save sound
       const response = await fetch('/api/sound-fx', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(soundData)
+        body: formData
       })
 
       if (response.ok) {
         toast({
-          title: "Sound FX saved successfully!",
-          description: `Sound '${soundName}' is now part of your DreamCut Sound Library.`
+          title: "Sound FX generated successfully!",
+          description: `Sound '${soundName || 'Unnamed Sound'}' has been generated and added to your DreamCut Sound Library.`
         })
         onClose()
       } else {
@@ -612,23 +605,6 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
               <h2 className="text-xs font-bold">🎵 Sound FX Studio</h2>
               <p className="text-[10px] text-muted-foreground">Craft emotionally intelligent sound design synchronized with your world's mood and story.</p>
             </div>
-            {/* Public/Private Toggle */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className={cn(
-                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
-                isPublic 
-                  ? "bg-green-100 text-green-700 border border-green-200" 
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              )}>
-                {isPublic ? "Public" : "Private"}
-              </span>
-              <Switch
-                id="public-toggle"
-                checked={isPublic}
-                onCheckedChange={setIsPublic}
-                className="scale-75"
-              />
-            </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-5 w-5 shrink-0">
             <X className="h-3 w-3" />
@@ -650,13 +626,49 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
             </CardHeader>
             <CardContent className="space-y-3 p-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">🎵 Sound Name</Label>
+                  <Input
+                    value={soundName}
+                    onChange={(e) => setSoundName(e.target.value)}
+                    placeholder="e.g., Cyber Door Slide"
+                    className="h-7 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">🏷️ Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Add tag"
+                      onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                      className="h-7 text-xs"
+                    />
+                    <Button onClick={addTag} size="sm" className="h-7 text-xs">Add</Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs">
+                        {tag}
+                        <X 
+                          className="h-3 w-3 cursor-pointer" 
+                          onClick={() => removeTag(tag)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-2 md:col-span-2">
-                  <Label className="text-xs">📝 Prompt / Description</Label>
+                  <Label className="text-xs">📝 Prompt / Description *</Label>
                   <Textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="A metallic door sliding open with a pneumatic hiss."
                     className="min-h-[60px] text-xs resize-none"
+                    required
                   />
                 </div>
 
@@ -1184,132 +1196,7 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
             </CardContent>
           </Card>
 
-          {/* Preview & Generation Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                🎵 Preview & Generation
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Generate 3 variations, compare, and fine-tune your sound.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-2">
-              <Button 
-                onClick={handleGeneratePreviews}
-                disabled={isGenerating}
-                className="w-full h-7 text-xs"
-              >
-                {isGenerating ? (
-                  <>
-                    <Sparkles className="h-3 w-3 mr-2 animate-spin" />
-                    🎵 Crafting your sound...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-3 w-3 mr-2" />
-                    Generate Sound FX Previews
-                  </>
-                )}
-              </Button>
 
-              {soundPreviews.length > 0 && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {soundPreviews.map((preview) => (
-                      <Card key={preview.id} className={cn(
-                        "cursor-pointer transition-all",
-                        selectedPreview === preview.id && "ring-2 ring-primary"
-                      )} onClick={() => setSelectedPreview(preview.id)}>
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <Badge variant="secondary" className="text-xs">{preview.variation}</Badge>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handlePlayPreview(preview.id)
-                              }}
-                            >
-                              {isPlaying === preview.id ? (
-                                <Pause className="h-3 w-3" />
-                              ) : (
-                                <Play className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {preview.duration_secs}s • {preview.category}
-                          </div>
-                          {/* Waveform visualization would go here */}
-                          <div className="h-5 bg-muted rounded mt-2 flex items-center justify-center">
-                            <span className="text-[9px] text-muted-foreground">Waveform</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Export & Save Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                💾 Export & Save
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Name, tag, and store the selected sound as a reusable Sound Kit.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">🎵 Sound Name</Label>
-                  <Input
-                    value={soundName}
-                    onChange={(e) => setSoundName(e.target.value)}
-                    placeholder="e.g., Cyber Door Slide"
-                    className="h-7 text-xs"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs">🏷️ Tags</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Add tag"
-                      onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                      className="h-7 text-xs"
-                    />
-                    <Button onClick={addTag} size="sm" className="h-7 text-xs">Add</Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs">
-                        {tag}
-                        <X 
-                          className="h-3 w-3 cursor-pointer" 
-                          onClick={() => removeTag(tag)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* <Button onClick={handleSaveSound} className="w-full h-7 text-xs">
-                <Save className="h-3 w-3 mr-2" />
-                Save Sound Kit
-              </Button> */}
-            </CardContent>
-          </Card>
 
           {/* Smart Message */}
           {smartMessage && (
@@ -1331,9 +1218,13 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={handleSaveSound} disabled={!soundName.trim() || !selectedPreview} className="h-10 text-sm font-semibold min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Sound
+                <Button onClick={handleSaveSound} disabled={!prompt.trim() || isGenerating} className="h-10 text-sm font-semibold min-w-[120px] bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">
+                  {isGenerating ? (
+                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Generate Sound Fx
                 </Button>
               </div>
             </CardContent>

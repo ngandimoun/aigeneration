@@ -4,6 +4,13 @@ import { z } from 'zod'
 import { fal } from '@fal-ai/client'
 import { STYLE_MAP } from '@/lib/styles/style-map'
 import { ProductMockupGenerationRequest, ProductMockupGenerationResult } from '@/lib/types/product-mockup'
+import { downloadAndUploadMultipleImages } from '@/lib/storage/download-and-upload'
+import { v4 as uuidv4 } from 'uuid'
+
+// Helper function to convert null to undefined
+const nullToUndefined = (value: string | null): string | undefined => {
+  return value === null ? undefined : value
+}
 
 // Configure fal.ai client
 fal.config({
@@ -18,22 +25,22 @@ const productMockupGenerationSchema = z.object({
   aspectRatio: z.enum(['1:1', '4:5', '16:9', '9:16', '2:1', '3:4', '2:3', '4:3', '3:2']).default('1:1'),
   
   // Product Photos (will be handled as base64 strings)
-  productPhotos: z.array(z.string()).min(1).max(4), // base64 encoded images
+  productPhotos: z.array(z.string()).max(4).optional().default([]), // base64 encoded images
   
   // Logo Upload
   logoFile: z.string().optional(), // base64 encoded logo
   logoUsagePrompt: z.string().max(500).optional(),
   
   // Art Direction & Visual Influence
-  artDirection: z.string().min(1),
-  visualInfluence: z.string().min(1),
-  lightingPreset: z.string().min(1),
-  backgroundEnvironment: z.string().min(1),
-  moodContext: z.string().min(1),
+  artDirection: z.string().optional(),
+  visualInfluence: z.string().optional(),
+  lightingPreset: z.string().optional(),
+  backgroundEnvironment: z.string().optional(),
+  moodContext: z.string().optional(),
   
   // Composition & Branding
   compositionTemplate: z.enum(['Centered Hero', 'Rule of Thirds', 'Floating Object', 'Flat Lay', 'Collage']).default('Centered Hero'),
-  objectCount: z.enum(['1', '2', '3']).default('1').transform(val => parseInt(val) as 1 | 2 | 3),
+  objectCount: z.union([z.number(), z.enum(['1', '2', '3'])]).default(1).transform(val => typeof val === 'number' ? val as 1 | 2 | 3 : parseInt(val) as 1 | 2 | 3),
   shadowType: z.enum(['Soft', 'Hard', 'Floating', 'Mirror']).default('Soft'),
   logoPlacement: z.enum(['Auto', 'Top Left', 'Top Right', 'Bottom Left', 'Bottom Right', 'Center']).default('Auto'),
   
@@ -73,12 +80,12 @@ const productMockupGenerationSchema = z.object({
     age: z.enum(['18-25', '26-35', '36-45', '46-55', '55+']),
     race: z.enum(['Caucasian', 'African', 'Asian', 'Hispanic', 'Middle Eastern', 'Mixed', 'Other']),
     gender: z.enum(['Male', 'Female', 'Non-binary']),
-    description: z.string().min(1).max(500)
+    description: z.string().max(500).optional()
   }).optional(),
   avatarRole: z.enum(['Model', 'User', 'Mascot', 'Spokesperson']).default('Model'),
   avatarInteraction: z.enum(['Holding', 'Wearing', 'Using', 'Observing']).default('Holding'),
   productMultiplicity: z.enum(['Single', 'Lineup', 'Bundle']).default('Single'),
-  angleVarietyCount: z.enum(['1', '2', '3', '4', '5']).default('1').transform(val => parseInt(val) as 1 | 2 | 3 | 4 | 5),
+  angleVarietyCount: z.union([z.number(), z.enum(['1', '2', '3', '4', '5'])]).default(1).transform(val => typeof val === 'number' ? val as 1 | 2 | 3 | 4 | 5 : parseInt(val) as 1 | 2 | 3 | 4 | 5),
   
   // Platform Target
   platformTarget: z.enum(['Instagram', 'Facebook', 'TikTok', 'YouTube', 'Banner', 'Print']).optional(),
@@ -140,8 +147,8 @@ function buildProductMockupPrompt(request: ProductMockupGenerationRequest): stri
   } = request
 
   // Get style information from STYLE_MAP
-  const styleInfo = STYLE_MAP[artDirection]?.find(inf => inf.label === visualInfluence)
-  const moodInfo = styleInfo?.moodContexts.find(mc => mc.name === moodContext)
+  const styleInfo = artDirection ? STYLE_MAP[artDirection]?.find((inf: any) => inf.label === visualInfluence) : undefined
+  const moodInfo = styleInfo?.moodContexts.find((mc: any) => mc.name === moodContext)
 
   let promptParts = [
     // Base description
@@ -237,18 +244,152 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse and validate request body
-    const body = await request.json()
-    const validatedData = productMockupGenerationSchema.parse(body)
+    // Parse form data instead of JSON
+    const formData = await request.formData()
+    
+    // Extract form fields
+    const prompt = formData.get('prompt')?.toString() || ''
+    const title = formData.get('title')?.toString() || ''
+    const description = formData.get('description')?.toString() || ''
+    const aspectRatio = formData.get('aspectRatio')?.toString() || '1:1'
+    const artDirection = formData.get('artDirection')?.toString() || null
+    const visualInfluence = formData.get('visualInfluence')?.toString() || null
+    const lightingPreset = formData.get('lightingPreset')?.toString() || null
+    const backgroundEnvironment = formData.get('backgroundEnvironment')?.toString() || null
+    const moodContext = formData.get('moodContext')?.toString() || null
+    const compositionTemplate = formData.get('compositionTemplate')?.toString() || 'Centered Hero'
+    const objectCount = parseInt(formData.get('objectCount')?.toString() || '1') as 1 | 2 | 3
+    const shadowType = formData.get('shadowType')?.toString() || 'Soft'
+    const logoPlacement = formData.get('logoPlacement')?.toString() || 'Auto'
+    const headline = formData.get('headline')?.toString() || null
+    const subtext = formData.get('subtext')?.toString() || null
+    const ctaText = formData.get('ctaText')?.toString() || null
+    const fontFamily = formData.get('fontFamily')?.toString() || 'sans'
+    const fontWeight = formData.get('fontWeight')?.toString() || 'normal'
+    const textCase = formData.get('textCase')?.toString() || 'sentence'
+    const letterSpacing = parseFloat(formData.get('letterSpacing')?.toString() || '0')
+    const lineHeight = parseFloat(formData.get('lineHeight')?.toString() || '1.2')
+    const textColor = formData.get('textColor')?.toString() || '#000000'
+    const textAlignment = formData.get('textAlignment')?.toString() || 'center'
+    const textEffects = formData.get('textEffects')?.toString() ? JSON.parse(formData.get('textEffects')?.toString() || '[]') : []
+    const highlightStyle = formData.get('highlightStyle')?.toString() || 'none'
+    const accentElement = formData.get('accentElement')?.toString() || 'none'
+    const brilliance = parseInt(formData.get('brilliance')?.toString() || '0')
+    const frostedGlass = formData.get('frostedGlass')?.toString() === 'true'
+    const dropShadowIntensity = parseInt(formData.get('dropShadowIntensity')?.toString() || '0')
+    const motionAccent = formData.get('motionAccent')?.toString() || 'none'
+    const layoutMode = formData.get('layoutMode')?.toString() || 'centered'
+    const verticalPosition = parseInt(formData.get('verticalPosition')?.toString() || '50')
+    const horizontalOffset = parseInt(formData.get('horizontalOffset')?.toString() || '0')
+    const smartAnchor = formData.get('smartAnchor')?.toString() === 'true'
+    const safeZones = formData.get('safeZones')?.toString() === 'true'
+    const useAvatars = formData.get('useAvatars')?.toString() === 'true'
+    const selectedAvatarId = formData.get('selectedAvatarId')?.toString() || null
+    const useBasicAvatar = formData.get('useBasicAvatar')?.toString() === 'true'
+    const basicAvatar = formData.get('basicAvatar')?.toString() ? JSON.parse(formData.get('basicAvatar')?.toString() || '{}') : null
+    const avatarRole = formData.get('avatarRole')?.toString() || 'Model'
+    const avatarInteraction = formData.get('avatarInteraction')?.toString() || 'Holding'
+    const productMultiplicity = formData.get('productMultiplicity')?.toString() || 'Single'
+    const angleVarietyCount = parseInt(formData.get('angleVarietyCount')?.toString() || '1') as 1 | 2 | 3 | 4 | 5
+    const platformTarget = formData.get('platformTarget')?.toString() || null
+    const brandColors = formData.get('brandColors')?.toString() ? JSON.parse(formData.get('brandColors')?.toString() || '{}') : { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' }
+    const metadata = formData.get('metadata')?.toString() ? JSON.parse(formData.get('metadata')?.toString() || '{}') : {}
+
+    // Handle product photos upload
+    const productPhotosPaths: string[] = []
+    for (let i = 0; i < 2; i++) {
+      const file = formData.get(`productPhoto_${i}`) as File | null
+      if (file) {
+        const filePath = `renders/product-mockups/${user.id}/references/${uuidv4()}-${file.name}`
+        const { error: uploadError } = await supabase.storage
+          .from('dreamcut')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          })
+
+        if (uploadError) {
+          console.error(`Error uploading product photo ${file.name}:`, uploadError)
+          return NextResponse.json({ error: `Failed to upload product photo: ${uploadError.message}` }, { status: 500 })
+        }
+        productPhotosPaths.push(filePath)
+      }
+    }
+
+    // Handle logo upload
+    let logoImagePath: string | null = null
+    const logoFile = formData.get('logoFile') as File | null
+    if (logoFile) {
+      const filePath = `renders/product-mockups/${user.id}/logo/${uuidv4()}-${logoFile.name}`
+      const { error: uploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(filePath, logoFile, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (uploadError) {
+        console.error('Error uploading logo file:', uploadError)
+        return NextResponse.json({ error: `Failed to upload logo: ${uploadError.message}` }, { status: 500 })
+      }
+      logoImagePath = filePath
+    }
+
+    // Create validated data object for compatibility with existing code
+    const validatedData: ProductMockupGenerationRequest = {
+      prompt,
+      aspectRatio: aspectRatio as any,
+      artDirection: nullToUndefined(artDirection),
+      visualInfluence: nullToUndefined(visualInfluence),
+      lightingPreset: nullToUndefined(lightingPreset),
+      backgroundEnvironment: nullToUndefined(backgroundEnvironment),
+      moodContext: nullToUndefined(moodContext),
+      compositionTemplate: compositionTemplate as any,
+      objectCount,
+      shadowType: shadowType as any,
+      logoPlacement: logoPlacement as any,
+      headline: nullToUndefined(headline),
+      subtext: nullToUndefined(subtext),
+      ctaText: nullToUndefined(ctaText),
+      fontFamily: fontFamily as any,
+      fontWeight: fontWeight as any,
+      textCase: textCase as any,
+      letterSpacing,
+      lineHeight,
+      textColor,
+      textAlignment: textAlignment as any,
+      textEffects,
+      highlightStyle: highlightStyle as any,
+      accentElement: accentElement as any,
+      brilliance,
+      frostedGlass,
+      dropShadowIntensity,
+      motionAccent: motionAccent as any,
+      layoutMode: layoutMode as any,
+      verticalPosition,
+      horizontalOffset,
+      smartAnchor,
+      safeZones,
+      useAvatars,
+      selectedAvatarId: nullToUndefined(selectedAvatarId),
+      useBasicAvatar,
+      basicAvatar,
+      avatarRole: avatarRole as any,
+      avatarInteraction: avatarInteraction as any,
+      productMultiplicity: productMultiplicity as any,
+      angleVarietyCount,
+      platformTarget: nullToUndefined(platformTarget) as any,
+      brandColors,
+      metadata
+    }
 
     console.log('📝 Product mockup generation data:', {
       prompt: validatedData.prompt,
-      imageCount: validatedData.imageCount,
       aspectRatio: validatedData.aspectRatio,
       artDirection: validatedData.artDirection,
       visualInfluence: validatedData.visualInfluence,
       useAvatars: validatedData.useAvatars,
-      productPhotos: validatedData.productPhotos.length
+      productPhotos: productPhotosPaths.length
     })
 
     // Build comprehensive prompt
@@ -260,7 +401,7 @@ export async function POST(request: NextRequest) {
     console.log('📐 Image dimensions:', dimensions)
 
     // Determine which model to use based on whether we have product photos
-    const hasProductPhotos = validatedData.productPhotos && validatedData.productPhotos.length > 0
+    const hasProductPhotos = productPhotosPaths.length > 0
     const model = hasProductPhotos 
       ? 'fal-ai/flux/dev' // Use Flux for image-to-image generation
       : 'fal-ai/flux/dev' // Use Flux for text-to-image generation
@@ -280,10 +421,9 @@ export async function POST(request: NextRequest) {
 
     // Add product photos if available (for image-to-image generation)
     if (hasProductPhotos && model === 'fal-ai/flux/dev') {
-      // For now, use the first product photo as reference
-      // In a full implementation, you'd want to handle multiple photos more intelligently
-      requestParams.input.image_url = validatedData.productPhotos[0]
-      console.log('🖼️ Using product photo for reference')
+      // For now, we'll generate without using the uploaded photos as reference
+      // In a full implementation, you'd want to download and use the uploaded photos
+      console.log('🖼️ Product photos uploaded, but using text-to-image generation for now')
     }
 
     console.log('⏳ Calling fal.ai API...')
@@ -300,12 +440,41 @@ export async function POST(request: NextRequest) {
     const imageUrls = result.data.images?.map((img: any) => img.url) || []
     console.log('🔗 Extracted image URLs:', imageUrls)
 
+    // Generate unique ID for this generation
+    const generationId = `pm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    // Download and upload images to Supabase Storage
+    console.log('📥 Downloading and uploading images to Supabase Storage...')
+    const uploadResults = await downloadAndUploadMultipleImages(
+      imageUrls,
+      `renders/product-mockups/${user.id}`,
+      generationId,
+      'image/png'
+    )
+
+    // Check if all uploads were successful
+    const failedUploads = uploadResults.filter(result => !result.success)
+    if (failedUploads.length > 0) {
+      console.error('❌ Some uploads failed:', failedUploads)
+      return NextResponse.json({ 
+        error: 'Failed to upload some images to storage',
+        details: failedUploads.map(f => f.error)
+      }, { status: 500 })
+    }
+
+    // Extract storage paths from successful uploads
+    const storagePaths = uploadResults
+      .filter(result => result.success)
+      .map(result => result.storagePath!)
+    
+    console.log('✅ All images uploaded successfully:', storagePaths)
+
     // Build comprehensive metadata
     const generationTimestamp = new Date().toISOString()
-    const generationId = `pm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
-    const variationsMetadata = imageUrls.map((url: string, index: number) => ({
-      imageUrl: url,
+    const variationsMetadata = storagePaths.map((storagePath: string, index: number) => ({
+      storagePath,
+      originalUrl: imageUrls[index], // Keep original URL for reference
       variationType: ['Hero', 'Lifestyle', 'Minimal', 'Conceptual'][index] || 'Variation',
       settings: {
         ...validatedData,
@@ -323,7 +492,7 @@ export async function POST(request: NextRequest) {
         prompt: validatedData.prompt,
         full_prompt: fullPrompt,
         settings: validatedData,
-        images: imageUrls,
+        images: storagePaths, // Store storage paths instead of temporary URLs
         metadata: {
           generationTimestamp,
           model,
@@ -344,15 +513,143 @@ export async function POST(request: NextRequest) {
       console.log('✅ Generation saved to database:', generationRecord.id)
     }
 
+    // Save to product_mockups table with new schema
+    console.log('🔄 Attempting to save to product_mockups table...')
+    const productMockupData = {
+        user_id: user.id,
+        title: title || validatedData.prompt.substring(0, 255),
+        description: description || validatedData.prompt,
+        prompt: validatedData.prompt,
+        
+        // Product Photos & Logo (storage paths)
+        product_photos_paths: productPhotosPaths,
+        logo_image_path: logoImagePath,
+        
+        // Generated Images
+        generated_images: imageUrls, // Store URLs for display
+        storage_paths: storagePaths, // Store storage paths for management
+        
+        // Art Direction & Visual Influence
+        art_direction: validatedData.artDirection,
+        visual_influence: validatedData.visualInfluence,
+        lighting_preset: validatedData.lightingPreset,
+        background_environment: validatedData.backgroundEnvironment,
+        mood_context: validatedData.moodContext,
+        
+        // Composition & Branding
+        composition_template: validatedData.compositionTemplate,
+        object_count: validatedData.objectCount,
+        shadow_type: validatedData.shadowType,
+        logo_placement: validatedData.logoPlacement,
+        aspect_ratio: validatedData.aspectRatio,
+        
+        // Text & CTA Overlay
+        headline: validatedData.headline,
+        subtext: validatedData.subtext,
+        cta_text: validatedData.ctaText,
+        font_family: validatedData.fontFamily,
+        font_weight: validatedData.fontWeight,
+        text_case: validatedData.textCase,
+        letter_spacing: validatedData.letterSpacing,
+        line_height: validatedData.lineHeight,
+        text_color: validatedData.textColor,
+        text_alignment: validatedData.textAlignment,
+        text_effects: validatedData.textEffects,
+        
+        // Advanced Typography
+        highlight_style: validatedData.highlightStyle,
+        accent_element: validatedData.accentElement,
+        brilliance: validatedData.brilliance,
+        frosted_glass: validatedData.frostedGlass,
+        drop_shadow_intensity: validatedData.dropShadowIntensity,
+        motion_accent: validatedData.motionAccent,
+        
+        // Alignment & Positioning
+        layout_mode: validatedData.layoutMode,
+        vertical_position: validatedData.verticalPosition,
+        horizontal_offset: validatedData.horizontalOffset,
+        smart_anchor: validatedData.smartAnchor,
+        safe_zones: validatedData.safeZones,
+        
+        // Casting & Multiplicity
+        use_avatars: validatedData.useAvatars,
+        selected_avatar_id: validatedData.selectedAvatarId,
+        use_basic_avatar: validatedData.useBasicAvatar,
+        basic_avatar: validatedData.basicAvatar,
+        avatar_role: validatedData.avatarRole,
+        avatar_interaction: validatedData.avatarInteraction,
+        product_multiplicity: validatedData.productMultiplicity,
+        angle_variety_count: validatedData.angleVarietyCount,
+        
+        // Platform Target
+        platform_target: validatedData.platformTarget,
+        
+        // Brand Colors
+        brand_colors: validatedData.brandColors,
+        
+        // Metadata & Content
+        content: {
+          generation_id: generationId,
+          full_prompt: fullPrompt,
+          settings: validatedData,
+          variations: variationsMetadata
+        },
+        metadata: {
+          generationTimestamp,
+          model,
+          dimensions,
+          projectTitle: validatedData.metadata?.projectTitle,
+          selectedArtifact: validatedData.metadata?.selectedArtifact,
+          generated_via: 'product-mockup-generation'
+        },
+        
+        // Status
+        status: 'completed'
+      }
+    
+    console.log('📝 Product mockup data to insert:', JSON.stringify(productMockupData, null, 2))
+    
+    const { data: productMockupRecord, error: productMockupError } = await supabase
+      .from('product_mockups')
+      .insert(productMockupData)
+      .select()
+      .single()
+
+    if (productMockupError) {
+      console.error('❌ Error saving to product_mockups table:', productMockupError)
+      console.error('❌ Full error details:', JSON.stringify(productMockupError, null, 2))
+      // Continue even if this fails
+    } else {
+      console.log('✅ Product mockup saved to product_mockups table:', productMockupRecord.id)
+      console.log('✅ Product mockup record:', JSON.stringify(productMockupRecord, null, 2))
+      
+      // Add to library_items table
+      const { error: libraryError } = await supabase
+        .from('library_items')
+        .insert({
+          user_id: user.id,
+          content_type: 'product_mockups',
+          content_id: productMockupRecord.id,
+          date_added_to_library: new Date().toISOString()
+        })
+
+      if (libraryError) {
+        console.error('Failed to add product mockup to library:', libraryError)
+      } else {
+        console.log(`✅ Product mockup ${productMockupRecord.id} added to library`)
+      }
+    }
+
     // Build response
     const response: ProductMockupGenerationResult = {
       success: true,
-      images: imageUrls,
+      images: storagePaths, // Return storage paths instead of temporary URLs
       metadata: {
         generationId,
         timestamp: generationTimestamp,
         settings: validatedData,
-        variations: variationsMetadata
+        variations: variationsMetadata as any, // Type assertion for now
+        storagePaths // Include storage paths in metadata
       }
     }
 

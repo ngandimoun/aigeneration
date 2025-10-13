@@ -12,16 +12,6 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error && data.user) {
-      // Check if this is a new user (first time signing in)
-      const { data: existingArtifacts } = await supabase
-        .from('artifacts')
-        .select('id')
-        .eq('user_id', data.user.id)
-        .limit(1)
-
-      // If no artifacts exist, the trigger will automatically create a default one
-      // This is handled by the database trigger we created earlier
-      
       const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development'
       if (isLocalEnv) {

@@ -1,124 +1,290 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
-// Validation schema for product motion creation
+// Helper to convert null to undefined for Zod optional()
+const nullToUndefined = z.literal('null').transform(() => undefined);
+
 const createProductMotionSchema = z.object({
-  title: z.string().min(1).max(255),
-  description: z.string().optional(),
-  selected_artifact: z.string().optional(),
-  motion_type: z.string().optional(),
-  product_type: z.string().optional(),
-  animation_style: z.string().optional(),
-  duration: z.number().optional(),
-  loop_type: z.string().optional(),
-  camera_angle: z.string().optional(),
-  lighting_setup: z.string().optional(),
-  background_type: z.string().optional(),
-  focus_point: z.string().optional(),
-  motion_speed: z.string().optional(),
-  content: z.record(z.any()).optional(),
-  metadata: z.record(z.any()).optional(),
-  is_template: z.boolean().optional().default(false),
-})
+  // Product Description & Intent Capture
+  product_category: z.enum(['Product', 'Chart', 'Infographic', 'Logo Animation', 'UI/UX Element']),
+  product_name: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  prompt: z.string().min(1, "Prompt is required"),
+  core_moment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  emotional_tone: z.enum(['Epic', 'Elegant', 'Calm', 'Poetic', 'Powerful']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  visual_style: z.enum(['Photoreal', 'Cinematic', 'Stylized CG', 'Watercolor Softness']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  duration: z.number().min(5).max(15).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Visual Context
+  environment: z.enum(['Studio white', 'Urban twilight', 'Forest dawn', 'Black marble', 'Custom']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_environment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  lighting_mood: z.enum(['Soft Daylight', 'Glossy Specular', 'Backlit Sunset', 'High-Contrast Spot']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  material_focus: z.array(z.string()).optional(),
+  camera_type: z.enum(['Macro Precision', 'Orbit Reveal', 'Tracking Pull-Back']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  frame_rate: z.enum(['Slow Motion 120 fps', 'Cinematic 60 fps', 'Standard 30 fps']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Motion & Energy
+  reveal_type: z.enum(['Assemble', 'Morph', 'Emerge', 'Disintegrate → Form', 'Morph From Form', 'Slide']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  camera_energy: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  loop_mode: z.boolean().optional(),
+  hook_intensity: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  end_emotion: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Audio DNA
+  sound_mode: z.enum(['SFX only', 'Music driven', 'Hybrid']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  sound_mood: z.enum(['Ambient minimal', 'Percussive energy', 'Cinematic warm']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  key_effects: z.array(z.string()).optional(),
+  mix_curve: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Brand Touch
+  accent_color_sync: z.boolean().optional(),
+  accent_color: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  logo_moment: z.enum(['Morph From Form', 'Fade-In', 'Hover', 'None']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  text_constraint: z.boolean().optional(),
+});
 
-// GET /api/product-motion - Get user's product motion
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  const supabase = createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const supabase = await createClient()
+    const body = await request.json();
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Parse arrays from JSON strings if they exist
+    if (body.material_focus && typeof body.material_focus === 'string') {
+      body.material_focus = JSON.parse(body.material_focus);
+    }
+    if (body.key_effects && typeof body.key_effects === 'string') {
+      body.key_effects = JSON.parse(body.key_effects);
     }
 
-    // Parse query parameters
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const validatedData = createProductMotionSchema.parse(body);
 
-    // Build query with filters
-    let query = supabase
-      .from('product_motion')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    // Simulate generated video
+    const generatedVideoFileName = `${uuidv4()}-motion.mp4`;
+    const generatedStoragePath = `renders/product-motion/${user.id}/generated/${generatedVideoFileName}`;
+    const generatedVideoUrl = `https://example.com/generated_motion/${generatedVideoFileName}`; // Placeholder URL
 
-    if (status) {
-      query = query.eq('status', status)
-    }
-
-    // Apply pagination (use range instead of limit to avoid conflicts)
-    query = query.range(offset, offset + limit - 1)
-
-    const { data: productMotion, error } = await query
+    const { data, error } = await supabase
+      .from('product_motions')
+      .insert([
+        {
+          user_id: user.id,
+          // Product Description & Intent Capture
+          product_category: validatedData.product_category,
+          product_name: validatedData.product_name,
+          prompt: validatedData.prompt,
+          core_moment: validatedData.core_moment,
+          emotional_tone: validatedData.emotional_tone,
+          visual_style: validatedData.visual_style,
+          duration: validatedData.duration,
+          
+          // Visual Context
+          environment: validatedData.environment,
+          custom_environment: validatedData.custom_environment,
+          lighting_mood: validatedData.lighting_mood,
+          material_focus: validatedData.material_focus,
+          camera_type: validatedData.camera_type,
+          frame_rate: validatedData.frame_rate,
+          
+          // Motion & Energy
+          reveal_type: validatedData.reveal_type,
+          camera_energy: validatedData.camera_energy,
+          loop_mode: validatedData.loop_mode,
+          hook_intensity: validatedData.hook_intensity,
+          end_emotion: validatedData.end_emotion,
+          
+          // Audio DNA
+          sound_mode: validatedData.sound_mode,
+          sound_mood: validatedData.sound_mood,
+          key_effects: validatedData.key_effects,
+          mix_curve: validatedData.mix_curve,
+          
+          // Brand Touch
+          accent_color_sync: validatedData.accent_color_sync,
+          accent_color: validatedData.accent_color,
+          logo_moment: validatedData.logo_moment,
+          text_constraint: validatedData.text_constraint,
+          
+          // Generation State
+          status: 'completed',
+          generated_video_url: generatedVideoUrl,
+          storage_path: generatedStoragePath,
+          
+          // Metadata
+          metadata: {
+            project_title: body.projectTitle || null,
+            selected_artifact: body.selectedArtifact || null,
+            generation_timestamp: new Date().toISOString()
+          },
+          content: {
+            motion_dna: {
+              category: validatedData.product_category,
+              product: validatedData.product_name,
+              prompt: validatedData.prompt,
+              core_moment: validatedData.core_moment,
+              style: `${validatedData.emotional_tone?.toLowerCase() || 'epic'} ${validatedData.visual_style?.toLowerCase() || 'cinematic'} kinetic reveal`,
+              camera: {
+                type: validatedData.camera_type?.toLowerCase().replace(/\s+/g, '-') || 'macro-precision',
+                movement: `${validatedData.camera_type?.toLowerCase() || 'macro precision'} → ${validatedData.reveal_type?.toLowerCase().replace(/\s+/g, '-') || 'morph'} → hero reveal`,
+                frame_rate: validatedData.frame_rate?.split(' ')[2] || "60fps",
+                energy: (validatedData.camera_energy || 50) / 100
+              },
+              lighting: validatedData.lighting_mood?.toLowerCase().replace(/\s+/g, '-') || 'soft-daylight',
+              environment: validatedData.environment === "Custom" ? validatedData.custom_environment : validatedData.environment?.toLowerCase().replace(/\s+/g, '-') || 'studio-white',
+              materials: validatedData.material_focus?.filter(m => m !== "All").map(m => m.toLowerCase()) || [],
+              motion: {
+                reveal_type: validatedData.reveal_type?.toLowerCase().replace(/\s+/g, '-') || 'morph',
+                camera_energy: (validatedData.camera_energy || 50) / 100,
+                loop: validatedData.loop_mode || false,
+                hook_intensity: (validatedData.hook_intensity || 50) / 100,
+                end_emotion: (validatedData.end_emotion || 50) / 100
+              },
+              audio: {
+                mode: validatedData.sound_mode?.toLowerCase().replace(/\s+/g, '_') || 'sfx_only',
+                mood: validatedData.sound_mood?.toLowerCase().replace(/\s+/g, '_') || 'ambient_minimal',
+                effects: validatedData.key_effects || [],
+                mix_curve: (validatedData.mix_curve || 50) / 100
+              },
+              branding: {
+                accent_color_sync: validatedData.accent_color_sync || false,
+                accent_color: validatedData.accent_color || '#3B82F6',
+                logo_moment: validatedData.logo_moment?.toLowerCase().replace(/\s+/g, '_') || 'none',
+                text_constraint: validatedData.text_constraint || false
+              },
+              duration: validatedData.duration || 10,
+              tone: `${validatedData.emotional_tone?.toLowerCase() || 'epic'}, modern, kinetically poetic`
+            }
+          }
+        },
+      ])
+      .select();
 
     if (error) {
-      console.error('Error fetching product motion:', error)
-      return NextResponse.json({ error: 'Failed to fetch product motion' }, { status: 500 })
+      console.error('Error inserting product_motion:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ productMotion }, { status: 200 })
-  } catch (error) {
-    console.error('Unexpected error in GET /api/product-motion:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Add to library_items
+    const { error: libraryError } = await supabase
+      .from('library_items')
+      .insert([
+        {
+          user_id: user.id,
+          item_id: data[0].id,
+          item_type: 'product_motion',
+          title: validatedData.product_name || `${validatedData.product_category} Motion`,
+          description: validatedData.prompt,
+          image_url: null, // No image for product motions
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (libraryError) {
+      console.error('Error inserting into library_items:', libraryError);
+      // Decide if this should be a hard fail or just log the error
+    }
+
+    return NextResponse.json({ 
+      message: 'Product motion generated and saved successfully', 
+      data: data[0] 
+    }, { status: 200 });
+
+  } catch (validationError) {
+    console.error('Validation error:', validationError);
+    return NextResponse.json({ 
+      error: (validationError as z.ZodError).errors 
+    }, { status: 400 });
   }
 }
 
-// POST /api/product-motion - Create new product motion
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+// GET endpoint to fetch product_motions by user
+export async function GET(request: NextRequest) {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    // Parse and validate request body
-    const body = await request.json()
-    const validatedData = createProductMotionSchema.parse(body)
-
-    // Create product motion
-    const { data: productMotion, error } = await supabase
-      .from('product_motion')
-      .insert({
-        user_id: user.id,
-        title: validatedData.title,
-        description: validatedData.description,
-        selected_artifact: validatedData.selected_artifact,
-        motion_type: validatedData.motion_type,
-        product_type: validatedData.product_type,
-        animation_style: validatedData.animation_style,
-        duration: validatedData.duration,
-        loop_type: validatedData.loop_type,
-        camera_angle: validatedData.camera_angle,
-        lighting_setup: validatedData.lighting_setup,
-        background_type: validatedData.background_type,
-        focus_point: validatedData.focus_point,
-        motion_speed: validatedData.motion_speed,
-        content: validatedData.content,
-        metadata: validatedData.metadata,
-        is_template: validatedData.is_template,
-        status: 'draft'
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('❌ Error creating product motion:', error)
-      return NextResponse.json({ error: 'Failed to create product motion' }, { status: 500 })
-    }
-
-    return NextResponse.json({ productMotion }, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 })
-    }
-    console.error('Unexpected error in POST /api/product-motion:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const { data: productMotions, error } = await supabase
+    .from('product_motions')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching product_motions:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(productMotions, { status: 200 });
+}
+
+// PUT endpoint to update a product_motion
+export async function PUT(request: NextRequest) {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id, ...updates } = await request.json();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Product motion ID is required for update' }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from('product_motions')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select();
+
+  if (error) {
+    console.error('Error updating product_motion:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Product motion not found or unauthorized' }, { status: 404 });
+  }
+
+  return NextResponse.json({ message: 'Product motion updated successfully', data }, { status: 200 });
+}
+
+// DELETE endpoint to delete a product_motion
+export async function DELETE(request: NextRequest) {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await request.json();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Product motion ID is required for deletion' }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from('product_motions')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error deleting product_motion:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ message: 'Product motion deleted successfully' }, { status: 200 });
 }

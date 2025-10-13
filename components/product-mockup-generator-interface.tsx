@@ -48,6 +48,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { STYLE_MAP } from "@/lib/styles/style-map"
+import { convertToSignedUrls } from "@/lib/storage/signed-urls"
 import { 
   ProductMockupGenerationRequest, 
   AvailableAvatar,
@@ -95,9 +96,7 @@ export function ProductMockupGeneratorInterface({
   // Basic Settings
   const [title, setTitle] = useState("")
   const [prompt, setPrompt] = useState("")
-  const [imageCount, setImageCount] = useState(4)
   const [aspectRatio, setAspectRatio] = useState<"1:1" | "4:5" | "16:9" | "9:16" | "2:1" | "3:4" | "2:3" | "4:3" | "3:2">("1:1")
-  const [isPublic, setIsPublic] = useState(true)
   
   // Product Photos
   const [productPhotos, setProductPhotos] = useState<File[]>([])
@@ -182,6 +181,8 @@ export function ProductMockupGeneratorInterface({
   // Generation State
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [signedImageUrls, setSignedImageUrls] = useState<string[]>([])
+  const [urlsLoading, setUrlsLoading] = useState(false)
   const [generationResult, setGenerationResult] = useState<ProductMockupGenerationResult | null>(null)
   
   // UI State
@@ -193,6 +194,23 @@ export function ProductMockupGeneratorInterface({
     casting: false,
     platform: false
   })
+
+  // Convert storage paths to signed URLs when generatedImages change
+  useEffect(() => {
+    if (generatedImages.length > 0) {
+      setUrlsLoading(true)
+      convertToSignedUrls(generatedImages)
+        .then(urls => {
+          setSignedImageUrls(urls)
+          setUrlsLoading(false)
+        })
+        .catch(error => {
+          console.error('Error generating signed URLs:', error)
+          setSignedImageUrls(generatedImages) // Fallback to original URLs
+          setUrlsLoading(false)
+        })
+    }
+  }, [generatedImages])
 
   // Load available avatars on mount
   useEffect(() => {
@@ -310,101 +328,85 @@ export function ProductMockupGeneratorInterface({
       return
     }
 
-
     setIsGenerating(true)
     try {
-      // Convert File objects to base64 strings
-      const convertFileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            const result = reader.result as string
-            // Remove the data:image/...;base64, prefix
-            const base64 = result.split(',')[1]
-            resolve(base64)
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
+      // Prepare FormData for file uploads
+      const formData = new FormData()
+      
+      // Add all form fields
+      formData.append('title', title)
+      formData.append('description', prompt.trim())
+      formData.append('prompt', prompt.trim())
+      formData.append('aspectRatio', aspectRatio)
+      formData.append('artDirection', artDirection || '')
+      formData.append('visualInfluence', visualInfluence || '')
+      formData.append('lightingPreset', lightingPreset || '')
+      formData.append('backgroundEnvironment', backgroundEnvironment || '')
+      formData.append('moodContext', moodContext || '')
+      formData.append('compositionTemplate', compositionTemplate)
+      formData.append('objectCount', objectCount.toString())
+      formData.append('shadowType', shadowType)
+      formData.append('logoPlacement', logoPlacementOption !== "None" ? logoPlacementOption.replace("-", " ") : "Auto")
+      formData.append('headline', headline || '')
+      formData.append('subtext', subtext || '')
+      formData.append('ctaText', ctaText || '')
+      formData.append('fontFamily', fontFamily)
+      formData.append('fontWeight', fontWeight)
+      formData.append('textCase', textCase)
+      formData.append('letterSpacing', letterSpacing.toString())
+      formData.append('lineHeight', lineHeight.toString())
+      formData.append('textColor', textColor)
+      formData.append('textAlignment', textAlignment)
+      formData.append('textEffects', JSON.stringify(textEffects))
+      formData.append('highlightStyle', highlightStyle)
+      formData.append('accentElement', accentElement)
+      formData.append('brilliance', brilliance.toString())
+      formData.append('frostedGlass', frostedGlass.toString())
+      formData.append('dropShadowIntensity', dropShadowIntensity.toString())
+      formData.append('motionAccent', motionAccent)
+      formData.append('layoutMode', layoutMode)
+      formData.append('verticalPosition', verticalPosition.toString())
+      formData.append('horizontalOffset', horizontalOffset.toString())
+      formData.append('smartAnchor', smartAnchor.toString())
+      formData.append('safeZones', safeZones.toString())
+      formData.append('useAvatars', useAvatars.toString())
+      formData.append('selectedAvatarId', selectedAvatarId || '')
+      formData.append('useBasicAvatar', useBasicAvatar.toString())
+      formData.append('basicAvatar', useBasicAvatar ? JSON.stringify({
+        age: basicAvatarAge,
+        race: basicAvatarRace,
+        gender: basicAvatarGender,
+        description: basicAvatarDescription
+      }) : '')
+      formData.append('avatarRole', avatarRole)
+      formData.append('avatarInteraction', avatarInteraction)
+      formData.append('productMultiplicity', productMultiplicity)
+      formData.append('angleVarietyCount', angleVarietyCount.toString())
+      formData.append('platformTarget', platformTarget || '')
+      formData.append('brandColors', JSON.stringify(brandColors))
+      formData.append('metadata', JSON.stringify({
+        projectTitle,
+        title,
+        selectedArtifact,
+        timestamp: new Date().toISOString()
+      }))
+      
+      // Add product photos
+      productPhotos.forEach((file, index) => {
+        formData.append(`productPhoto_${index}`, file)
+      })
+      
+      // Add logo file if present
+      if (logoFile) {
+        formData.append('logoFile', logoFile)
       }
 
-      const productPhotosBase64 = productPhotos.length > 0 
-        ? await Promise.all(productPhotos.map(convertFileToBase64))
-        : []
-
-      const logoFileBase64 = logoFile ? await convertFileToBase64(logoFile) : undefined
-
-      const generationData: ProductMockupGenerationRequest = {
-        prompt: prompt.trim(),
-        imageCount,
-        aspectRatio,
-        productPhotos: productPhotosBase64,
-        logoFile: logoFileBase64,
-        logoUsagePrompt: logoUsagePrompt.trim() || undefined,
-        artDirection,
-        visualInfluence,
-        lightingPreset,
-        backgroundEnvironment,
-        moodContext,
-        compositionTemplate,
-        objectCount,
-        shadowType,
-        logoPlacement: logoPlacementOption !== "None" ? logoPlacementOption.replace("-", " ") as any : "Auto",
-        headline: headline.trim() || undefined,
-        subtext: subtext.trim() || undefined,
-        ctaText: ctaText.trim() || undefined,
-        fontFamily,
-        fontWeight,
-        textCase,
-        letterSpacing,
-        lineHeight,
-        textColor,
-        textAlignment,
-        textEffects,
-        highlightStyle,
-        accentElement,
-        brilliance,
-        frostedGlass,
-        dropShadowIntensity,
-        motionAccent,
-        layoutMode,
-        verticalPosition,
-        horizontalOffset,
-        smartAnchor,
-        safeZones,
-        useAvatars,
-        selectedAvatarId: useBasicAvatar ? "basic" : (selectedAvatarId || undefined),
-        useBasicAvatar,
-        basicAvatar: useBasicAvatar ? {
-          age: basicAvatarAge,
-          race: basicAvatarRace,
-          gender: basicAvatarGender,
-          description: basicAvatarDescription
-        } : undefined,
-        avatarRole,
-        avatarInteraction,
-        productMultiplicity,
-        angleVarietyCount,
-        platformTarget,
-        brandColors,
-        metadata: {
-          projectTitle,
-          title,
-          selectedArtifact,
-          isPublic,
-          timestamp: new Date().toISOString()
-        }
-      }
-
-      console.log("Generating product mockup with:", generationData)
+      console.log("Generating product mockup with FormData")
 
       // Call the API
       const response = await fetch('/api/product-mockup-generation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(generationData),
+        body: formData,
       })
 
       if (!response.ok) {
@@ -423,6 +425,12 @@ export function ProductMockupGeneratorInterface({
           title: "Product Mockup Generated!",
           description: `Successfully generated ${result.images.length} mockup variations.`,
         })
+        
+        // Close the interface to return to the generator panel
+        // This will trigger a refresh of the product mockups list
+        setTimeout(() => {
+          onClose()
+        }, 2000) // Wait 2 seconds to show the success message
       } else {
         throw new Error(result.error || 'Generation failed')
       }
@@ -452,29 +460,12 @@ export function ProductMockupGeneratorInterface({
       <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2 border-b border-border">
         <div className="flex items-center gap-3">
           <div>
-            <h3 className="text-xs font-semibold text-foreground">
+            <h3 className="text-xs font-semibold bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
               Product Mockup Generator
             </h3>
             <p className="text-xs text-muted-foreground">
               {projectTitle}
             </p>
-          </div>
-          {/* Public/Private Toggle */}
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-[9px] font-medium px-2 rounded-full transition-colors",
-              isPublic 
-                ? "bg-green-100 text-green-700 border border-green-200" 
-                : "bg-gray-100 text-gray-700 border border-gray-200"
-            )}>
-              {isPublic ? "Public" : "Private"}
-            </span>
-            <Switch
-              id="public-toggle"
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-              className="scale-75"
-            />
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
@@ -569,7 +560,7 @@ export function ProductMockupGeneratorInterface({
           {productPhotos.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-medium text-foreground">Uploaded Photos</h4>
+                <h4 className="text-xs font-medium bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">Uploaded Photos</h4>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1163,28 +1154,6 @@ export function ProductMockupGeneratorInterface({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-foreground">Images ({imageCount})</label>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-6 w-6 rounded-full"
-                  onClick={() => setImageCount(Math.max(1, imageCount - 1))}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <span className="text-xs font-medium min-w-[20px] text-center">{imageCount}</span>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-6 w-6 rounded-full"
-                  onClick={() => setImageCount(Math.min(4, imageCount + 1))}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
           </div>
 
           {/* Composition Template */}
@@ -2312,7 +2281,7 @@ export function ProductMockupGeneratorInterface({
       {generatedImages.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-foreground">Generated Mockups</h4>
+            <h4 className="text-sm font-medium bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">Generated Mockups</h4>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -2326,32 +2295,41 @@ export function ProductMockupGeneratorInterface({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {generatedImages.map((imageUrl, index) => (
-              <div key={index} className="relative group">
-                <img 
-                  src={imageUrl} 
-                  alt={`Generated mockup ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center gap-2">
-                  <Button variant="secondary" size="sm" className="text-xs h-6">
-                    <Eye className="h-3 w-3 mr-1" />
-                    View
-                  </Button>
-                  <Button variant="secondary" size="sm" className="text-xs h-6">
-                    <Download className="h-3 w-3 mr-1" />
-                    Save
-                  </Button>
+            {generatedImages.map((imageUrl, index) => {
+              const displayUrl = signedImageUrls[index] || imageUrl
+              return (
+                <div key={index} className="relative group">
+                  {urlsLoading ? (
+                    <div className="w-full h-32 flex items-center justify-center bg-muted rounded-md">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <img 
+                      src={displayUrl} 
+                      alt={`Generated mockup ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center gap-2">
+                    <Button variant="secondary" size="sm" className="text-xs h-6">
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button variant="secondary" size="sm" className="text-xs h-6">
+                      <Download className="h-3 w-3 mr-1" />
+                      Save
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
 
       {/* Generate Button */}
       <Button 
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-sm font-medium" 
+        className="w-full h-9 text-sm font-medium bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed" 
         disabled={!prompt.trim() || isGenerating}
         onClick={handleGenerate}
       >

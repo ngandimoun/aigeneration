@@ -1,8 +1,6 @@
 "use client"
 
 import {
-  Home,
-  Sparkles,
   Search,
   Users,
   Grid3x3,
@@ -37,16 +35,10 @@ import {
   FileImage,
   FileText,
   Palette,
-  Merge,
-  Crop,
   Subtitles,
-  VolumeX,
-  Volume1,
-  TrendingUp,
-  Wand2,
   Droplets,
-  Link,
   Plus,
+  Languages,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -102,13 +94,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
         </div>
         <div className="flex-1 h-0 overflow-y-auto scrollbar-hover">
           <nav className="px-3 py-4 space-y-1">
-            <Button
-              variant="ghost"
-              className={`w-full ${isCollapsed ? "justify-center px-0" : "justify-start"} gap-3 text-sidebar-foreground hover:bg-accent`}
-            >
-              <Home className="h-5 w-5 shrink-0" />
-              {!isCollapsed && <span>Artifacts</span>}
-            </Button>
           </nav>
         </div>
         <div className="p-4 border-t border-sidebar-border space-y-3">
@@ -144,47 +129,17 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
         <Button
           variant="ghost"
           className={`w-full ${isCollapsed ? "justify-center px-0" : "justify-start"} gap-3 ${
-            selectedSection === 'artifacts'
+            selectedSection === 'library'
               ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
               : 'text-sidebar-foreground hover:bg-accent'
           }`}
           onClick={() => {
-            setSelectedSection('artifacts')
+            setSelectedSection('library')
             onMobileClose()
           }}
         >
-          <Home className="h-5 w-5 shrink-0" />
-          {!isCollapsed && <span>Artifacts</span>}
-        </Button>
-        <Button
-          variant="ghost"
-          className={`w-full ${isCollapsed ? "justify-center px-0" : "justify-start"} gap-3 ${
-            selectedSection === 'templates'
-              ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-              : 'text-sidebar-foreground hover:bg-accent'
-          }`}
-          onClick={() => {
-            setSelectedSection('templates')
-            onMobileClose()
-          }}
-        >
-          <Sparkles className="h-5 w-5 shrink-0" />
-          {!isCollapsed && <span>Templates</span>}
-        </Button>
-        <Button
-          variant="ghost"
-          className={`w-full ${isCollapsed ? "justify-center px-0" : "justify-start"} gap-3 ${
-            selectedSection === 'favorites'
-              ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-              : 'text-sidebar-foreground hover:bg-accent'
-          }`}
-          onClick={() => {
-            setSelectedSection('favorites')
-            onMobileClose()
-          }}
-        >
-          <Heart className="h-5 w-5 shrink-0" />
-          {!isCollapsed && <span>Favorites</span>}
+          <Grid3x3 className="h-5 w-5 shrink-0" />
+          {!isCollapsed && <span>Library</span>}
         </Button>
 
         {/* Pinned Section */}
@@ -218,18 +173,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <div className="ml-6 mt-1 space-y-1">
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-xs ${
-                  selectedSection === 'comics'
-                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                    : 'text-sidebar-foreground hover:bg-accent'
-                }`}
-                onClick={() => {
-                  setSelectedSection('comics')
-                  onMobileClose()
-                }}
+                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+                disabled
               >
                 <BookOpen className="h-4 w-4 shrink-0" />
                 <span>Comics</span>
+                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
               </Button>
               <Button
                 variant="ghost"
@@ -474,36 +423,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'cinematic-clips'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('cinematic-clips')
-                onMobileClose()
-              }}
-            >
-              <Film className="h-4 w-4 shrink-0" />
-              <span>Cinematic Clips</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'social-cuts'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('social-cuts')
-                onMobileClose()
-              }}
-            >
-              <Scissors className="h-4 w-4 shrink-0" />
-              <span>Social Cuts</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'talking-avatars'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -516,10 +435,29 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               <MessageCircle className="h-4 w-4 shrink-0" />
               <span>Talking Avatars</span>
             </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
+            >
+              <Film className="h-4 w-4 shrink-0" />
+              <span>Cinematic Clips</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
+            >
+              <Scissors className="h-4 w-4 shrink-0" />
+              <span>Social Cuts</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+            </Button>
           </div>
         )}
 
-        <Button
+        {/* Mixed Assets - Temporarily disabled */}
+        {/* <Button
           variant="ghost"
           className={`w-full ${isCollapsed ? "justify-center px-0" : "justify-start"} gap-3 text-sidebar-foreground hover:bg-accent`}
           onClick={() => {
@@ -540,10 +478,10 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               )}
             </>
           )}
-        </Button>
+        </Button> */}
         
-        {/* Mixed Assets Submenu */}
-        {!isCollapsed && isMixedAssetsOpen && (
+        {/* Mixed Assets Submenu - Temporarily disabled */}
+        {/* {!isCollapsed && isMixedAssetsOpen && (
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
@@ -606,7 +544,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               <span>Brand Kits</span>
             </Button>
           </div>
-        )}
+        )} */}
 
         <Button
           variant="ghost"
@@ -637,36 +575,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'merge-videos'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('merge-videos')
-                onMobileClose()
-              }}
-            >
-              <Merge className="h-4 w-4 shrink-0" />
-              <span>Merge Videos</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'trim-video'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('trim-video')
-                onMobileClose()
-              }}
-            >
-              <Crop className="h-4 w-4 shrink-0" />
-              <span>Trim Video / Audio</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'add-subtitles'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -679,96 +587,72 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               <Subtitles className="h-4 w-4 shrink-0" />
               <span>Add Subtitles</span>
             </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'extract-audio'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('extract-audio')
-                onMobileClose()
-              }}
-            >
-              <VolumeX className="h-4 w-4 shrink-0" />
-              <span>Extract Audio - Video</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'add-sound'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('add-sound')
-                onMobileClose()
-              }}
-            >
-              <Volume1 className="h-4 w-4 shrink-0" />
-              <span>Add Sound to Video</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'upscaling'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('upscaling')
-                onMobileClose()
-              }}
-            >
-              <TrendingUp className="h-4 w-4 shrink-0" />
-              <span>Upscaling (HD → 4K)</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'style-transfer'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('style-transfer')
-                onMobileClose()
-              }}
-            >
-              <Wand2 className="h-4 w-4 shrink-0" />
-              <span>Style Transfer</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'add-watermark'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('add-watermark')
-                onMobileClose()
-              }}
-            >
-              <Droplets className="h-4 w-4 shrink-0" />
-              <span>Add Watermark</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'stitch-clips'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('stitch-clips')
-                onMobileClose()
-              }}
-            >
-              <Link className="h-4 w-4 shrink-0" />
-              <span>Stitch Clips Together</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                className={`flex-1 justify-start gap-3 text-xs ${
+                  selectedSection === 'add-watermark'
+                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                    : 'text-sidebar-foreground hover:bg-accent'
+                }`}
+                onClick={() => {
+                  setSelectedSection('add-watermark')
+                  onMobileClose()
+                }}
+              >
+                <Droplets className="h-4 w-4 shrink-0" />
+                <span>Add Watermark</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 text-xs ${
+                  selectedSection === 'add-watermark'
+                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white hover:from-[#57e6f9] hover:via-blue-500 hover:to-purple-700'
+                    : 'text-sidebar-foreground hover:bg-accent'
+                }`}
+                onClick={() => {
+                  setSelectedSection('add-watermark')
+                  onMobileClose()
+                }}
+                title="Create new watermark project"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                className={`flex-1 justify-start gap-3 text-xs ${
+                  selectedSection === 'video-translate'
+                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                    : 'text-sidebar-foreground hover:bg-accent'
+                }`}
+                onClick={() => {
+                  setSelectedSection('video-translate')
+                  onMobileClose()
+                }}
+              >
+                <Languages className="h-4 w-4 shrink-0" />
+                <span>Translate</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 text-xs ${
+                  selectedSection === 'video-translate'
+                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white hover:from-[#57e6f9] hover:via-blue-500 hover:to-purple-700'
+                    : 'text-sidebar-foreground hover:bg-accent'
+                }`}
+                onClick={() => {
+                  setSelectedSection('video-translate')
+                  onMobileClose()
+                }}
+                title="Create new translation project"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         )}
         </nav>

@@ -32,7 +32,6 @@ import { cn } from "@/lib/utils"
 interface ComicsFormProps {
   onSave: (comic: ComicData) => Promise<void>
   onCancel: () => void
-  availableArtifacts: Array<{ id: string, title: string, image: string, description: string, icon?: string, type?: string, section?: string, isPublic?: boolean }>
 }
 
 interface Character {
@@ -248,7 +247,7 @@ const comicArtifacts = [
 ]
 
 
-export function ComicsForm({ onSave, onCancel, availableArtifacts }: ComicsFormProps) {
+export function ComicsForm({ onSave, onCancel }: ComicsFormProps) {
   const { setCharacterVariations, setCharacterVariationsMetadata, setIsGeneratingVariations } = useNavigation()
   
   // Check if character variations functions are available
@@ -319,7 +318,6 @@ export function ComicsForm({ onSave, onCancel, availableArtifacts }: ComicsFormP
     selectVariation,
     confirmSelection,
     clearVariations,
-    saveAllVariationsToTemplates
   } = useCharacterGeneration()
 
   // Sync character variations with navigation context
@@ -673,8 +671,8 @@ export function ComicsForm({ onSave, onCancel, availableArtifacts }: ComicsFormP
     }
   }
 
-  // Use real user artifacts instead of hardcoded ones
-  const artifactsToShow = availableArtifacts.length > 0 ? availableArtifacts : comicArtifacts
+  // Use hardcoded comic artifacts
+  const artifactsToShow = comicArtifacts
   const selectedArtifactData = artifactsToShow.find(artifact => artifact.id === selectedArtifact)
 
   // Composant pour l'indicateur de progression
@@ -2264,7 +2262,7 @@ export function ComicsForm({ onSave, onCancel, availableArtifacts }: ComicsFormP
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => saveAllVariationsToTemplates(title.trim() || 'Previous Generation')}
+                    onClick={() => {}}
                     className="w-full"
                   >
                     💾 Save Variations to Templates (Optional)

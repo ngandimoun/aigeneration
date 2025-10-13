@@ -67,8 +67,7 @@ export async function POST(request: NextRequest) {
         content: body.content,
         metadata: body.metadata,
         is_public: body.is_public || false,
-        is_template: body.is_template || false,
-        selected_artifact: body.selected_artifact
+        is_template: body.is_template || false
       })
       .select()
       .single()

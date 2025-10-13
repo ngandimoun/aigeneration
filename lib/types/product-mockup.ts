@@ -46,22 +46,22 @@ export type StyleMap = {
 export type ProductMockupGenerationRequest = {
   // Basic Settings
   prompt: string;
-  imageCount: number; // 1-4
+  imageCount?: number; // 1-4 (optional, backend decides default)
   aspectRatio: "1:1" | "4:5" | "16:9" | "9:16" | "2:1" | "3:4" | "2:3" | "4:3" | "3:2";
   
   // Product Photos (base64 encoded strings)
-  productPhotos: string[];
+  productPhotos?: string[];
   
   // Logo Upload (base64 encoded string)
   logoFile?: string; // Single logo file as base64
   logoUsagePrompt?: string; // How to use the logo in the mockup
   
   // Art Direction & Visual Influence
-  artDirection: string;
-  visualInfluence: string;
-  lightingPreset: string;
-  backgroundEnvironment: string;
-  moodContext: string;
+  artDirection?: string;
+  visualInfluence?: string;
+  lightingPreset?: string;
+  backgroundEnvironment?: string;
+  moodContext?: string;
   
   // Composition & Branding
   compositionTemplate: "Centered Hero" | "Rule of Thirds" | "Floating Object" | "Flat Lay" | "Collage";
@@ -105,7 +105,7 @@ export type ProductMockupGenerationRequest = {
     age: "18-25" | "26-35" | "36-45" | "46-55" | "55+";
     race: "Caucasian" | "African" | "Asian" | "Hispanic" | "Middle Eastern" | "Mixed" | "Other";
     gender: "Male" | "Female" | "Non-binary";
-    description: string;
+    description?: string;
   };
   avatarRole: "Model" | "User" | "Mascot" | "Spokesperson";
   avatarInteraction: "Holding" | "Wearing" | "Using" | "Observing";
@@ -157,16 +157,18 @@ export type AvailableAvatar = {
 // Generation Result
 export type ProductMockupGenerationResult = {
   success: boolean;
-  images: string[];
+  images: string[]; // Now contains storage paths instead of temporary URLs
   metadata: {
     generationId: string;
     timestamp: string;
     settings: ProductMockupGenerationRequest;
     variations: Array<{
-      imageUrl: string;
+      storagePath: string;
+      originalUrl?: string; // Keep original URL for reference
       variationType: string;
       settings: Partial<ProductMockupGenerationRequest>;
     }>;
+    storagePaths?: string[]; // Include storage paths in metadata
   };
   error?: string;
 };

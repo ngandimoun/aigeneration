@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, RefreshCw, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { convertToSignedUrls } from "@/lib/storage/signed-urls"
 
 interface CharacterVariationMetadata {
   character: {
@@ -75,13 +76,34 @@ export function CharacterVariations({
   selectedIndex,
   className
 }: CharacterVariationsProps) {
+  const [signedUrls, setSignedUrls] = useState<string[]>([])
+  const [urlsLoading, setUrlsLoading] = useState(false)
+
+  // Convert storage paths to signed URLs when variations change
+  useEffect(() => {
+    if (variations.length > 0) {
+      setUrlsLoading(true)
+      convertToSignedUrls(variations)
+        .then(urls => {
+          setSignedUrls(urls)
+          setUrlsLoading(false)
+        })
+        .catch(error => {
+          console.error('Error generating signed URLs:', error)
+          setSignedUrls(variations) // Fallback to original URLs
+          setUrlsLoading(false)
+        })
+    }
+  }, [variations])
+
   console.log('🎨 CharacterVariations component rendered:', {
     variationsCount: variations.length,
     variationsMetadataCount: variationsMetadata?.length || 0,
     isLoading,
     selectedIndex,
     variations: variations,
-    variationsMetadata: variationsMetadata
+    variationsMetadata: variationsMetadata,
+    signedUrls: signedUrls
   })
   if (isLoading) {
     return (
@@ -199,19 +221,21 @@ export function CharacterVariations({
           {variationsMetadata && (
             <span> with {variationsMetadata.length} metadata entries</span>
           )}
-          {variations.length > 0 && (
+          {signedUrls.length > 0 && (
             <div className="mt-1">
-              <a href={variations[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                Test first image URL
+              <a href={signedUrls[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                Test first signed URL
               </a>
             </div>
           )}
+          {urlsLoading && <div className="mt-1 text-blue-600">Generating signed URLs...</div>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         {variations.map((variation, index) => {
-          console.log(`🖼️ Rendering variation ${index + 1}:`, variation)
+          const displayUrl = signedUrls[index] || variation
+          console.log(`🖼️ Rendering variation ${index + 1}:`, { original: variation, signed: displayUrl })
           return (
             <Card 
               key={index} 
@@ -224,13 +248,19 @@ export function CharacterVariations({
               onClick={() => onSelect(index)}
             >
               <CardContent className="p-0 h-full relative">
-                <img
-                  src={variation}
-                  alt={`Character variation ${index + 1}`}
-                  className="w-full h-full object-cover rounded-lg"
-                  onLoad={() => console.log(`✅ Image ${index + 1} loaded successfully`)}
-                  onError={(e) => console.error(`❌ Image ${index + 1} failed to load:`, e)}
-                />
+                {urlsLoading ? (
+                  <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <img
+                    src={displayUrl}
+                    alt={`Character variation ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg"
+                    onLoad={() => console.log(`✅ Image ${index + 1} loaded successfully`)}
+                    onError={(e) => console.error(`❌ Image ${index + 1} failed to load:`, e)}
+                  />
+                )}
               
               {/* Selection indicator */}
               {selectedIndex === index && (

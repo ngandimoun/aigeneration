@@ -2,11 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+// Cache for 30 seconds
+export const revalidate = 30
+
 // Validation schema for explainer creation
 const createExplainerSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
-  selected_artifact: z.string().optional(),
   explainer_type: z.string().optional(),
   style: z.string().optional(),
   duration: z.number().optional(),
@@ -60,7 +62,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch explainers' }, { status: 500 })
     }
 
-    return NextResponse.json({ explainers }, { status: 200 })
+    return NextResponse.json({ explainers }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'max-age=30'
+      }
+    })
   } catch (error) {
     console.error('Unexpected error in GET /api/explainers:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -89,7 +97,6 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         title: validatedData.title,
         description: validatedData.description,
-        selected_artifact: validatedData.selected_artifact,
         explainer_type: validatedData.explainer_type,
         style: validatedData.style,
         duration: validatedData.duration,

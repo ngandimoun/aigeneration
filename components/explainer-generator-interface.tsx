@@ -48,6 +48,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { ExplainerVideoLibrary } from "@/components/explainer-video-library"
 
 interface ExplainerGeneratorInterfaceProps {
   onClose: () => void
@@ -56,27 +57,20 @@ interface ExplainerGeneratorInterfaceProps {
 
 // OpenAI voices for the voiceover
 const OPENAI_VOICES = [
-  { value: "alloy", label: "Alloy - Neutral, balanced" },
-  { value: "ash", label: "Ash - Deep, authoritative" },
-  { value: "ballad", label: "Ballad - Warm, storytelling" },
-  { value: "coral", label: "Coral - Bright, energetic" },
-  { value: "echo", label: "Echo - Clear, professional" },
-  { value: "fable", label: "Fable - Educational, clear" },
-  { value: "onyx", label: "Onyx - Rich, narrative" },
-  { value: "nova", label: "Nova - Conversational, friendly" },
-  { value: "sage", label: "Sage - Wise, calm" },
-  { value: "shimmer", label: "Shimmer - Soft, soothing" },
-  { value: "verse", label: "Verse - Poetic, expressive" }
+  { value: "alloy", label: "⚖️ Alloy - Neutral, balanced" },
+  { value: "ash", label: "🗿 Ash - Deep, authoritative" },
+  { value: "ballad", label: "🎵 Ballad - Warm, storytelling" },
+  { value: "coral", label: "🌺 Coral - Bright, energetic" },
+  { value: "echo", label: "📢 Echo - Clear, professional" },
+  { value: "fable", label: "📚 Fable - Educational, clear" },
+  { value: "onyx", label: "💎 Onyx - Rich, narrative" },
+  { value: "nova", label: "⭐ Nova - Conversational, friendly" },
+  { value: "sage", label: "🧙 Sage - Wise, calm" },
+  { value: "shimmer", label: "✨ Shimmer - Soft, soothing" },
+  { value: "verse", label: "🎭 Verse - Poetic, expressive" }
 ]
 
-// Languages for voiceover
-const LANGUAGES = [
-  { value: "english", label: "English" },
-  { value: "french", label: "French" },
-  { value: "arabic", label: "Arabic" },
-  { value: "spanish", label: "Spanish" },
-  { value: "japanese", label: "Japanese" }
-]
+// Languages for voiceover - REMOVED as requested
 
 // Helper function to format duration
 const formatDuration = (seconds: number) => {
@@ -94,22 +88,22 @@ const formatDuration = (seconds: number) => {
 }
 
 const ASPECT_RATIOS = [
-  { value: "16:9", label: "16:9 Widescreen" },
-  { value: "9:16", label: "9:16 Social" },
-  { value: "1:1", label: "1:1 Square" }
+  { value: "16:9", label: "📺 16:9 Widescreen" },
+  { value: "9:16", label: "📱 9:16 Social" },
+  { value: "1:1", label: "⬜ 1:1 Square" }
 ]
 
 const RESOLUTIONS = [
-  { value: "720p", label: "720p" },
-  { value: "480p", label: "480p" },
-  { value: "1080p", label: "1080p" }
+  { value: "720p", label: "🎬 720p HD" },
+  { value: "480p", label: "📺 480p SD" },
+  { value: "1080p", label: "🎥 1080p Full HD" }
 ]
 
 const STYLES = [
-  { value: "auto", label: "Auto" },
-  { value: "clean", label: "Clean" },
-  { value: "cinematic", label: "Cinematic" },
-  { value: "academic", label: "Academic" }
+  { value: "auto", label: "🤖 Auto" },
+  { value: "clean", label: "✨ Clean" },
+  { value: "cinematic", label: "🎭 Cinematic" },
+  { value: "academic", label: "🎓 Academic" }
 ]
 
 export function ExplainerGeneratorInterface({ onClose, projectTitle }: ExplainerGeneratorInterfaceProps) {
@@ -118,7 +112,6 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
   const [prompt, setPrompt] = useState("")
   const [hasVoiceover, setHasVoiceover] = useState(false)
   const [voiceStyle, setVoiceStyle] = useState("fable")
-  const [language, setLanguage] = useState("english")
   
   // Smart options state
   const [isSmartOptionsOpen, setIsSmartOptionsOpen] = useState(false)
@@ -148,6 +141,8 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
   const supabase = createClient()
   const { toast } = useToast()
   const realtimeChannel = useRef<any>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'generate' | 'library'>('generate')
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
@@ -175,7 +170,6 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
           prompt,
           hasVoiceover,
           voiceStyle,
-          language,
           duration: duration[0],
           aspectRatio,
           resolution,
@@ -332,6 +326,17 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Get current user ID
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      }
+    }
+    getUser()
+  }, [supabase.auth])
+
   // Cleanup realtime subscription on unmount
   useEffect(() => {
     return () => {
@@ -342,7 +347,7 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
   }, [])
 
   return (
-    <div className="bg-background border border-border rounded-lg p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+    <div className="bg-background border border-border rounded-lg p-4 space-y-4 max-h-[80vh] overflow-y-auto scrollbar-hover">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -358,18 +363,27 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
         </Button>
       </div>
 
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'generate' | 'library')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="generate">Generate New</TabsTrigger>
+          <TabsTrigger value="library">My Videos</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="generate" className="space-y-4 mt-4">
+
       {!generatedVideo ? (
         <>
           {/* Step 1: Title */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Label className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
               📝 Title:
             </Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What is Entropy?"
-              className="text-sm bg-muted/30 border-muted-foreground/25 focus:bg-background transition-colors"
+              className="text-sm bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800 focus:bg-gradient-to-r focus:from-amber-100 focus:to-orange-100 dark:focus:from-amber-900/30 dark:focus:to-orange-900/30 focus:border-amber-300 dark:focus:border-amber-700 transition-all duration-200"
               maxLength={100}
             />
             <p className="text-xs text-muted-foreground">
@@ -379,14 +393,14 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
 
           {/* Step 2: Prompt */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
-              ✏️ Prompt:
+            <Label className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2">
+              ✏️ Prompt: <span className="text-red-500">*</span>
             </Label>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Animate a rotating cube transforming into a pyramid on a dark background, with labels appearing as it morphs."
-              className="min-h-[100px] text-sm resize-none bg-muted/30 border-muted-foreground/25 focus:bg-background transition-colors"
+              className="min-h-[100px] text-sm resize-none bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 focus:bg-gradient-to-r focus:from-blue-100 focus:to-indigo-100 dark:focus:from-blue-900/30 dark:focus:to-indigo-900/30 focus:border-blue-300 dark:focus:border-blue-700 transition-all duration-200"
             />
             <div className="flex justify-between items-center">
               <p className="text-xs text-muted-foreground">
@@ -396,12 +410,15 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
                 {prompt.length}/5000 characters
               </p>
             </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+              * Only the Prompt field is required. All other fields are optional.
+            </p>
           </div>
 
           {/* Step 3: Voiceover Toggle */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Label className="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
                 🎙️ Add AI Voiceover?
               </Label>
               <Switch
@@ -411,33 +428,17 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
             </div>
             
             {hasVoiceover && (
-              <div className="grid grid-cols-2 gap-3 pl-4">
+              <div className="grid grid-cols-1 gap-3 pl-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Voice</Label>
+                  <Label className="text-xs text-muted-foreground">🎤 Voice Style</Label>
                   <Select value={voiceStyle} onValueChange={setVoiceStyle}>
-                    <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectTrigger className="w-full h-8 text-xs bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800 focus:bg-gradient-to-r focus:from-purple-100 focus:to-pink-100 dark:focus:from-purple-900/30 dark:focus:to-pink-900/30 focus:border-purple-300 dark:focus:border-purple-700 transition-all duration-200">
                       <SelectValue placeholder="Select voice" />
                     </SelectTrigger>
                     <SelectContent>
                       {OPENAI_VOICES.map((voice) => (
                         <SelectItem key={voice.value} value={voice.value} className="text-xs">
                           {voice.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Language</Label>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="w-full h-8 text-xs">
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value} className="text-xs">
-                          {lang.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -542,17 +543,18 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
           {/* Step 5: Generate Button */}
           <Button 
             onClick={handleGenerate}
-            disabled={!title.trim() || !prompt.trim() || isGenerating}
-            className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
+            disabled={!prompt.trim() || isGenerating}
+            size="sm"
+            className="w-full h-10 text-sm font-medium bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
           >
             {isGenerating ? (
               <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Generating Animation...
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
               </>
             ) : (
               <>
-                <Sparkles className="h-5 w-5 mr-2" />
+                <Sparkles className="h-4 w-4 mr-2" />
                 Generate Animation 🎞️
               </>
             )}
@@ -776,6 +778,27 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
           </div>
         </div>
       )}
+        </TabsContent>
+        
+        <TabsContent value="library" className="space-y-4 mt-4">
+          {userId ? (
+            <ExplainerVideoLibrary 
+              userId={userId}
+              onVideoSelect={(video) => {
+                // Handle video selection if needed
+                console.log('Selected video:', video)
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading user information...</p>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Floating Scroll to Top Button */}
       {showScrollButton && (

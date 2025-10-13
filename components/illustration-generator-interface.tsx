@@ -32,8 +32,6 @@ import {
   Settings,
   Zap,
   Image as ImageIcon,
-  Minus,
-  Plus,
   Camera,
   Layers,
   Target,
@@ -319,7 +317,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
   const [prompt, setPrompt] = useState("")
   const [purpose, setPurpose] = useState("")
   const [referenceImages, setReferenceImages] = useState<File[]>([])
-  const [imageCount, setImageCount] = useState(4)
+  const [isDragOver, setIsDragOver] = useState(false)
   const [aspectRatio, setAspectRatio] = useState("1:1") // Default to Square
 
   // Art Direction & Visual Style
@@ -352,7 +350,6 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
-  const [isPublic, setIsPublic] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
 
   // Smart behavior logic
@@ -462,16 +459,28 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
     }
   }, [artDirection])
 
-  const handleImageCountChange = (delta: number) => {
-    const newCount = imageCount + delta
-    if (newCount >= 1 && newCount <= 4) {
-      setImageCount(newCount)
-    }
-  }
 
   const handleReferenceImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
-    if (files.length + referenceImages.length > 3) {
+    processFiles(files)
+  }
+
+  const processFiles = (files: File[]) => {
+    // Validate file types
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: `${file.name} is not an image file.`,
+          variant: "destructive"
+        })
+        return false
+      }
+      return true
+    })
+
+    // Check total count
+    if (validFiles.length + referenceImages.length > 3) {
       toast({
         title: "Too many images",
         description: "Maximum 3 reference images allowed.",
@@ -479,7 +488,44 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
       })
       return
     }
-    setReferenceImages(prev => [...prev, ...files])
+
+    // Check file sizes (max 10MB per file)
+    const oversizedFiles = validFiles.filter(file => file.size > 10 * 1024 * 1024)
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "File too large",
+        description: `${oversizedFiles[0].name} is larger than 10MB.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    setReferenceImages(prev => [...prev, ...validFiles])
+    
+    if (validFiles.length > 0) {
+      toast({
+        title: "Images uploaded",
+        description: `Added ${validFiles.length} reference image(s).`,
+      })
+    }
+  }
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault()
+    setIsDragOver(false)
+    
+    const files = Array.from(event.dataTransfer.files)
+    processFiles(files)
   }
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -512,7 +558,6 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
       formData.append('title', title)
       formData.append('prompt', prompt)
       formData.append('purpose', purpose)
-      formData.append('imageCount', imageCount.toString())
       formData.append('aspectRatio', aspectRatio)
 
       // Art Direction & Visual Style
@@ -552,8 +597,6 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
         formData.append('logoImage', logoImage)
       }
 
-      // Add public/private status
-      formData.append('isPublic', isPublic.toString())
 
       const response = await fetch('/api/illustrations', {
         method: 'POST',
@@ -569,7 +612,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
       toast({
         title: "Illustration generated!",
-        description: `Successfully created ${imageCount} illustration(s) for "${projectTitle}".`,
+        description: `Successfully created illustration(s) for "${projectTitle}".`,
       })
 
       onClose()
@@ -601,26 +644,9 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
       {/* Header - Fixed */}
       <div className="flex items-center justify-between p-2 border-b border-border sticky top-0 bg-background z-10">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <h3 className="text-xs font-semibold text-foreground">
+          <h3 className="text-xs font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent">
             Generate Illustrations for: {projectTitle}
           </h3>
-          {/* Public/Private Toggle */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className={cn(
-              "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
-              isPublic 
-                ? "bg-green-100 text-green-700 border border-green-200" 
-                : "bg-gray-100 text-gray-700 border border-gray-200"
-            )}>
-              {isPublic ? "Public" : "Private"}
-            </span>
-            <Switch
-              id="public-toggle"
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-              className="scale-75"
-            />
-          </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
           <X className="h-3 w-3" />
@@ -642,7 +668,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
         <div className="space-y-2">
           {/* Entry & Intent */}
           <div className="space-y-2">
-            <h4 className="text-xs font-semibold text-foreground border-b pb-1">Entry & Intent</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent border-b pb-1">Entry & Intent</h4>
             <div className="space-y-2">
               <div>
                 <Label htmlFor="title" className="text-xs">Title</Label>
@@ -689,71 +715,97 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
               </div>
 
               <div>
-                <Label className="text-xs">Upload Reference (optional)</Label>
+                <Label className="text-xs">Reference Images (optional)</Label>
                 <div className="mt-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleReferenceImageUpload}
-                      className="flex-1 h-8 text-xs"
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      Max 3 images
-                    </span>
+                  {/* Drag & Drop Zone */}
+                  <div
+                    className={cn(
+                      "border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer",
+                      isDragOver 
+                        ? "border-blue-400 bg-blue-50" 
+                        : "border-gray-300 hover:border-gray-400 hover:bg-gray-50",
+                      referenceImages.length > 0 && "border-green-300 bg-green-50"
+                    )}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('reference-file-input')?.click()}
+                  >
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <div className="text-xs text-gray-600">
+                        <span className="font-medium">
+                          {referenceImages.length > 0 
+                            ? `${referenceImages.length}/3 images uploaded` 
+                            : "Drop images here or click to browse"
+                          }
+                        </span>
+                        <p className="text-gray-500 mt-1">
+                          Supports JPG, PNG, GIF • Max 10MB each • Up to 3 images
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Hidden file input */}
+                  <Input
+                    id="reference-file-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleReferenceImageUpload}
+                    className="hidden"
+                  />
+
+                  {/* Image previews */}
                   {referenceImages.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
-                      {referenceImages.map((file, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={`Reference ${index + 1}`}
-                            className="w-full h-20 object-cover rounded border"
-                          />
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-1 right-1 h-6 w-6 p-0"
-                            onClick={() => removeReferenceImage(index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700">
+                          Reference Images ({referenceImages.length}/3)
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setReferenceImages([])}
+                          className="h-6 text-xs"
+                        >
+                          Clear All
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {referenceImages.map((file, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Reference ${index + 1}`}
+                              className="w-full h-20 object-cover rounded border shadow-sm"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded border" />
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeReferenceImage(index)
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                            <div className="absolute bottom-1 left-1 right-1">
+                              <div className="bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded truncate">
+                                {file.name}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs">Number of Images</Label>
-                <div className="flex items-center gap-2 mt-4">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => handleImageCountChange(-1)}
-                    disabled={imageCount <= 1}
-                    className="h-6 w-6 rounded-full bg-red-50 hover:bg-red-100 border-red-200 text-red-600 hover:text-red-700"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <div className="bg-blue-50 border border-blue-200 rounded-sm px-3">
-                    <span className="text-xs font-medium text-blue-700">{imageCount}</span>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => handleImageCountChange(1)}
-                    disabled={imageCount >= 4}
-                    className="h-6 w-6 rounded-full bg-green-50 hover:bg-green-100 border-green-200 text-green-600 hover:text-green-700"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                  <span className="text-xs text-muted-foreground">(Max 4)</span>
-                </div>
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="aspect-ratio" className="text-xs">Aspect Ratio</Label>
@@ -792,7 +844,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
           {/* Art Direction & Visual Style */}
           <div className="space-y-2">
-            <hr className="" />
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent border-b pb-1">🎨 Art Direction & Visual Style</h4>
             <div className="space-y-2">
               <div>
                 <Label htmlFor="art-direction" className="text-xs">Art Direction</Label>
@@ -918,6 +970,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
           {/* Mood Context */}
           <div className="space-y-2">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent border-b pb-1">🎭 Mood Context</h4>
             <hr className="" />
             <div className="space-y-2">
               <div>
@@ -990,6 +1043,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
           {/* Brand Sync & Palette */}
           <div className="space-y-2">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent border-b pb-1">🎨 Brand Sync & Palette</h4>
             <hr className="" />
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -1115,6 +1169,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
           {/* Composition Template */}
           <div className="space-y-2">
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent border-b pb-1">📐 Composition Template</h4>
             <hr className="" />
             <div className="space-y-2">
               <div className="space-y-2">
@@ -1216,7 +1271,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
             ) : (
               <>
                 <Sparkles className="h-4 w-4 mr-2" />
-                ✨ Generate
+                 Generate Illustration
               </>
             )}
           </Button>

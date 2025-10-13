@@ -1,89 +1,23 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X, Loader2, ChevronsUpDown, Megaphone, Image as ImageIcon, CheckCircle, Check } from "lucide-react"
+import { Plus, X, Loader2, Megaphone, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface UGCAdsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string }) => void
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-
-export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormProps) {
+export function UGCAdsForm({ onSave, onCancel }: UGCAdsFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [selectedArtifact, setSelectedArtifact] = useState<string>("")
-  const [artifactOpen, setArtifactOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
-  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
-
-  // Fetch real artifacts from the database
-  useEffect(() => {
-    const loadArtifacts = async () => {
-      try {
-        // Fetch all artifacts for the user (both public and private)
-        const artifacts = await fetchArtifacts({})
-        const formattedArtifacts = artifacts.map(artifact => ({
-          id: artifact.id,
-          title: artifact.title,
-          image: artifact.metadata?.image || "/placeholder.jpg",
-          description: artifact.description || "No description available"
-        }))
-        setRealArtifacts(formattedArtifacts)
-      } catch (error) {
-        console.error('Failed to load artifacts:', error)
-        toast({
-          title: "Error loading artifacts",
-          description: "Could not load artifacts from database. Please try again.",
-          variant: "destructive"
-        })
-      }
-    }
-
-    loadArtifacts()
-  }, [fetchArtifacts, toast])
-
-  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
-  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
-  
-  // Filtrer les artifacts basé sur le terme de recherche
-  const filteredArtifacts = artifactsToShow.filter(artifact =>
-    artifact.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artifact.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  
-  // Ref pour gérer le clic en dehors
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  
-  // Fermer le menu quand on clique en dehors
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setArtifactOpen(false)
-        setSearchTerm("") // Reset search when closing
-      }
-    }
-    
-    if (artifactOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [artifactOpen])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -97,7 +31,7 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
   }
 
   const handleSave = async () => {
-    if (title.trim() && description.trim() && selectedArtifact) {
+    if (title.trim() && description.trim()) {
       setIsLoading(true)
       
       // Simuler un délai de sauvegarde
@@ -106,14 +40,12 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
       onSave({
         title: title.trim(),
         image: imagePreview || "",
-        description: description.trim(),
-        selectedArtifact
+        description: description.trim()
       })
       
       setTitle("")
       setDescription("")
       setImagePreview(null)
-      setSelectedArtifact("")
       setIsLoading(false)
       
       toast({
@@ -178,73 +110,6 @@ export function UGCAdsForm({ onSave, onCancel, availableArtifacts }: UGCAdsFormP
                 </div>
               )}
             </label>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
-            Artifact(s)
-          </label>
-          {realArtifacts.length === 0 && availableArtifacts.length === 0 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              No artifacts available. Create artifacts in the "Artifacts" section.
-            </p>
-          )}
-          
-          <div className="relative" ref={dropdownRef}>
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => {
-                setArtifactOpen(!artifactOpen)
-              }}
-            >
-              {selectedArtifact
-                ? artifactsToShow.find((artifact) => artifact.id === selectedArtifact)?.title
-                : "Select artifact..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-            
-            {artifactOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto scrollbar-hover">
-                <div className="p-2">
-                  <input
-                    type="text"
-                    placeholder="Search artifact..."
-                    className="w-full px-3 py-2 text-sm border border-border rounded-md mb-2"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <div className="space-y-1">
-                    {filteredArtifacts.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">
-                        No artifacts found matching "{searchTerm}"
-                      </div>
-                    ) : (
-                      filteredArtifacts.map((artifact) => (
-                      <div
-                        key={artifact.id}
-                        className="flex items-center px-3 py-2 text-sm hover:bg-accent rounded-md cursor-pointer"
-                        onClick={() => {
-                          setSelectedArtifact(artifact.id)
-                          setArtifactOpen(false)
-                          setSearchTerm("") // Reset search when selecting
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedArtifact === artifact.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {artifact.title}
-                      </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

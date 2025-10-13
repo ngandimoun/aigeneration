@@ -2,11 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+// Cache for 30 seconds
+export const revalidate = 30
+
 // Validation schema for avatar creation
 const createAvatarSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
-  selected_artifact: z.string().optional(),
   character_type: z.string().optional(),
   gender: z.string().optional(),
   age_range: z.string().optional(),
@@ -65,7 +67,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch avatars' }, { status: 500 })
     }
 
-    return NextResponse.json({ avatars }, { status: 200 })
+    return NextResponse.json({ avatars }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'max-age=30'
+      }
+    })
   } catch (error) {
     console.error('Unexpected error in GET /api/avatars:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -94,7 +102,6 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         title: validatedData.title,
         description: validatedData.description,
-        selected_artifact: validatedData.selected_artifact,
         character_type: validatedData.character_type,
         gender: validatedData.gender,
         age_range: validatedData.age_range,

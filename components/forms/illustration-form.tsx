@@ -9,16 +9,14 @@ import { X, Palette, Image as ImageIcon, Loader2, Loader } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface IllustrationFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string; isPublic: boolean }) => Promise<void>
+  onSave: (project: { title: string; image: string; description: string; isPublic: boolean }) => Promise<void>
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-export function IllustrationForm({ onSave, onCancel, availableArtifacts }: IllustrationFormProps) {
+export function IllustrationForm({ onSave, onCancel }: IllustrationFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [selectedArtifact, setSelectedArtifact] = useState<string>("")
   const [isPublic, setIsPublic] = useState(true) // Default to Public
   const [isCreating, setIsCreating] = useState(false) // Loading state for creation
   const { toast } = useToast()
@@ -43,7 +41,6 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
         title: title.trim(),
         image: imagePreview || "/placeholder.jpg", // Use placeholder if no image
         description: description.trim(),
-        selectedArtifact: selectedArtifact || "default", // Use default if no artifact selected
         isPublic // Ajout de isPublic
       }
       
@@ -55,7 +52,6 @@ export function IllustrationForm({ onSave, onCancel, availableArtifacts }: Illus
         setTitle("")
         setDescription("")
         setImagePreview(null)
-        setSelectedArtifact("")
         setIsPublic(true) // Reset to Public
         
         // Show success toast

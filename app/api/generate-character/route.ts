@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fal } from '@fal-ai/client'
+import { downloadAndUploadMultipleImages } from '@/lib/storage/download-and-upload'
+import { createClient } from '@/lib/supabase/server'
 
 // Configure fal.ai client
 fal.config({
@@ -256,10 +258,47 @@ export async function POST(request: NextRequest) {
     const imageUrls = result.data.images.map((img: any) => img.url)
     console.log('🔗 Extracted image URLs:', imageUrls)
 
+    // Download and upload images to Supabase Storage
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
+    }
+
+    const generationId = `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const baseStoragePath = `renders/comics/${user.id}`
+    
+    console.log('📥 Downloading and uploading images to Supabase Storage...')
+    const uploadResults = await downloadAndUploadMultipleImages(
+      imageUrls,
+      baseStoragePath,
+      generationId,
+      'image/png'
+    )
+
+    // Check if all uploads were successful
+    const failedUploads = uploadResults.filter(result => !result.success)
+    if (failedUploads.length > 0) {
+      console.error('❌ Some uploads failed:', failedUploads)
+      return NextResponse.json({ 
+        error: 'Failed to upload some images to storage',
+        details: failedUploads.map(f => f.error)
+      }, { status: 500 })
+    }
+
+    // Extract storage paths from successful uploads
+    const storagePaths = uploadResults
+      .filter(result => result.success)
+      .map(result => result.storagePath!)
+    
+    console.log('✅ All images uploaded successfully:', storagePaths)
+
     // Build comprehensive metadata for each variation
     const generationTimestamp = new Date().toISOString()
-    const variationsMetadata = imageUrls.map((url, index) => ({
-      url,
+    const variationsMetadata = storagePaths.map((storagePath, index) => ({
+      storagePath,
+      originalUrl: imageUrls[index], // Keep original URL for reference
       variationNumber: index + 1,
       metadata: {
         // Character information
@@ -314,16 +353,17 @@ export async function POST(request: NextRequest) {
 
     const response = {
       success: true,
-      images: imageUrls,
+      images: storagePaths, // Return storage paths instead of temporary URLs
       variations: variationsMetadata,
       seed: result.data.seed,
       prompt: prompt,
       metadata: {
-        totalVariations: imageUrls.length,
+        totalVariations: storagePaths.length,
         generationTimestamp,
         comicTitle: metadata?.comicTitle || 'Untitled Comic',
         selectedArtifact: metadata?.selectedArtifact,
-        generationContext: metadata?.generationContext
+        generationContext: metadata?.generationContext,
+        storagePaths // Include storage paths in metadata
       }
     }
     console.log('📤 API response with metadata:', {

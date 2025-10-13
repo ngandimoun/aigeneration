@@ -1,63 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, X, Loader2, ChevronsUpDown, Users, Image as ImageIcon, CheckCircle, Loader } from "lucide-react"
+import { Plus, X, Loader2, Users, Image as ImageIcon, Loader } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface AvatarsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string; isPublic: boolean }) => void
+  onSave: (project: { title: string; image: string; description: string; isPublic: boolean }) => void
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFormProps) {
+export function AvatarsForm({ onSave, onCancel }: AvatarsFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [selectedArtifact, setSelectedArtifact] = useState<string>("")
-  const [artifactDialogOpen, setArtifactDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isPublic, setIsPublic] = useState<boolean>(true) // Default to Public
-  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
-  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
-
-  // Fetch real artifacts from the database
-  useEffect(() => {
-    const loadArtifacts = async () => {
-      try {
-        // Fetch all artifacts for the user (both public and private)
-        const artifacts = await fetchArtifacts({})
-        const formattedArtifacts = artifacts.map(artifact => ({
-          id: artifact.id,
-          title: artifact.title,
-          image: artifact.metadata?.image || "/placeholder.jpg",
-          description: artifact.description || "No description available"
-        }))
-        setRealArtifacts(formattedArtifacts)
-      } catch (error) {
-        console.error('Failed to load artifacts:', error)
-        toast({
-          title: "Error loading artifacts",
-          description: "Could not load artifacts from database. Please try again.",
-          variant: "destructive"
-        })
-      }
-    }
-
-    loadArtifacts()
-  }, [fetchArtifacts, toast])
-
-  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
-  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
-  const selectedArtifactData = artifactsToShow.find(artifact => artifact.id === selectedArtifact)
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -81,14 +44,12 @@ export function AvatarsForm({ onSave, onCancel, availableArtifacts }: AvatarsFor
         title: title.trim(),
         image: imagePreview || "",
         description: description.trim(),
-        selectedArtifact: "", // Temporarily disabled
         isPublic
       })
       
       setTitle("")
       setDescription("")
       setImagePreview(null)
-      setSelectedArtifact("")
       setIsPublic(true) // Reset to default Public
       setIsLoading(false)
       

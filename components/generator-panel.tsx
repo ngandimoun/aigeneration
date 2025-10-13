@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useNavigation } from "@/hooks/use-navigation"
-import { ArtifactCard } from "@/components/artifact-card"
-import { ArtifactForm } from "@/components/artifact-form"
 import { ImageGeneratorInterface } from "@/components/image-generator-interface"
 import { IllustrationGeneratorInterface } from "@/components/illustration-generator-interface"
 import { AvatarPersonaGeneratorInterface } from "@/components/avatar-persona-generator-interface"
 import { VideoGeneratorInterface } from "@/components/video-generator-interface"
 import { ExplainerGeneratorInterface } from "@/components/explainer-generator-interface"
+import { ExplainerVideoLibrary } from "@/components/explainer-video-library"
 import { UGCAdsGeneratorInterface } from "@/components/ugc-ads-generator-interface"
 import { ProductMotionGeneratorInterface } from "@/components/product-motion-generator-interface"
 import { ProductMockupGeneratorInterface } from "@/components/product-mockup-generator-interface"
@@ -34,15 +33,23 @@ import { ComicsForm } from "@/components/forms/comics-form"
 import { SubtitleForm } from "@/components/forms/subtitle-form"
 import { SubtitleInterface } from "@/components/subtitle-interface"
 import { SoundToVideoInterface } from "@/components/sound-to-video-interface"
+import { WatermarkForm } from "@/components/forms/watermark-form"
+import { WatermarkInterface } from "@/components/watermark-interface"
+import { VideoTranslationForm } from "@/components/forms/video-translation-form"
+import { VideoTranslationInterface } from "@/components/video-translation-interface"
 import { ComicCard } from "@/components/comic-card"
+import { LibraryHeader } from "@/components/library-header"
 import { Button } from "@/components/ui/button"
 import { Plus, FolderPlus, Globe, Lock } from "lucide-react"
-import { ArtifactCardSkeleton } from "@/components/artifact-card-skeleton"
 import { AutocaptionModelInputs } from "@/lib/types/subtitles"
+import { VideoTranslationInputs } from "@/lib/types/video-translation"
+import { createClient } from "@/lib/supabase/client"
 
 export function GeneratorPanel() {
   const [isMounted, setIsMounted] = useState(false)
-  const { getDisplayTitle, selectedSection, getArtifactsBySection, addArtifact, deleteArtifact, showArtifactForm, setShowArtifactForm, showProjectForm, setShowProjectForm, artifacts, isLoadingArtifacts, setSelectedArtifact, setSelectedSection } = useNavigation()
+  const [userId, setUserId] = useState<string | null>(null)
+  const { getDisplayTitle, selectedSection, showProjectForm, setShowProjectForm, setSelectedSection } = useNavigation()
+  const supabase = createClient()
   
   // États locaux pour l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const [showImageGenerator, setShowImageGenerator] = useState(false)
@@ -70,8 +77,6 @@ export function GeneratorPanel() {
   const [showTalkingAvatars, setShowTalkingAvatars] = useState(false)
   const [selectedTalkingAvatarProject, setSelectedTalkingAvatarProject] = useState<{title: string, image: string, description: string} | null>(null)
   
-  // Obtenir les artifacts filtrés par section
-  const sectionArtifacts = getArtifactsBySection(selectedSection)
 
   // Sections qui supportent la génération d'images
   const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics', 'comics']
@@ -92,7 +97,7 @@ export function GeneratorPanel() {
   const musicJingleSections = ['music-jingles']
   
   // Sections qui supportent les nouveaux formulaires
-  const newFormSections = ['explainers', 'ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound']
+  const newFormSections = ['ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound', 'add-watermark', 'video-translate']
   
   // Sections qui supportent la génération de talking avatars
   const talkingAvatarsSections = ['talking-avatars']
@@ -106,13 +111,24 @@ export function GeneratorPanel() {
   const isMusicJingleSection = (section: string) => musicJingleSections.includes(section)
   const isNewFormSection = (section: string) => newFormSections.includes(section)
   const isTalkingAvatarsSection = (section: string) => talkingAvatarsSections.includes(section)
-  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
-  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length > 0 && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
-  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && sectionArtifacts.length === 0 && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
+  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection) || selectedSection === 'explainers') && selectedSection !== 'social-cuts' && selectedSection !== 'cinematic-clips' && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
+  const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && false && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
+  const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && true && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // Get current user ID
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      }
+    }
+    getUser()
+  }, [supabase.auth])
 
   // Fermer l'interface de génération d'images quand on change de section
   useEffect(() => {
@@ -168,19 +184,38 @@ export function GeneratorPanel() {
     }
   }, [selectedSection, showTalkingAvatars])
 
-  // Clear selectedArtifact when changing sections
   useEffect(() => {
-    setSelectedArtifact(null)
-  }, [selectedSection, setSelectedArtifact])
+    // Effect for section changes
+  }, [selectedSection])
 
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
   const handleProjectClick = (artifact: any) => {
     if (selectedSection === 'illustration' || selectedSection === 'avatars-personas' || selectedSection === 'product-mockups' || selectedSection === 'concept-worlds' || selectedSection === 'charts-infographics') {
       // For illustration, avatars-personas, product-mockups, concept-worlds, and charts-infographics sections, show project details in MainContent AND open generator
-      setSelectedArtifact(artifact)
+      // setSelectedArtifact removed
       setSelectedProject(artifact)
       setImageGeneratorSection(selectedSection)
       setShowImageGenerator(true)
+    } else if (selectedSection === 'explainers') {
+      // For explainers section, do nothing - we show video library directly
+      // No need to open artifact details or generator
+    } else if (selectedSection === 'ugc-ads') {
+      // For ugc-ads section, show project details in MainContent AND open generator
+      // setSelectedArtifact removed
+      setSelectedVideoProject(artifact)
+      setVideoGeneratorSection(selectedSection)
+      setShowVideoGenerator(true)
+    } else if (selectedSection === 'product-motion') {
+      // For product-motion section, show project details in MainContent AND open generator
+      // setSelectedArtifact removed
+      setSelectedVideoProject(artifact)
+      setVideoGeneratorSection(selectedSection)
+      setShowVideoGenerator(true)
+    } else if (selectedSection === 'talking-avatars') {
+      // For talking-avatars section, show project details in MainContent AND open generator
+      // setSelectedArtifact removed
+      setSelectedTalkingAvatarProject(artifact)
+      setShowTalkingAvatars(true)
     } else if (isImageGenerationSection(selectedSection)) {
       setSelectedProject(artifact)
       setImageGeneratorSection(selectedSection)
@@ -199,9 +234,8 @@ export function GeneratorPanel() {
     setShowImageGenerator(false)
     setSelectedProject(null)
     setImageGeneratorSection(null)
-    // Clear selectedArtifact when closing generator to return to welcome message
     if (selectedSection === 'illustration' || selectedSection === 'avatars-personas' || selectedSection === 'product-mockups' || selectedSection === 'concept-worlds' || selectedSection === 'charts-infographics') {
-      setSelectedArtifact(null)
+      // setSelectedArtifact removed
     }
   }
 
@@ -209,6 +243,9 @@ export function GeneratorPanel() {
     setShowVideoGenerator(false)
     setSelectedVideoProject(null)
     setVideoGeneratorSection(null)
+    if (selectedSection === 'explainers' || selectedSection === 'ugc-ads' || selectedSection === 'product-motion') {
+      // setSelectedArtifact removed
+    }
   }
 
   const handleCloseVoiceCreation = () => {
@@ -226,205 +263,210 @@ export function GeneratorPanel() {
   const handleCloseTalkingAvatars = () => {
     setShowTalkingAvatars(false)
     setSelectedTalkingAvatarProject(null)
+    if (selectedSection === 'talking-avatars') {
+      // setSelectedArtifact removed
+    }
   }
 
-  // Composant pour le bouton New Project
-  const NewProjectButton = () => (
-    <Button
-      size="sm"
-      onClick={() => {
-        if (selectedSection === 'illustration') {
-          // Créer un projet temporaire pour ouvrir le générateur
-          setSelectedProject({ title: 'New Illustration', image: '', description: '', isPublic: true })
-          setImageGeneratorSection('illustration')
-          setShowImageGenerator(true)
-        } else if (selectedSection === 'avatars-personas') {
-          // Créer un projet temporaire pour ouvrir le générateur
-          setSelectedProject({ title: 'New Avatar & Persona', image: '', description: '', isPublic: true })
-          setImageGeneratorSection('avatars-personas')
-          setShowImageGenerator(true)
-        } else if (selectedSection === 'product-mockups') {
-          // Créer un projet temporaire pour ouvrir le générateur
-          setSelectedProject({ title: 'New Product Mockup', image: '', description: '', isPublic: true })
-          setImageGeneratorSection('product-mockups')
-          setShowImageGenerator(true)
-        } else if (selectedSection === 'concept-worlds') {
-          // Créer un projet temporaire pour ouvrir le générateur
-          setSelectedProject({ title: 'New Concept World', image: '', description: '', isPublic: true })
-          setImageGeneratorSection('concept-worlds')
-          setShowImageGenerator(true)
-        } else if (selectedSection === 'charts-infographics') {
-          // Créer un projet temporaire pour ouvrir le générateur
-          setSelectedProject({ title: 'New Chart & Infographic', image: '', description: '', isPublic: true })
-          setImageGeneratorSection('charts-infographics')
-          setShowImageGenerator(true)
-        } else {
-          setShowProjectForm(true)
-        }
-      }}
-      className="flex items-center gap-2"
-    >
-      <FolderPlus className="h-4 w-4" />
-      New Project
-    </Button>
-  )
+  // Composant pour le bouton New Project avec gradient dynamique
+  const NewProjectButton = () => {
+    const getGradientClass = () => {
+      switch (selectedSection) {
+        case 'illustration':
+          return "bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 hover:from-amber-500 hover:via-orange-600 hover:to-red-600"
+        case 'avatars-personas':
+          return "bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 hover:from-emerald-500 hover:via-teal-600 hover:to-cyan-600"
+        case 'product-mockups':
+          return "bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 hover:from-violet-600 hover:via-purple-600 hover:to-fuchsia-600"
+        case 'concept-worlds':
+          return "bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 hover:from-sky-500 hover:via-blue-600 hover:to-indigo-600"
+        case 'charts-infographics':
+          return "bg-gradient-to-r from-lime-400 via-green-500 to-emerald-500 hover:from-lime-500 hover:via-green-600 hover:to-emerald-600"
+        case 'explainers':
+          return "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600"
+        case 'ugc-ads':
+          return "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600"
+        case 'product-motion':
+          return "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600"
+        case 'talking-avatars':
+          return "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600"
+        default:
+          return "bg-gradient-to-r from-rose-400 via-pink-500 to-purple-500 hover:from-rose-500 hover:via-pink-600 hover:to-purple-600"
+      }
+    }
 
-  // Composant pour le formulaire d'artifact
-  const ArtifactFormComponent = ({ type = "artifact" }: { type?: "artifact" | "project" }) => (
-    <ArtifactForm 
-      onSave={addArtifact}
-      onCancel={() => {
-        if (type === 'artifact') {
-          setShowArtifactForm(false)
-        } else {
-          setShowProjectForm(false)
-        }
-      }}
-      type={type}
-    />
-  )
+    const getButtonLabel = () => {
+      switch (selectedSection) {
+        case 'illustration': return 'New Illustration'
+        case 'avatars-personas': return 'New Avatar'
+        case 'product-mockups': return 'New Mockup'
+        case 'concept-worlds': return 'New World'
+        case 'charts-infographics': return 'New Chart'
+        case 'comics': return 'New Comic'
+        case 'explainers': return 'New Explainer'
+        case 'ugc-ads': return 'New Ad'
+        case 'product-motion': return 'New Motion'
+        case 'talking-avatars': return 'New Avatar'
+        case 'add-subtitles': return 'New Subtitle'
+        case 'add-watermark': return 'New Watermark'
+        case 'video-translate': return 'New Translation'
+        default: return 'New Project'
+      }
+    }
+
+    return (
+      <Button
+        size="sm"
+        onClick={() => {
+          if (selectedSection === 'illustration') {
+            // Créer un projet temporaire pour ouvrir le générateur
+            setSelectedProject({ title: 'New Illustration', image: '', description: '', isPublic: true })
+            setImageGeneratorSection('illustration')
+            setShowImageGenerator(true)
+          } else if (selectedSection === 'avatars-personas') {
+            // Créer un projet temporaire pour ouvrir le générateur
+            setSelectedProject({ title: 'New Avatar & Persona', image: '', description: '', isPublic: true })
+            setImageGeneratorSection('avatars-personas')
+            setShowImageGenerator(true)
+          } else if (selectedSection === 'product-mockups') {
+            // Créer un projet temporaire pour ouvrir le générateur
+            setSelectedProject({ title: 'New Product Mockup', image: '', description: '', isPublic: true })
+            setImageGeneratorSection('product-mockups')
+            setShowImageGenerator(true)
+          } else if (selectedSection === 'concept-worlds') {
+            // Créer un projet temporaire pour ouvrir le générateur
+            setSelectedProject({ title: 'New Concept World', image: '', description: '', isPublic: true })
+            setImageGeneratorSection('concept-worlds')
+            setShowImageGenerator(true)
+          } else if (selectedSection === 'charts-infographics') {
+            // Créer un projet temporaire pour ouvrir le générateur
+            setSelectedProject({ title: 'New Chart & Infographic', image: '', description: '', isPublic: true })
+            setImageGeneratorSection('charts-infographics')
+            setShowImageGenerator(true)
+          } else if (selectedSection === 'explainers') {
+            // Créer un projet temporaire pour ouvrir le générateur explainers
+            setSelectedVideoProject({ title: 'New Explainer Video', image: '', description: '' })
+            setVideoGeneratorSection('explainers')
+            setShowVideoGenerator(true)
+          } else if (selectedSection === 'ugc-ads') {
+            // Créer un projet temporaire pour ouvrir le générateur UGC Ads
+            setSelectedVideoProject({ title: 'New UGC Ad', image: '', description: '' })
+            setVideoGeneratorSection('ugc-ads')
+            setShowVideoGenerator(true)
+          } else if (selectedSection === 'product-motion') {
+            // Créer un projet temporaire pour ouvrir le générateur Product in Motion
+            setSelectedVideoProject({ title: 'New Product Motion', image: '', description: '' })
+            setVideoGeneratorSection('product-motion')
+            setShowVideoGenerator(true)
+          } else if (selectedSection === 'talking-avatars') {
+            // Créer un projet temporaire pour ouvrir le générateur Talking Avatars
+            setSelectedTalkingAvatarProject({ title: 'New Talking Avatar', image: '', description: '' })
+            setShowTalkingAvatars(true)
+          } else {
+            setShowProjectForm(true)
+          }
+        }}
+        className={`flex items-center gap-2 ${getGradientClass()} text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0`}
+      >
+        <FolderPlus className="h-4 w-4" />
+        {getButtonLabel()}
+      </Button>
+    )
+  }
+
 
   // Fonction pour rendre le bon formulaire selon la section
   const renderSectionForm = () => {
-    const availableArtifacts = artifacts.map(artifact => ({
-      id: artifact.id,
-      title: artifact.title,
-      image: artifact.image,
-      description: artifact.description,
-      type: artifact.type,
-      section: artifact.section
-    }))
 
     switch (selectedSection) {
       case 'illustration':
         return (
           <IllustrationForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={availableArtifacts}
           />
         )
       case 'avatars-personas':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForAvatars = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <AvatarsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForAvatars}
           />
         )
       case 'product-mockups':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForProductMockups = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ProductMockupsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForProductMockups}
           />
         )
       case 'concept-worlds':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForConceptWorlds = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ConceptWorldsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForConceptWorlds}
           />
         )
       case 'charts-infographics':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForCharts = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ChartsInfographicsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForCharts}
           />
         )
       case 'explainers':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForExplainers = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ExplainersForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForExplainers}
           />
         )
       case 'ugc-ads':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForUGCAds = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <UGCAdsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForUGCAds}
           />
         )
       case 'product-motion':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForProductMotion = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ProductMotionForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForProductMotion}
           />
         )
       case 'cinematic-clips':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForCinematicClips = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <CinematicClipsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForCinematicClips}
           />
         )
       case 'social-cuts':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForSocialCuts = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <SocialCutsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForSocialCuts}
           />
         )
       case 'talking-avatars':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifactsForTalkingAvatars = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <TalkingAvatarsForm
-            onSave={addArtifact}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifactsForTalkingAvatars}
           />
         )
       case 'comics':
-        // Filter artifacts to show only artifacts from the main "artifacts" section
-        const mainArtifacts = availableArtifacts.filter(artifact => artifact.section === 'artifacts')
         return (
           <ComicsForm
-            onSave={async (comicData) => {
-              // Save the comic as an artifact
-              await addArtifact(comicData)
-              // Close the form
-              setShowProjectForm(false)
-              // Navigate to comics section to view the created comic
-              setSelectedSection('comics')
-              console.log('🎬 Comic saved and navigating to comics section')
-            }}
+            onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
-            availableArtifacts={mainArtifacts}
           />
         )
       case 'add-subtitles':
         return (
           <SubtitleForm
+            isOpen={showProjectForm}
             onSubmit={async (subtitleData: AutocaptionModelInputs) => {
               try {
                 const response = await fetch('/api/subtitles', {
@@ -472,73 +514,91 @@ export function GeneratorPanel() {
             </div>
           </div>
         )
-      default:
+      case 'add-watermark':
         return (
-          <ArtifactFormComponent type="project" />
+          <WatermarkForm
+            isOpen={showProjectForm}
+            onSubmit={async (formData) => {
+              try {
+                // Add title and description to FormData
+                formData.append('title', `Watermark Project - ${new Date().toLocaleDateString()}`)
+                formData.append('description', 'Video watermark generation project')
+                
+                const response = await fetch('/api/watermarks', {
+                  method: 'POST',
+                  body: formData
+                })
+
+                if (!response.ok) {
+                  throw new Error('Failed to create watermark project')
+                }
+
+                const result = await response.json()
+                console.log('🎬 Watermark project saved:', result)
+                setShowProjectForm(false)
+                
+                // Optionally show a success message or redirect
+              } catch (error) {
+                console.error('Error saving watermark project:', error)
+                // Handle error (show toast, etc.)
+              }
+            }}
+            onCancel={() => setShowProjectForm(false)}
+            isLoading={false}
+          />
         )
+      case 'video-translate':
+        return (
+          <VideoTranslationForm
+            isOpen={showProjectForm}
+            onSubmit={async (translationData: VideoTranslationInputs) => {
+              try {
+                const response = await fetch('/api/video-translations', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    ...translationData,
+                    title: translationData.title || `Video Translation - ${new Date().toLocaleDateString()}`,
+                    description: translationData.description || 'Video translation project'
+                  }),
+                })
+
+                if (!response.ok) {
+                  throw new Error('Failed to create video translation project')
+                }
+
+                const result = await response.json()
+                console.log('🌍 Video translation project saved:', result)
+                setShowProjectForm(false)
+                
+                // Optionally show a success message or redirect
+              } catch (error) {
+                console.error('Error saving video translation project:', error)
+                // Handle error (show toast, etc.)
+              }
+            }}
+            onCancel={() => setShowProjectForm(false)}
+            isLoading={false}
+          />
+        )
+      default:
+        return null
     }
   }
 
-  // Composant pour la grille de projets
+  // Composant pour la grille de projets - empty since artifacts are removed
   const ProjectGrid = () => (
-    <div className="grid grid-cols-2 gap-4">
-      {sectionArtifacts.map((artifact) => (
-        <div
-          key={artifact.id}
-          className="bg-background border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => handleProjectClick(artifact)}
-        >
-          <div className="aspect-square mb-3 overflow-hidden rounded-md relative">
-            <img 
-              src={artifact.image} 
-              alt={artifact.title}
-              className="w-full h-full object-cover"
-            />
-            {/* Public/Private indicator */}
-            <div className="absolute top-2 right-2">
-              {artifact.isPublic ? (
-                <div className="bg-green-500/90 text-white rounded-full p-1.5 shadow-sm">
-                  <Globe className="h-3 w-3" />
-                </div>
-              ) : (
-                <div className="bg-gray-500/90 text-white rounded-full p-1.5 shadow-sm">
-                  <Lock className="h-3 w-3" />
-                </div>
-              )}
-            </div>
-          </div>
-          <h3 className="font-semibold text-sm text-foreground mb-1 line-clamp-2">
-            {artifact.title}
-          </h3>
-          <p className="text-xs text-muted-foreground line-clamp-3">
-            {artifact.description}
-          </p>
-        </div>
-      ))}
+    <div className="text-center py-8">
+      <p className="text-muted-foreground">No projects available</p>
     </div>
   )
 
-  // Composant pour la grille de comics
+  // Composant pour la grille de comics - empty since artifacts are removed
   const ComicsGrid = () => (
-    <div className="grid grid-cols-2 gap-4">
-      {sectionArtifacts.map((artifact) => {
-        // Extraire les données spécifiques au comic depuis l'artifact
-        const comicData = artifact as any // Type assertion temporaire
-        return (
-          <ComicCard
-            key={artifact.id}
-            title={artifact.title}
-            image={artifact.image}
-            description={artifact.description}
-            type={comicData.type || 'color'}
-            vibe={comicData.vibe || 'action'}
-            inspirationStyle={comicData.inspirationStyle}
-            charactersCount={comicData.characters?.length || 0}
-            isPublic={artifact.isPublic}
-            onClick={() => handleProjectClick(artifact)}
-          />
-        )
-      })}
+    <div className="text-center py-8">
+      <p className="text-muted-foreground">No comics available</p>
     </div>
   )
 
@@ -552,8 +612,8 @@ export function GeneratorPanel() {
   // Composant pour l'état de chargement
   const LoadingSkeleton = () => (
     <div className="grid grid-cols-2 gap-4">
-      <ArtifactCardSkeleton />
-      <ArtifactCardSkeleton />
+      <div className="h-32 bg-muted animate-pulse rounded-lg" />
+      <div className="h-32 bg-muted animate-pulse rounded-lg" />
     </div>
   )
 
@@ -574,22 +634,9 @@ export function GeneratorPanel() {
       <div className={`${(showImageGenerator || showVideoGenerator) ? 'p-4 space-y-4' : 'p-6 space-y-6'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{getDisplayTitle()}</h2>
-          {selectedSection === 'artifacts' && !showArtifactForm && (
-            <Button
-              size="sm"
-              onClick={() => setShowArtifactForm(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Artifact
-            </Button>
-          )}
           {shouldShowNewProjectButton() && <NewProjectButton />}
         </div>
         
-        {selectedSection === 'artifacts' && showArtifactForm && (
-          <ArtifactFormComponent />
-        )}
         
         {(isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && showProjectForm && (
           renderSectionForm()
@@ -666,7 +713,7 @@ export function GeneratorPanel() {
               <Button
                 size="sm"
                 onClick={() => setShowVoiceCreation(true)}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center gap-2 text-xs bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
               >
                 <Plus className="h-4 w-4" />
                 New Voice
@@ -692,7 +739,7 @@ export function GeneratorPanel() {
               <Button
                 size="sm"
                 onClick={() => setShowVoiceover(true)}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center gap-2 text-xs bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 hover:from-cyan-500 hover:via-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
               >
                 <Plus className="h-4 w-4" />
                 New Voiceover
@@ -718,7 +765,7 @@ export function GeneratorPanel() {
               <Button
                 size="sm"
                 onClick={() => setShowSoundFx(true)}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center gap-2 text-xs bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
               >
                 <Plus className="h-4 w-4" />
                 New Sound FX
@@ -744,7 +791,7 @@ export function GeneratorPanel() {
               <Button
                 size="sm"
                 onClick={() => setShowMusicJingleGenerator(true)}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center gap-2 text-xs bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 hover:from-rose-600 hover:via-pink-600 hover:to-fuchsia-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
               >
                 <Plus className="h-4 w-4" />
                 New Music Jingle
@@ -777,6 +824,15 @@ export function GeneratorPanel() {
           />
         )}
 
+        {/* Video Translation Interface */}
+        {selectedSection === 'video-translate' && !showProjectForm && (
+          <VideoTranslationInterface 
+            onClose={() => setShowProjectForm(true)}
+            projectTitle="Video Translation"
+            hideHeader={true}
+          />
+        )}
+
         {/* Sound-to-Video Interface */}
         {selectedSection === 'add-sound' && !showProjectForm && (
           <SoundToVideoInterface 
@@ -784,42 +840,115 @@ export function GeneratorPanel() {
             projectTitle="Add Sound to Video"
           />
         )}
+
+        {/* Watermark Interface */}
+        {selectedSection === 'add-watermark' && !showProjectForm && (
+          <WatermarkInterface 
+            onClose={() => setShowProjectForm(true)}
+            projectTitle="Add Watermark"
+          />
+        )}
+
+        {/* Library Header */}
+        {selectedSection === 'library' && (
+          <LibraryHeader />
+        )}
+        
+        {/* Explainers Video Library - Independent of artifact system */}
+        {selectedSection === 'explainers' && !showVideoGenerator && !showProjectForm && (
+          <>
+            {console.log('🎬 GeneratorPanel: Rendering ExplainerVideoLibrary for explainers section')}
+            {userId ? (
+              <ExplainerVideoLibrary 
+                userId={userId}
+                onVideoSelect={(video) => {
+                  console.log('Selected video:', video)
+                }}
+                onVideoClick={(video) => {
+                  console.log('Video clicked, setting as selected artifact:', video)
+                  // Convert video to artifact format for MainContent
+                  const artifact = {
+                    id: video.id,
+                    title: video.title,
+                    image: video.video_url || '/placeholder.jpg',
+                    description: video.description,
+                    section: 'explainers',
+                    type: 'explainer',
+                    isPublic: false,
+                    isDefault: false
+                  }
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center">
+                  <div className="h-8 w-8 animate-spin mx-auto mb-2 rounded-full border-4 border-primary border-t-transparent" />
+                  <p className="text-sm text-muted-foreground">Loading your videos...</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
         
         {/* Loading state for all sections */}
-        {isLoadingArtifacts && (
+        {false && selectedSection !== 'explainers' && (
           <LoadingSkeleton />
         )}
         
-        {/* Artifacts grid */}
-        {selectedSection === 'artifacts' && !isLoadingArtifacts && sectionArtifacts.length > 0 && (
-          <div className="grid grid-cols-2 gap-4">
-            {sectionArtifacts.map((artifact) => (
-              <ArtifactCard
-                key={artifact.id}
-                id={artifact.id}
-                title={artifact.title}
-                image={artifact.image}
-                description={artifact.description}
-                isPublic={artifact.isPublic}
-                isDefault={artifact.isDefault}
-                onDelete={deleteArtifact}
-                onClick={() => setSelectedArtifact(artifact)}
-              />
-            ))}
-          </div>
-        )}
+        {/* Artifacts grid - removed since artifacts are no longer used */}
         
         {/* Project grids */}
-        {shouldShowProjectGrid() && selectedSection === 'comics' && !isLoadingArtifacts && <ComicsGrid />}
-        {shouldShowProjectGrid() && selectedSection !== 'comics' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && !isLoadingArtifacts && <ProjectGrid />}
+        {shouldShowProjectGrid() && selectedSection === 'comics' && !false && <ComicsGrid />}
+        {shouldShowProjectGrid() && selectedSection !== 'comics' && selectedSection !== 'explainers' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && selectedSection !== 'add-watermark' && !false && <ProjectGrid />}
         
         {/* Empty states */}
-        {selectedSection === 'artifacts' && !isLoadingArtifacts && sectionArtifacts.length === 0 && !showArtifactForm && (
+        {selectedSection === 'artifacts' && !false && true && !false && (
           <EmptyState message="No artifacts yet. Create your first artifact!" />
         )}
         
-        {shouldShowEmptyState() && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && (
+        
+        {shouldShowEmptyState() && selectedSection !== 'explainers' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && selectedSection !== 'add-watermark' && selectedSection !== 'social-cuts' && selectedSection !== 'cinematic-clips' && (
           <EmptyState message="No projects yet. Create your first project!" />
+        )}
+        
+        {shouldShowEmptyState() && selectedSection === 'social-cuts' && (
+          <div className="text-center py-12">
+            <div className="max-w-lg mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+                <span className="text-2xl">🚧</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Coming Soon
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Social Cuts feature is currently in development.
+              </p>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-full text-xs font-medium">
+                <span>🚧</span>
+                <span>Under Construction</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {shouldShowEmptyState() && selectedSection === 'cinematic-clips' && (
+          <div className="text-center py-12">
+            <div className="max-w-lg mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                <span className="text-2xl">🎬</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Coming Soon
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Cinematic Clips feature is currently in development.
+              </p>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-xs font-medium">
+                <span>🚧</span>
+                <span>Under Construction</span>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

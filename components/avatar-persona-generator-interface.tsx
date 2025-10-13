@@ -19,8 +19,6 @@ import {
   User, 
   Shirt, 
   Palette,
-  Minus,
-  Plus,
   Cpu,
   ChevronRight,
   Info,
@@ -1227,8 +1225,8 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
   const [aiPromptEnabled, setAiPromptEnabled] = useState(true)
-  const [imageCount, setImageCount] = useState(4)
   const [aspectRatio, setAspectRatio] = useState("1:1")
+  const [isGenerating, setIsGenerating] = useState(false)
   
   // Visual Style Stack (existing five-tier system)
   const [artDirection, setArtDirection] = useState<string>("")
@@ -1236,7 +1234,6 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   const [lightingPreset, setLightingPreset] = useState<string>("")
   const [backgroundEnvironment, setBackgroundEnvironment] = useState<string>("")
   const [moodContext, setMoodContext] = useState<string>("")
-  const [isPublic, setIsPublic] = useState(true)
   
   // Identity & Role
   const [ethnicity, setEthnicity] = useState<string>("")
@@ -1381,12 +1378,6 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
     }
   }, [logoPreviewUrl])
 
-  const handleImageCountChange = (delta: number) => {
-    const newCount = imageCount + delta
-    if (newCount >= 1 && newCount <= 3) {
-      setImageCount(newCount)
-    }
-  }
 
   // Image reference handling
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1470,12 +1461,13 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
   const handleGenerate = async () => {
     try {
+      setIsGenerating(true)
+      
       // Prepare the generation data
       const generationData = {
         // Basic settings
-        name,
+        personaName: name,  // Fixed: was 'name', now 'personaName' to match schema
         prompt,
-        imageCount,
         aspectRatio,
         aiPromptEnabled,
         
@@ -1487,7 +1479,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         moodContext,
         
         // Identity & Role
-        ethnicity,
+        // ethnicity removed - not in backend schema
         roleArchetype,
         ageRange,
         genderExpression,
@@ -1511,27 +1503,61 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           type: file.type
         })),
         
-        // Logo Placement
-        logoPlacement,
-        logoImage: logoImage ? {
-          name: logoImage.name,
-          size: logoImage.size,
-          type: logoImage.type
-        } : null,
-        
-        // Public/Private status
-        isPublic
+        // Logo Placement (stored in metadata since not in main schema)
+        metadata: {
+          logoPlacement,
+          logoImage: logoImage ? {
+            name: logoImage.name,
+            size: logoImage.size,
+            type: logoImage.type
+          } : null
+        }
       }
 
       console.log("Generating avatar/persona with:", generationData)
 
+      // Prepare FormData for file uploads
+      const formData = new FormData()
+      
+      // Add all form fields
+      formData.append('personaName', name)
+      formData.append('prompt', prompt)
+      formData.append('aspectRatio', aspectRatio)
+      formData.append('aiPromptEnabled', aiPromptEnabled.toString())
+      formData.append('artDirection', artDirection || '')
+      formData.append('visualInfluence', visualInfluence || '')
+      formData.append('lightingPreset', lightingPreset || '')
+      formData.append('backgroundEnvironment', backgroundEnvironment || '')
+      formData.append('moodContext', moodContext || '')
+      formData.append('roleArchetype', roleArchetype || '')
+      formData.append('ageRange', ageRange || '')
+      formData.append('genderExpression', genderExpression || '')
+      formData.append('emotionBias', emotionBias[0].toString())
+      formData.append('bodyType', bodyType || '')
+      formData.append('skinTone', skinTone || '')
+      formData.append('hairStyle', hairStyle || '')
+      formData.append('hairColor', hairColor || '')
+      formData.append('eyeColor', eyeColor || '')
+      formData.append('eyeShape', eyeShape || '')
+      formData.append('outfitCategory', outfitCategory || '')
+      formData.append('outfitPalette', outfitPalette || '')
+      formData.append('accessories', JSON.stringify(accessories))
+      formData.append('logoPlacement', logoPlacement)
+      
+      // Add reference images
+      referenceImages.forEach((file, index) => {
+        formData.append(`referenceImage_${index}`, file)
+      })
+      
+      // Add logo image if present
+      if (logoImage) {
+        formData.append('logoImage', logoImage)
+      }
+
       // Call the API
       const response = await fetch('/api/avatar-persona-generation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(generationData),
+        body: formData,
       })
 
       if (!response.ok) {
@@ -1551,6 +1577,8 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
     } catch (error) {
       console.error('Error generating avatar/persona:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to generate avatar/persona')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -1560,26 +1588,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         {/* Header */}
         <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2 border-b border-border">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <h3 className="text-xs font-semibold text-foreground pr-2">
+            <h3 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent pr-2">
               Generate Avatar/Persona for: {projectTitle}
             </h3>
-            {/* Public/Private Toggle */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className={cn(
-                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
-                isPublic 
-                  ? "bg-green-100 text-green-700 border border-green-200" 
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              )}>
-                {isPublic ? "Public" : "Private"}
-              </span>
-              <Switch
-                id="public-toggle"
-                checked={isPublic}
-                onCheckedChange={setIsPublic}
-                className="scale-75"
-              />
-            </div>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0">
             <X className="h-3 w-3" />
@@ -1621,7 +1632,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
             <Brain className="h-3 w-3 text-primary" />
-            <h4 className="text-xs font-semibold text-foreground">🧠 Identity & Role</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">🧠 Identity & Role</h4>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1737,7 +1748,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-primary" />
-            <h4 className="text-xs font-semibold text-foreground">🎨 Visual Style Stack</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">🎨 Visual Style Stack</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             DreamCut adapts lighting and mood automatically to match your chosen style.
@@ -1980,7 +1991,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-primary" />
-            <h4 className="text-xs font-semibold text-foreground">👕 Physical Traits & Outfits</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">👕 Physical Traits & Outfits</h4>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2178,7 +2189,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4 text-primary" />
-            <h4 className="text-xs font-semibold text-foreground">📸 Reference Images</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">📸 Reference Images</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             Upload up to 3 reference images to guide the avatar/persona generation (max 10MB each)
@@ -2260,7 +2271,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
-            <h4 className="text-xs font-semibold text-foreground">🏷️ Logo Placement</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">🏷️ Logo Placement</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             Add a logo overlay to your avatar/persona (optional)
@@ -2339,55 +2350,13 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-primary" />
-            <h4 className="text-xs font-semibold text-foreground">⚙️ Generation Settings</h4>
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-clip-text text-transparent">⚙️ Generation Settings</h4>
           </div>
           <p className="text-xs text-muted-foreground">
             Configure the output format and number of variations for your avatar/persona
           </p>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {/* Image Variations */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-foreground">Image Variations</label>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Number of avatar/persona variations to generate (max 3)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleImageCountChange(-1)}
-                  disabled={imageCount <= 1}
-                  className="h-7 w-7 shrink-0"
-                >
-                  <Minus className="h-2.5 w-2.5" />
-                </Button>
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border rounded-md bg-muted/50 justify-center min-w-[45px] flex-1 max-w-[80px]">
-                  <ImageIcon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="text-xs font-medium">{imageCount}</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleImageCountChange(1)}
-                  disabled={imageCount >= 3}
-                  className="h-7 w-7 shrink-0"
-                >
-                  <Plus className="h-2.5 w-2.5" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Generate {imageCount} variation{imageCount > 1 ? 's' : ''} of your avatar/persona
-              </p>
-            </div>
-
             {/* Aspect Ratio */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -2424,11 +2393,20 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         <div className="sticky bottom-0 bg-background py-3 border-t border-border mt-4">
           <Button 
             onClick={handleGenerate}
-            className="w-full h-10 text-sm font-medium"
-            disabled={!name.trim() || !prompt.trim()}
+            className="w-full h-10 text-sm font-medium bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={!name.trim() || !prompt.trim() || isGenerating}
           >
-            <Sparkles className="h-4 w-4 mr-2" />
-            Generate Avatar/Persona
+            {isGenerating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate Avatar/Persona
+              </>
+            )}
           </Button>
         </div>
       </div>

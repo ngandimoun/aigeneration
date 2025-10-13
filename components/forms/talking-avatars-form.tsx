@@ -8,82 +8,18 @@ import { Plus, X, Loader2, ChevronsUpDown, MessageCircle, Image as ImageIcon, Ch
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useArtifactsApi } from "@/hooks/use-artifacts-api"
 
 interface TalkingAvatarsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selected_artifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string }) => void
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
-
-export function TalkingAvatarsForm({ onSave, onCancel, availableArtifacts }: TalkingAvatarsFormProps) {
+export function TalkingAvatarsForm({ onSave, onCancel }: TalkingAvatarsFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [selectedArtifact, setSelectedArtifact] = useState<string>("")
-  const [artifactOpen, setArtifactOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [realArtifacts, setRealArtifacts] = useState<Array<{ id: string; title: string; image: string; description: string }>>([])
   const { toast } = useToast()
-  const { fetchArtifacts, loading: artifactsLoading } = useArtifactsApi()
-
-  // Fetch real artifacts from the database
-  useEffect(() => {
-    const loadArtifacts = async () => {
-      try {
-        // Fetch all artifacts for the user (both public and private)
-        const artifacts = await fetchArtifacts({})
-        const formattedArtifacts = artifacts.map(artifact => ({
-          id: artifact.id,
-          title: artifact.title,
-          image: artifact.metadata?.image || "/placeholder.jpg",
-          description: artifact.description || "No description available"
-        }))
-        setRealArtifacts(formattedArtifacts)
-      } catch (error) {
-        console.error('Failed to load artifacts:', error)
-        toast({
-          title: "Error loading artifacts",
-          description: "Could not load artifacts from database. Please try again.",
-          variant: "destructive"
-        })
-      }
-    }
-
-    loadArtifacts()
-  }, [fetchArtifacts, toast])
-
-  // Use real artifacts from database, fallback to passed availableArtifacts if no real artifacts
-  const artifactsToShow = realArtifacts.length > 0 ? realArtifacts : availableArtifacts
-  
-  // Filtrer les artifacts basé sur le terme de recherche
-  const filteredArtifacts = artifactsToShow.filter(artifact =>
-    artifact.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artifact.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  
-  // Ref pour gérer le clic en dehors
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  
-  // Fermer le menu quand on clique en dehors
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setArtifactOpen(false)
-        setSearchTerm("") // Reset search when closing
-      }
-    }
-    
-    if (artifactOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [artifactOpen])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]

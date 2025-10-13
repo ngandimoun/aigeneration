@@ -8,6 +8,13 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { 
   Music, 
   Play, 
   Pause, 
@@ -27,7 +34,19 @@ import {
   Redo,
   Copy,
   Trash2,
-  Brush
+  Brush,
+  Users,
+  User,
+  UserCheck,
+  Zap,
+  Settings,
+  Info,
+  Lightbulb,
+  Target,
+  Volume2,
+  VolumeX,
+  Clock,
+  FileAudio
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -46,15 +65,74 @@ interface GeneratedMusic {
   waveform: number[]
 }
 
-// Style Tags - Fusion de tous les genres, moods, tempos, etc.
-const STYLE_TAGS = [
-  "pop", "rock", "electronic", "jazz", "classical", "hip-hop", "r&b",
-  "upbeat", "calm", "energetic", "powerful", "mysterious", "romantic", "melancholic",
-  "slow tempo", "fast tempo", "moderate tempo",
-  "piano", "guitar", "orchestral", "acoustic", "synthetic",
-  "commercial", "cinematic", "ambient", "corporate", "game", "trailer",
-  "female vocals", "male vocals", "instrumental", "choir", "strings", "brass"
+// Model configurations
+const MODEL_CONFIGS = {
+  V3_5: { name: "V3.5", badge: "", duration: "Up to 4 min", description: "Solid arrangements with creative diversity" },
+  V4: { name: "V4", badge: "", duration: "Up to 4 min", description: "Best audio quality with refined song structure" },
+  V4_5: { name: "V4.5", badge: "ENHANCED", duration: "Up to 8 min", description: "Superior genre blending with smarter prompts" },
+  V4_5PLUS: { name: "V4.5+", badge: "PLUS", duration: "Up to 8 min", description: "Richer sound, new ways to create" },
+  V5: { name: "V5", badge: "NEW", duration: "Up to 8 min", description: "Superior musical expression, faster generation" }
+}
+
+// Character limits by model (based on Suno API documentation)
+const getCharacterLimits = (model: string) => ({
+  title: ['V3_5', 'V4'].includes(model) ? 80 : 100,
+  prompt: ['V3_5', 'V4'].includes(model) ? 3000 : 5000,
+  style: ['V3_5', 'V4'].includes(model) ? 200 : 1000,
+  // For non-custom mode, prompt is limited to 500 characters
+  promptSimple: 500
+})
+
+// Style Tags organized by categories
+const STYLE_CATEGORIES = {
+  genres: {
+    icon: "🎵",
+    label: "Genres",
+    tags: ["pop", "rock", "electronic", "jazz", "classical", "hip-hop", "r&b", "country", "blues", "reggae", "funk", "soul", "disco", "punk", "metal", "folk", "indie", "alternative", "k-pop", "latin", "world"]
+  },
+  moods: {
+    icon: "🎭",
+    label: "Moods",
+    tags: ["upbeat", "calm", "energetic", "powerful", "mysterious", "romantic", "melancholic", "happy", "sad", "angry", "peaceful", "dramatic", "playful", "serious", "nostalgic", "hopeful", "dark", "bright", "intense", "relaxed"]
+  },
+  tempo: {
+    icon: "⏱️",
+    label: "Tempo",
+    tags: ["slow tempo", "moderate tempo", "fast tempo", "very slow", "very fast", "medium tempo", "ballad tempo", "dance tempo", "march tempo", "waltz tempo"]
+  },
+  instruments: {
+    icon: "🎹",
+    label: "Instruments",
+    tags: ["piano", "guitar", "orchestral", "acoustic", "synthetic", "strings", "brass", "woodwinds", "drums", "bass", "violin", "cello", "trumpet", "saxophone", "flute", "organ", "synth", "electric guitar", "acoustic guitar", "bass guitar"]
+  },
+  vocals: {
+    icon: "🎤",
+    label: "Vocals",
+    tags: ["female vocals", "male vocals", "instrumental", "choir", "harmony", "solo vocals", "duet", "group vocals", "backing vocals", "lead vocals", "falsetto", "baritone", "tenor", "alto", "soprano"]
+  },
+  usecase: {
+    icon: "🎬",
+    label: "Use Case",
+    tags: ["commercial", "cinematic", "ambient", "corporate", "game", "trailer", "background", "foreground", "jingle", "theme song", "background music", "elevator music", "study music", "workout music", "meditation", "party", "wedding", "funeral"]
+  }
+}
+
+// Prompt templates
+const PROMPT_TEMPLATES = [
+  "Upbeat commercial jingle with catchy melody",
+  "Cinematic orchestral piece, epic and powerful",
+  "Chill lofi hip-hop beats for studying",
+  "Energetic rock anthem with electric guitar",
+  "Peaceful acoustic guitar for relaxation",
+  "Electronic dance track with heavy bass",
+  "Jazz piano trio with smooth saxophone",
+  "Ambient soundscape for meditation",
+  "Corporate background music, professional",
+  "Game soundtrack, adventurous and heroic"
 ]
+
+// Legacy style tags for backward compatibility
+const STYLE_TAGS = Object.values(STYLE_CATEGORIES).flatMap(category => category.tags)
 
 export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJingleGeneratorInterfaceProps) {
   const { toast } = useToast()
@@ -64,6 +142,18 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   const [title, setTitle] = useState("")
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
   const [isPublic, setIsPublic] = useState(true)
+  
+  // New Suno v5 State
+  const [selectedModel, setSelectedModel] = useState<'V3_5' | 'V4' | 'V4_5' | 'V4_5PLUS' | 'V5'>('V5')
+  const [audioAction, setAudioAction] = useState<'generate' | 'cover' | 'extend' | 'add_instrumental' | 'add_vocals'>('generate')
+  const [vocalGender, setVocalGender] = useState<'m' | 'f' | 'auto'>('auto')
+  const [styleWeight, setStyleWeight] = useState([0.65])
+  const [weirdnessConstraint, setWeirdnessConstraint] = useState([0.65])
+  const [audioWeight, setAudioWeight] = useState([0.65])
+  const [negativeTags, setNegativeTags] = useState<string[]>([])
+  const [isInstrumental, setIsInstrumental] = useState(false)
+  const [customMode, setCustomMode] = useState(false)
+  const [style, setStyle] = useState("")
   
   // Advanced Settings
   const [showStyles, setShowStyles] = useState(false)
@@ -144,6 +234,49 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
     }
   }, [isRecording, recordingStartTime])
 
+  // Helper functions
+  const getCharacterCount = (text: string, field: 'title' | 'prompt' | 'style') => {
+    const limits = getCharacterLimits(selectedModel)
+    
+    // For prompt field, use different limits based on mode
+    if (field === 'prompt') {
+      const limit = isSimpleMode ? limits.promptSimple : limits.prompt
+      return { current: text.length, limit }
+    }
+    
+    return { current: text.length, limit: limits[field] }
+  }
+
+  const getCharacterCountColor = (current: number, limit: number) => {
+    const percentage = (current / limit) * 100
+    if (percentage >= 95) return "text-red-500"
+    if (percentage >= 80) return "text-orange-500"
+    return "text-muted-foreground"
+  }
+
+  const getSmartSuggestions = (text: string) => {
+    const suggestions: string[] = []
+    const lowerText = text.toLowerCase()
+    
+    if (lowerText.includes('happy') || lowerText.includes('cheerful')) {
+      suggestions.push('upbeat', 'pop', 'cheerful')
+    }
+    if (lowerText.includes('intense') || lowerText.includes('powerful')) {
+      suggestions.push('rock', 'electronic', 'fast tempo')
+    }
+    if (lowerText.includes('background') || lowerText.includes('ambient')) {
+      suggestions.push('ambient', 'instrumental', 'subtle')
+    }
+    if (lowerText.includes('sad') || lowerText.includes('melancholic')) {
+      suggestions.push('melancholic', 'slow tempo', 'minor key')
+    }
+    if (lowerText.includes('dance') || lowerText.includes('party')) {
+      suggestions.push('electronic', 'fast tempo', 'dance')
+    }
+    
+    return suggestions.filter(s => !selectedStyles.includes(s))
+  }
+
   // Style management functions
   const addStyle = (style: string) => {
     if (!selectedStyles.includes(style)) {
@@ -153,6 +286,57 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
 
   const removeStyle = (style: string) => {
     setSelectedStyles(selectedStyles.filter(s => s !== style))
+  }
+
+  const addNegativeTag = (tag: string) => {
+    if (!negativeTags.includes(tag)) {
+      setNegativeTags([...negativeTags, tag])
+    }
+  }
+
+  const removeNegativeTag = (tag: string) => {
+    setNegativeTags(negativeTags.filter(t => t !== tag))
+  }
+
+  const insertTemplate = (template: string) => {
+    setDescription(template)
+  }
+
+  // Validation functions
+  const validateCharacterLimits = () => {
+    const errors: string[] = []
+    const limits = getCharacterLimits(selectedModel)
+    
+    // Check title limit
+    if (title.length > limits.title) {
+      errors.push(`Title exceeds ${limits.title} character limit (${title.length}/${limits.title})`)
+    }
+    
+    // Check prompt/description limit based on mode
+    const promptLimit = isSimpleMode ? limits.promptSimple : limits.prompt
+    if (description.length > promptLimit) {
+      errors.push(`Description exceeds ${promptLimit} character limit (${description.length}/${promptLimit})`)
+    }
+    
+    // Check style limit (if style field exists)
+    if (style && style.length > limits.style) {
+      errors.push(`Style exceeds ${limits.style} character limit (${style.length}/${limits.style})`)
+    }
+    
+    return errors
+  }
+
+  const truncateToLimit = (text: string, field: 'title' | 'prompt' | 'style') => {
+    const limits = getCharacterLimits(selectedModel)
+    let limit: number
+    
+    if (field === 'prompt') {
+      limit = isSimpleMode ? limits.promptSimple : limits.prompt
+    } else {
+      limit = limits[field]
+    }
+    
+    return text.length > limit ? text.substring(0, limit) : text
   }
 
   // Format time in MM:SS format
@@ -437,12 +621,65 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
       return
     }
 
+    // Validate character limits before sending to API
+    const validationErrors = validateCharacterLimits()
+    if (validationErrors.length > 0) {
+      toast({
+        title: "Character limit exceeded",
+        description: validationErrors.join(". "),
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsGenerating(true)
     try {
-      // Simulate API call to generate music
-      await new Promise(resolve => setTimeout(resolve, 4000))
+      // Prepare data for Suno API with proper character limits
+      const apiData = {
+        // Core parameters
+        prompt: truncateToLimit(description, 'prompt'),
+        title: title ? truncateToLimit(title, 'title') : undefined,
+        style: style ? truncateToLimit(style, 'style') : undefined,
+        
+        // Mode settings
+        customMode: !isSimpleMode,
+        instrumental: isInstrumental,
+        model: selectedModel,
+        
+        // Advanced parameters (V5)
+        vocalGender: !isInstrumental ? vocalGender : undefined,
+        styleWeight: styleWeight[0],
+        weirdnessConstraint: weirdnessConstraint[0],
+        audioWeight: audioUploaded ? audioWeight[0] : undefined,
+        negativeTags: negativeTags.length > 0 ? negativeTags.join(', ') : undefined,
+        
+        // Audio action (if audio uploaded)
+        audioAction: audioUploaded ? audioAction : undefined,
+        uploadUrl: audioUploaded && uploadedAudioFile ? 'uploaded_audio_url' : undefined,
+        
+        // Callback URL for async processing
+        callBackUrl: `${window.location.origin}/api/suno/callback`
+      }
+
+      console.log('Sending to Suno API:', apiData)
+
+      // Show generation stages with realistic timing
+      const stages = [
+        { message: "Analyzing prompt...", duration: 1000 },
+        { message: "Generating composition...", duration: 2000 },
+        { message: "Rendering audio...", duration: 1500 },
+        { message: "Finalizing...", duration: 500 }
+      ]
+
+      for (const stage of stages) {
+        toast({
+          title: stage.message,
+          description: "Please wait while we create your music...",
+        })
+        await new Promise(resolve => setTimeout(resolve, stage.duration))
+      }
       
-      // Mock generated music
+      // Mock generated music with Suno v5 parameters
       const mockMusic: GeneratedMusic = {
         id: "generated_music_1",
         title: title || "Generated Music",
@@ -455,12 +692,12 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
       setGeneratedMusic(mockMusic)
       toast({
         title: "Music generated successfully!",
-        description: "Your music is ready to play and customize."
+        description: `Your ${MODEL_CONFIGS[selectedModel].name} music is ready to play and customize.`
       })
     } catch (error) {
       toast({
         title: "Generation failed",
-        description: "Please try again.",
+        description: "Please try again or check your connection.",
         variant: "destructive"
       })
     } finally {
@@ -686,7 +923,40 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm">v5</span>
+              <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as any)}>
+                <SelectTrigger className="w-auto h-8 text-sm border-0 bg-transparent focus:ring-0 cursor-pointer">
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{MODEL_CONFIGS[selectedModel].name}</span>
+                      {MODEL_CONFIGS[selectedModel].badge && (
+                        <Badge variant="default" className="text-xs bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 text-white">
+                          {MODEL_CONFIGS[selectedModel].badge}
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(MODEL_CONFIGS).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{config.name}</span>
+                        {config.badge && (
+                          <Badge variant="secondary" className="text-xs">
+                            {config.badge}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {config.duration}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Badge variant="outline" className="text-xs">
+                {MODEL_CONFIGS[selectedModel].duration}
+              </Badge>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 shrink-0">
@@ -700,31 +970,108 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
           {isSimpleMode ? (
             // Simple Mode Content
             <>
+              {/* Prompt Templates */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Need inspiration?</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {PROMPT_TEMPLATES.slice(0, 4).map((template, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="h-auto p-2 text-xs text-left justify-start"
+                      onClick={() => insertTemplate(template)}
+                    >
+                      {template}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               {/* Description Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Describe your song</span>
-                  <Expand className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs ${getCharacterCountColor(getCharacterCount(description, 'prompt').current, getCharacterCount(description, 'prompt').limit)}`}>
+                      {getCharacterCount(description, 'prompt').current} / {getCharacterCount(description, 'prompt').limit}
+                    </span>
+                    <Expand className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
                 <Textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    const newValue = e.target.value
+                    const limits = getCharacterLimits(selectedModel)
+                    const maxLength = isSimpleMode ? limits.promptSimple : limits.prompt
+                    
+                    if (newValue.length <= maxLength) {
+                      setDescription(newValue)
+                    } else {
+                      // Show warning but don't prevent typing
+                      toast({
+                        title: "Character limit warning",
+                        description: `You're approaching the ${maxLength} character limit.`,
+                        variant: "destructive"
+                      })
+                    }
+                  }}
                   placeholder="Describe the music you want to create..."
                   className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
                 />
+                
+                {/* Smart Suggestions */}
+                {description && getSmartSuggestions(description).length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Suggested styles:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {getSmartSuggestions(description).slice(0, 3).map((suggestion) => (
+                        <Button
+                          key={suggestion}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => addStyle(suggestion)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Input Options */}
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-xs"
+                  onClick={() => setAudioUploaded(false)}
+                >
                   <Plus className="h-3 w-3 mr-1" />
                   Audio
                 </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className={`h-7 text-xs ${!isInstrumental ? 'bg-primary text-primary-foreground' : ''}`}
+                  onClick={() => setIsInstrumental(false)}
+                >
                   <Plus className="h-3 w-3 mr-1" />
                   Lyrics
                 </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs bg-primary text-primary-foreground">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className={`h-7 text-xs ${isInstrumental ? 'bg-primary text-primary-foreground' : ''}`}
+                  onClick={() => setIsInstrumental(true)}
+                >
                   <Check className="h-3 w-3 mr-1" />
                   Instrumental
                 </Button>
@@ -737,6 +1084,58 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                   placeholder="Add inspiration or reference..."
                   className="min-h-[60px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
                 />
+              </div>
+
+              {/* Generation Preview & Button */}
+              <div className="space-y-3 pt-4 border-t">
+                {/* Generation Preview Card */}
+                <div className="p-3 bg-muted/20 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Generation Preview</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Model:</div>
+                      <div className="font-medium">{MODEL_CONFIGS[selectedModel].name} {MODEL_CONFIGS[selectedModel].badge && `(${MODEL_CONFIGS[selectedModel].badge})`}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Duration:</div>
+                      <div className="font-medium">{MODEL_CONFIGS[selectedModel].duration}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Type:</div>
+                      <div className="font-medium">{isInstrumental ? 'Instrumental' : 'With Vocals'}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Mode:</div>
+                      <div className="font-medium">Simple</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="text-xs text-muted-foreground">Estimated time: ~30 seconds</span>
+                    <span className="text-xs text-muted-foreground">Credits: 1</span>
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <Button 
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !description.trim()}
+                  className="w-full h-10 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Music
+                    </>
+                  )}
+                </Button>
               </div>
             </>
           ) : (
@@ -821,6 +1220,58 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                  {audioUploaded ? (
                    // Audio Uploaded Interface
                    <>
+                     {/* Audio Action Selector */}
+                     <div className="space-y-2">
+                       <span className="text-sm font-medium">What would you like to do?</span>
+                       <div className="grid grid-cols-2 gap-2">
+                         <Button
+                           variant={audioAction === 'generate' ? 'default' : 'outline'}
+                           size="sm"
+                           className="h-8 text-xs"
+                           onClick={() => setAudioAction('generate')}
+                         >
+                           <Sparkles className="h-3 w-3 mr-1" />
+                           Generate New
+                         </Button>
+                         <Button
+                           variant={audioAction === 'cover' ? 'default' : 'outline'}
+                           size="sm"
+                           className="h-8 text-xs"
+                           onClick={() => setAudioAction('cover')}
+                         >
+                           <Brush className="h-3 w-3 mr-1" />
+                           Cover Audio
+                         </Button>
+                         <Button
+                           variant={audioAction === 'extend' ? 'default' : 'outline'}
+                           size="sm"
+                           className="h-8 text-xs"
+                           onClick={() => setAudioAction('extend')}
+                         >
+                           <Expand className="h-3 w-3 mr-1" />
+                           Extend Audio
+                         </Button>
+                         <Button
+                           variant={audioAction === 'add_instrumental' ? 'default' : 'outline'}
+                           size="sm"
+                           className="h-8 text-xs"
+                           onClick={() => setAudioAction('add_instrumental')}
+                         >
+                           <Music className="h-3 w-3 mr-1" />
+                           Add Instrumental
+                         </Button>
+                         <Button
+                           variant={audioAction === 'add_vocals' ? 'default' : 'outline'}
+                           size="sm"
+                           className="h-8 text-xs"
+                           onClick={() => setAudioAction('add_vocals')}
+                         >
+                           <Mic className="h-3 w-3 mr-1" />
+                           Add Vocals
+                         </Button>
+                       </div>
+                     </div>
+
                      {/* Audio Player Section */}
                      <div className="space-y-3">
                        {/* Audio Controls */}
@@ -843,13 +1294,13 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                          {/* Audio Info */}
                          <div className="flex items-center gap-3 flex-1">
                            <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center">
-                             <Music className="h-6 w-6 text-muted-foreground" />
+                             <FileAudio className="h-6 w-6 text-muted-foreground" />
                            </div>
                            <div className="flex-1">
                              <h3 className="text-sm font-medium">
                                {isRecording 
                                  ? "Recording..." 
-                                 : (audioFileName || "Nipsey hussle - Suno v5 Studio")
+                                 : (audioFileName || "Uploaded Audio")
                                }
                              </h3>
                              <p className="text-xs text-muted-foreground">
@@ -859,9 +1310,6 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                                }
                              </p>
                            </div>
-                           <Button size="sm" variant="outline" className="h-6 text-xs">
-                             Add Vocals
-                           </Button>
                            <Button 
                              size="sm" 
                              variant="ghost" 
@@ -979,8 +1427,13 @@ In the
                              onClick={() => setShowStyles(!showStyles)}
                              className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
                            >
-                             <ChevronDown className="h-4 w-4" />
+                             {showStyles ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                              Styles
+                             {!showStyles && selectedStyles.length > 0 && (
+                               <span className="text-xs text-muted-foreground">
+                                 • {selectedStyles.length} selected
+                               </span>
+                             )}
                            </button>
                          </div>
                          <div className="flex items-center gap-1">
@@ -1003,28 +1456,72 @@ In the
                          </div>
                        </div>
                        
-                       <div className="space-y-2">
-                         {/* Style Description */}
-                         <div className="text-xs text-muted-foreground leading-relaxed">
-                           The piece is a slow tempo R&B track in a minor key, featuring a female vocalist. The instrumentation includes a prominent bassline, a drum machine providing a laid-back hip-hop beat, and a synth pad creating a dreamy, atmospheric background. The bass plays a simple, repetitive melodic line. The drum machine features a kick...
+                       {showStyles && (
+                         <div className="space-y-3 p-3 bg-muted/20 rounded-lg">
+                           {/* Selected Styles */}
+                           {selectedStyles.length > 0 && (
+                             <div className="space-y-2">
+                               <span className="text-xs font-medium text-muted-foreground">Selected Styles</span>
+                               <div className="flex flex-wrap gap-1">
+                                 {selectedStyles.map((style) => (
+                                   <Badge key={style} variant="default" className="text-xs">
+                                     {style}
+                                     <button
+                                       onClick={() => removeStyle(style)}
+                                       className="ml-1 hover:text-destructive"
+                                     >
+                                       <X className="h-3 w-3" />
+                                     </button>
+                                   </Badge>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
+
+                           {/* Style Categories */}
+                           {Object.entries(STYLE_CATEGORIES).map(([key, category]) => (
+                             <div key={key} className="space-y-2">
+                               <div className="flex items-center gap-2">
+                                 <span className="text-sm">{category.icon}</span>
+                                 <span className="text-sm font-medium">{category.label}</span>
+                               </div>
+                               <div className="flex flex-wrap gap-1">
+                                 {category.tags.slice(0, 8).map((tag) => (
+                                   <Button
+                                     key={tag}
+                                     variant={selectedStyles.includes(tag) ? "default" : "outline"}
+                                     size="sm"
+                                     className="h-6 text-xs"
+                                     onClick={() => {
+                                       if (selectedStyles.includes(tag)) {
+                                         removeStyle(tag)
+                                       } else {
+                                         addStyle(tag)
+                                       }
+                                     }}
+                                   >
+                                     {selectedStyles.includes(tag) ? (
+                                       <Check className="h-3 w-3 mr-1" />
+                                     ) : (
+                                       <Plus className="h-3 w-3 mr-1" />
+                                     )}
+                                     {tag}
+                                   </Button>
+                                 ))}
+                                 {category.tags.length > 8 && (
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-6 text-xs text-muted-foreground"
+                                   >
+                                     +{category.tags.length - 8} more
+                                   </Button>
+                                 )}
+                               </div>
+                             </div>
+                           ))}
                          </div>
-                         
-                         {/* Style Tags Row */}
-                         <div className="flex items-center gap-2 overflow-x-auto">
-                           <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                             <Plus className="h-3 w-3" />
-                             dubstep
-                           </button>
-                           <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                             <Plus className="h-3 w-3" />
-                             rap
-                           </button>
-                           <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                             <Plus className="h-3 w-3" />
-                             female tenor baritone vocalist
-                           </button>
-                         </div>
-                       </div>
+                       )}
                      </div>
 
                      {/* Advanced Options */}
@@ -1034,10 +1531,176 @@ In the
                            onClick={() => setShowAdvanced(!showAdvanced)}
                            className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
                          >
-                           <ChevronRight className="h-4 w-4" />
+                           {showAdvanced ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                            Advanced Options
+                           {!showAdvanced && (
+                             <span className="text-xs text-muted-foreground">
+                               • Style: {styleWeight[0]} • Weirdness: {weirdnessConstraint[0]} • Audio: {audioWeight[0]}
+                             </span>
+                           )}
                          </button>
                        </div>
+                       
+                       {showAdvanced && (
+                         <div className="space-y-4 p-3 bg-muted/20 rounded-lg">
+                           {/* Vocal Gender Selection */}
+                           {!isInstrumental && (
+                             <div className="space-y-2">
+                               <div className="flex items-center gap-2">
+                                 <Users className="h-4 w-4 text-muted-foreground" />
+                                 <span className="text-sm font-medium">Vocal Gender</span>
+                               </div>
+                               <div className="flex gap-2">
+                                 <Button
+                                   variant={vocalGender === 'auto' ? 'default' : 'outline'}
+                                   size="sm"
+                                   className="h-8 text-xs"
+                                   onClick={() => setVocalGender('auto')}
+                                 >
+                                   <UserCheck className="h-3 w-3 mr-1" />
+                                   Auto
+                                 </Button>
+                                 <Button
+                                   variant={vocalGender === 'm' ? 'default' : 'outline'}
+                                   size="sm"
+                                   className="h-8 text-xs"
+                                   onClick={() => setVocalGender('m')}
+                                 >
+                                   <User className="h-3 w-3 mr-1" />
+                                   Male
+                                 </Button>
+                                 <Button
+                                   variant={vocalGender === 'f' ? 'default' : 'outline'}
+                                   size="sm"
+                                   className="h-8 text-xs"
+                                   onClick={() => setVocalGender('f')}
+                                 >
+                                   <User className="h-3 w-3 mr-1" />
+                                   Female
+                                 </Button>
+                               </div>
+                             </div>
+                           )}
+
+                           {/* Style Weight */}
+                           <div className="space-y-2">
+                             <div className="flex items-center gap-2">
+                               <Target className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-medium">Style Weight</span>
+                               <span className="text-xs text-muted-foreground">({styleWeight[0].toFixed(2)})</span>
+                             </div>
+                             <div className="space-y-1">
+                               <Slider
+                                 value={styleWeight}
+                                 onValueChange={setStyleWeight}
+                                 max={1}
+                                 min={0}
+                                 step={0.01}
+                                 className="w-full"
+                               />
+                               <div className="flex justify-between text-xs text-muted-foreground">
+                                 <span>Loose Interpretation</span>
+                                 <span>Strict Adherence</span>
+                               </div>
+                             </div>
+                           </div>
+
+                           {/* Weirdness Constraint */}
+                           <div className="space-y-2">
+                             <div className="flex items-center gap-2">
+                               <Zap className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-medium">Weirdness Constraint</span>
+                               <span className="text-xs text-muted-foreground">({weirdnessConstraint[0].toFixed(2)})</span>
+                               <div className="relative group">
+                                 <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                   Controls creative deviation and novelty
+                                 </div>
+                               </div>
+                             </div>
+                             <div className="space-y-1">
+                               <Slider
+                                 value={weirdnessConstraint}
+                                 onValueChange={setWeirdnessConstraint}
+                                 max={1}
+                                 min={0}
+                                 step={0.01}
+                                 className="w-full"
+                               />
+                               <div className="flex justify-between text-xs text-muted-foreground">
+                                 <span>Conventional</span>
+                                 <span>Experimental</span>
+                               </div>
+                             </div>
+                           </div>
+
+                           {/* Audio Weight (only when audio uploaded) */}
+                           {audioUploaded && (
+                             <div className="space-y-2">
+                               <div className="flex items-center gap-2">
+                                 <Volume2 className="h-4 w-4 text-muted-foreground" />
+                                 <span className="text-sm font-medium">Audio Weight</span>
+                                 <span className="text-xs text-muted-foreground">({audioWeight[0].toFixed(2)})</span>
+                                 <div className="relative group">
+                                   <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                     How much the uploaded audio influences generation
+                                   </div>
+                                 </div>
+                               </div>
+                               <div className="space-y-1">
+                                 <Slider
+                                   value={audioWeight}
+                                   onValueChange={setAudioWeight}
+                                   max={1}
+                                   min={0}
+                                   step={0.01}
+                                   className="w-full"
+                                 />
+                                 <div className="flex justify-between text-xs text-muted-foreground">
+                                   <span>Original Focus</span>
+                                   <span>Heavy Influence</span>
+                                 </div>
+                               </div>
+                             </div>
+                           )}
+
+                           {/* Negative Tags */}
+                           <div className="space-y-2">
+                             <div className="flex items-center gap-2">
+                               <X className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-medium">Negative Tags</span>
+                             </div>
+                             <div className="space-y-2">
+                               <Input
+                                 placeholder="Add styles to avoid (e.g., Heavy Metal, Aggressive Drums)"
+                                 className="text-sm"
+                                 onKeyDown={(e) => {
+                                   if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                     addNegativeTag(e.currentTarget.value.trim())
+                                     e.currentTarget.value = ''
+                                   }
+                                 }}
+                               />
+                               {negativeTags.length > 0 && (
+                                 <div className="flex flex-wrap gap-1">
+                                   {negativeTags.map((tag) => (
+                                     <Badge key={tag} variant="secondary" className="text-xs">
+                                       {tag}
+                                       <button
+                                         onClick={() => removeNegativeTag(tag)}
+                                         className="ml-1 hover:text-destructive"
+                                       >
+                                         <X className="h-3 w-3" />
+                                       </button>
+                                     </Badge>
+                                   ))}
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                         </div>
+                       )}
                      </div>
 
                      {/* Song Title */}
@@ -1061,6 +1724,82 @@ In the
                  ) : (
                  // Initial Custom Mode Content (when no audio uploaded)
                  <>
+                   {/* Prompt Templates */}
+                   <div className="space-y-2">
+                     <div className="flex items-center gap-2">
+                       <Lightbulb className="h-4 w-4 text-muted-foreground" />
+                       <span className="text-sm font-medium">Need inspiration?</span>
+                     </div>
+                     <div className="grid grid-cols-2 gap-2">
+                       {PROMPT_TEMPLATES.slice(0, 4).map((template, index) => (
+                         <Button
+                           key={index}
+                           variant="outline"
+                           size="sm"
+                           className="h-auto p-2 text-xs text-left justify-start"
+                           onClick={() => insertTemplate(template)}
+                         >
+                           {template}
+                         </Button>
+                       ))}
+                     </div>
+                   </div>
+
+                   {/* Description Section */}
+                   <div className="space-y-2">
+                     <div className="flex items-center justify-between">
+                       <span className="text-sm font-medium">Describe your song</span>
+                       <div className="flex items-center gap-2">
+                         <span className={`text-xs ${getCharacterCountColor(getCharacterCount(description, 'prompt').current, getCharacterCount(description, 'prompt').limit)}`}>
+                           {getCharacterCount(description, 'prompt').current} / {getCharacterCount(description, 'prompt').limit}
+                         </span>
+                         <Expand className="h-4 w-4 text-muted-foreground" />
+                       </div>
+                     </div>
+                     <Textarea
+                       value={description}
+                       onChange={(e) => {
+                         const newValue = e.target.value
+                         const limits = getCharacterLimits(selectedModel)
+                         const maxLength = isSimpleMode ? limits.promptSimple : limits.prompt
+                         
+                         if (newValue.length <= maxLength) {
+                           setDescription(newValue)
+                         } else {
+                           // Show warning but don't prevent typing
+                           toast({
+                             title: "Character limit warning",
+                             description: `You're approaching the ${maxLength} character limit.`,
+                             variant: "destructive"
+                           })
+                         }
+                       }}
+                       placeholder="Describe the music you want to create..."
+                       className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
+                     />
+                     
+                     {/* Smart Suggestions */}
+                     {description && getSmartSuggestions(description).length > 0 && (
+                       <div className="space-y-1">
+                         <span className="text-xs text-muted-foreground">Suggested styles:</span>
+                         <div className="flex flex-wrap gap-1">
+                           {getSmartSuggestions(description).slice(0, 3).map((suggestion) => (
+                             <Button
+                               key={suggestion}
+                               variant="outline"
+                               size="sm"
+                               className="h-6 text-xs"
+                               onClick={() => addStyle(suggestion)}
+                             >
+                               <Plus className="h-3 w-3 mr-1" />
+                               {suggestion}
+                             </Button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+
                    {/* Lyrics Section */}
                    <div className="space-y-2">
                      <div className="flex items-center gap-2">
@@ -1068,21 +1807,75 @@ In the
                          onClick={() => setShowLyrics(!showLyrics)}
                          className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
                        >
-                         <ChevronDown className="h-4 w-4" />
+                         {showLyrics ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                          Lyrics
+                         {!showLyrics && (
+                           <span className="text-xs text-muted-foreground">
+                             • {description.length > 0 ? 'Custom' : 'Auto-generated'}
+                           </span>
+                         )}
                        </button>
                        <Edit3 className="h-4 w-4 text-muted-foreground" />
                      </div>
                      
-                     <div className="relative">
-                       <Textarea
-                         placeholder="Write some lyrics (leave empty for instrumental)"
-                         className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors pr-8"
-                       />
-                       <div className="absolute bottom-2 right-2">
-                         <Expand className="h-3 w-3 text-muted-foreground" />
+                     {showLyrics && (
+                       <div className="relative">
+                         <Textarea
+                           value={description}
+                           onChange={(e) => {
+                             const newValue = e.target.value
+                             const limits = getCharacterLimits(selectedModel)
+                             const maxLength = limits.prompt // Custom mode uses full prompt limit for lyrics
+                             
+                             if (newValue.length <= maxLength) {
+                               setDescription(newValue)
+                             } else {
+                               // Show warning but don't prevent typing
+                               toast({
+                                 title: "Character limit warning",
+                                 description: `Lyrics exceed ${maxLength} character limit.`,
+                                 variant: "destructive"
+                               })
+                             }
+                           }}
+                           placeholder="Write some lyrics (leave empty for instrumental)"
+                           className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors pr-8"
+                         />
+                         <div className="absolute bottom-2 right-2">
+                           <Expand className="h-3 w-3 text-muted-foreground" />
+                         </div>
                        </div>
+                     )}
+                   </div>
+
+                   {/* Style Description Section */}
+                   <div className="space-y-2">
+                     <div className="flex items-center justify-between">
+                       <span className="text-sm font-medium">Style Description</span>
+                       <span className={`text-xs ${getCharacterCountColor(getCharacterCount(style, 'style').current, getCharacterCount(style, 'style').limit)}`}>
+                         {getCharacterCount(style, 'style').current} / {getCharacterCount(style, 'style').limit}
+                       </span>
                      </div>
+                     <Textarea
+                       value={style}
+                       onChange={(e) => {
+                         const newValue = e.target.value
+                         const limits = getCharacterLimits(selectedModel)
+                         
+                         if (newValue.length <= limits.style) {
+                           setStyle(newValue)
+                         } else {
+                           // Show warning but don't prevent typing
+                           toast({
+                             title: "Character limit warning",
+                             description: `Style description exceeds ${limits.style} character limit.`,
+                             variant: "destructive"
+                           })
+                         }
+                       }}
+                       placeholder="Describe the musical style (e.g., 'Jazz piano trio with smooth saxophone')"
+                       className="min-h-[60px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
+                     />
                    </div>
 
                    {/* Styles Section */}
@@ -1092,36 +1885,82 @@ In the
                          onClick={() => setShowStyles(!showStyles)}
                          className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
                        >
-                         <ChevronDown className="h-4 w-4" />
-                         Styles
+                         {showStyles ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                         Style Tags
+                         {!showStyles && selectedStyles.length > 0 && (
+                           <span className="text-xs text-muted-foreground">
+                             • {selectedStyles.length} selected
+                           </span>
+                         )}
                        </button>
                      </div>
                      
-                     <div className="space-y-2">
-                       {/* Current Styles Display */}
-                       <div className="text-xs text-muted-foreground">
-                         Hip-hop, R&B, upbeat
+                     {showStyles && (
+                       <div className="space-y-3 p-3 bg-muted/20 rounded-lg">
+                         {/* Selected Styles */}
+                         {selectedStyles.length > 0 && (
+                           <div className="space-y-2">
+                             <span className="text-xs font-medium text-muted-foreground">Selected Styles</span>
+                             <div className="flex flex-wrap gap-1">
+                               {selectedStyles.map((style) => (
+                                 <Badge key={style} variant="default" className="text-xs">
+                                   {style}
+                                   <button
+                                     onClick={() => removeStyle(style)}
+                                     className="ml-1 hover:text-destructive"
+                                   >
+                                     <X className="h-3 w-3" />
+                                   </button>
+                                 </Badge>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+
+                         {/* Style Categories */}
+                         {Object.entries(STYLE_CATEGORIES).map(([key, category]) => (
+                           <div key={key} className="space-y-2">
+                             <div className="flex items-center gap-2">
+                               <span className="text-sm">{category.icon}</span>
+                               <span className="text-sm font-medium">{category.label}</span>
+                             </div>
+                             <div className="flex flex-wrap gap-1">
+                               {category.tags.slice(0, 8).map((tag) => (
+                                 <Button
+                                   key={tag}
+                                   variant={selectedStyles.includes(tag) ? "default" : "outline"}
+                                   size="sm"
+                                   className="h-6 text-xs"
+                                   onClick={() => {
+                                     if (selectedStyles.includes(tag)) {
+                                       removeStyle(tag)
+                                     } else {
+                                       addStyle(tag)
+                                     }
+                                   }}
+                                 >
+                                   {selectedStyles.includes(tag) ? (
+                                     <Check className="h-3 w-3 mr-1" />
+                                   ) : (
+                                     <Plus className="h-3 w-3 mr-1" />
+                                   )}
+                                   {tag}
+                                 </Button>
+                               ))}
+                               {category.tags.length > 8 && (
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   className="h-6 text-xs text-muted-foreground"
+                                 >
+                                   +{category.tags.length - 8} more
+                                 </Button>
+                               )}
+                             </div>
+                           </div>
+                         ))}
                        </div>
-                       
-                       {/* Style Tags Row */}
-                       <div className="flex items-center gap-2 overflow-x-auto">
-                         <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                           <span className="text-xs">|||</span>
-                         </button>
-                         <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                           <Plus className="h-3 w-3" />
-                           allegra
-                         </button>
-                         <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                           <Plus className="h-3 w-3" />
-                           k-pop
-                         </button>
-                         <button className="flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors whitespace-nowrap">
-                           <Plus className="h-3 w-3" />
-                           slightly melancholic tempo
-                         </button>
-                       </div>
-                     </div>
+                     )}
                    </div>
 
                    {/* Advanced Options */}
@@ -1131,24 +1970,230 @@ In the
                          onClick={() => setShowAdvanced(!showAdvanced)}
                          className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
                        >
-                         <ChevronRight className="h-4 w-4" />
+                         {showAdvanced ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                          Advanced Options
+                         {!showAdvanced && (
+                           <span className="text-xs text-muted-foreground">
+                             • Style: {styleWeight[0]} • Weirdness: {weirdnessConstraint[0]}
+                           </span>
+                         )}
                        </button>
                      </div>
+                     
+                     {showAdvanced && (
+                       <div className="space-y-4 p-3 bg-muted/20 rounded-lg">
+                         {/* Vocal Gender Selection */}
+                         {!isInstrumental && (
+                           <div className="space-y-2">
+                             <div className="flex items-center gap-2">
+                               <Users className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-medium">Vocal Gender</span>
+                             </div>
+                             <div className="flex gap-2">
+                               <Button
+                                 variant={vocalGender === 'auto' ? 'default' : 'outline'}
+                                 size="sm"
+                                 className="h-8 text-xs"
+                                 onClick={() => setVocalGender('auto')}
+                               >
+                                 <UserCheck className="h-3 w-3 mr-1" />
+                                 Auto
+                               </Button>
+                               <Button
+                                 variant={vocalGender === 'm' ? 'default' : 'outline'}
+                                 size="sm"
+                                 className="h-8 text-xs"
+                                 onClick={() => setVocalGender('m')}
+                               >
+                                 <User className="h-3 w-3 mr-1" />
+                                 Male
+                               </Button>
+                               <Button
+                                 variant={vocalGender === 'f' ? 'default' : 'outline'}
+                                 size="sm"
+                                 className="h-8 text-xs"
+                                 onClick={() => setVocalGender('f')}
+                               >
+                                 <User className="h-3 w-3 mr-1" />
+                                 Female
+                               </Button>
+                             </div>
+                           </div>
+                         )}
+
+                         {/* Style Weight */}
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-2">
+                             <Target className="h-4 w-4 text-muted-foreground" />
+                             <span className="text-sm font-medium">Style Weight</span>
+                             <span className="text-xs text-muted-foreground">({styleWeight[0].toFixed(2)})</span>
+                           </div>
+                           <div className="space-y-1">
+                             <Slider
+                               value={styleWeight}
+                               onValueChange={setStyleWeight}
+                               max={1}
+                               min={0}
+                               step={0.01}
+                               className="w-full"
+                             />
+                             <div className="flex justify-between text-xs text-muted-foreground">
+                               <span>Loose Interpretation</span>
+                               <span>Strict Adherence</span>
+                             </div>
+                           </div>
+                         </div>
+
+                         {/* Weirdness Constraint */}
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-2">
+                             <Zap className="h-4 w-4 text-muted-foreground" />
+                             <span className="text-sm font-medium">Weirdness Constraint</span>
+                             <span className="text-xs text-muted-foreground">({weirdnessConstraint[0].toFixed(2)})</span>
+                             <div className="relative group">
+                               <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                 Controls creative deviation and novelty
+                               </div>
+                             </div>
+                           </div>
+                           <div className="space-y-1">
+                             <Slider
+                               value={weirdnessConstraint}
+                               onValueChange={setWeirdnessConstraint}
+                               max={1}
+                               min={0}
+                               step={0.01}
+                               className="w-full"
+                             />
+                             <div className="flex justify-between text-xs text-muted-foreground">
+                               <span>Conventional</span>
+                               <span>Experimental</span>
+                             </div>
+                           </div>
+                         </div>
+
+                         {/* Negative Tags */}
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-2">
+                             <X className="h-4 w-4 text-muted-foreground" />
+                             <span className="text-sm font-medium">Negative Tags</span>
+                           </div>
+                           <div className="space-y-2">
+                             <Input
+                               placeholder="Add styles to avoid (e.g., Heavy Metal, Aggressive Drums)"
+                               className="text-sm"
+                               onKeyDown={(e) => {
+                                 if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                   addNegativeTag(e.currentTarget.value.trim())
+                                   e.currentTarget.value = ''
+                                 }
+                               }}
+                             />
+                             {negativeTags.length > 0 && (
+                               <div className="flex flex-wrap gap-1">
+                                 {negativeTags.map((tag) => (
+                                   <Badge key={tag} variant="secondary" className="text-xs">
+                                     {tag}
+                                     <button
+                                       onClick={() => removeNegativeTag(tag)}
+                                       className="ml-1 hover:text-destructive"
+                                     >
+                                       <X className="h-3 w-3" />
+                                     </button>
+                                   </Badge>
+                                 ))}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     )}
                    </div>
 
                    {/* Song Title */}
                    <div className="space-y-2">
-                     <div className="flex items-center gap-2">
-                       <Edit3 className="h-4 w-4 text-muted-foreground" />
-                       <span className="text-sm font-medium">Add a song title</span>
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                         <Edit3 className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm font-medium">Add a song title</span>
+                       </div>
+                       <span className={`text-xs ${getCharacterCountColor(getCharacterCount(title, 'title').current, getCharacterCount(title, 'title').limit)}`}>
+                         {getCharacterCount(title, 'title').current} / {getCharacterCount(title, 'title').limit}
+                       </span>
                      </div>
                      <Input
                        value={title}
-                       onChange={(e) => setTitle(e.target.value)}
+                       onChange={(e) => {
+                         const newValue = e.target.value
+                         const limits = getCharacterLimits(selectedModel)
+                         
+                         if (newValue.length <= limits.title) {
+                           setTitle(newValue)
+                         } else {
+                           // Show warning but don't prevent typing
+                           toast({
+                             title: "Character limit warning",
+                             description: `Title exceeds ${limits.title} character limit.`,
+                             variant: "destructive"
+                           })
+                         }
+                       }}
                        placeholder="Add a song title"
                        className="border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
                      />
+                   </div>
+
+                   {/* Generation Preview & Button */}
+                   <div className="space-y-3 pt-4 border-t">
+                     {/* Generation Preview Card */}
+                     <div className="p-3 bg-muted/20 rounded-lg space-y-2">
+                       <div className="flex items-center gap-2">
+                         <Settings className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm font-medium">Generation Preview</span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-2 text-xs">
+                         <div className="space-y-1">
+                           <div className="text-muted-foreground">Model:</div>
+                           <div className="font-medium">{MODEL_CONFIGS[selectedModel].name} {MODEL_CONFIGS[selectedModel].badge && `(${MODEL_CONFIGS[selectedModel].badge})`}</div>
+                         </div>
+                         <div className="space-y-1">
+                           <div className="text-muted-foreground">Duration:</div>
+                           <div className="font-medium">{MODEL_CONFIGS[selectedModel].duration}</div>
+                         </div>
+                         <div className="space-y-1">
+                           <div className="text-muted-foreground">Type:</div>
+                           <div className="font-medium">{isInstrumental ? 'Instrumental' : 'With Vocals'}</div>
+                         </div>
+                         <div className="space-y-1">
+                           <div className="text-muted-foreground">Style Weight:</div>
+                           <div className="font-medium">{styleWeight[0].toFixed(2)}</div>
+                         </div>
+                       </div>
+                       <div className="flex items-center justify-between pt-2 border-t">
+                         <span className="text-xs text-muted-foreground">Estimated time: ~30 seconds</span>
+                         <span className="text-xs text-muted-foreground">Credits: 1</span>
+                       </div>
+                     </div>
+
+                     {/* Generate Button */}
+                     <Button 
+                       onClick={handleGenerate}
+                       disabled={isGenerating || !description.trim()}
+                       className="w-full h-10 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                     >
+                       {isGenerating ? (
+                         <>
+                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                           Generating...
+                         </>
+                       ) : (
+                         <>
+                           <Sparkles className="h-4 w-4 mr-2" />
+                           Generate Music
+                         </>
+                       )}
+                     </Button>
                    </div>
 
                    {/* Workspace */}

@@ -136,7 +136,7 @@ export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfacePr
           <p className="text-muted-foreground mb-4">
             Create your first subtitle project to get started
           </p>
-          <Button>
+          <Button className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-500 hover:via-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0">
             <Plus className="h-4 w-4 mr-2" />
             Create New Project
           </Button>

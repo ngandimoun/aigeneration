@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react'
 import { toast } from '@/hooks/use-toast'
-import { useArtifactsApi } from '@/hooks/use-artifacts-api'
 
 interface Character {
   name: string
@@ -52,7 +51,6 @@ export function useCharacterGeneration() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState<number | undefined>(undefined)
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null)
-  const { createArtifact } = useArtifactsApi()
 
   const generateCharacter = useCallback(async (
     character: Character, 
@@ -124,51 +122,6 @@ export function useCharacterGeneration() {
         setGenerationResult(data)
         console.log('🔄 Variations state updated:', data.images)
         
-        // Automatically save character variations based on selected artifact's public status
-        if (data.variations && data.variations.length > 0) {
-          const comicTitle = options.comicTitle || 'Untitled Comic'
-          const isPublicArtifact = options?.selectedArtifact?.isPublic || false
-          
-          if (isPublicArtifact) {
-            console.log('🎨 Auto-saving character variations to Templates (public artifact selected)...')
-          } else {
-            console.log('🎨 Auto-saving character variations to main artifacts (private artifact selected)...')
-          }
-          
-          for (const variation of data.variations) {
-            try {
-              await createArtifact({
-                title: `${comicTitle} - Character Variation ${variation.variationNumber}`,
-                description: `Character variation generated for "${comicTitle}" comic project using ${options?.selectedArtifact?.title || 'selected artifact'}`,
-                type: (options?.selectedArtifact?.type || 'comic') as any, // Use the original artifact type
-                content: { image: variation.url },
-                metadata: { 
-                  isPublic: isPublicArtifact, // Use the same public status as the selected artifact
-                  originalComic: comicTitle,
-                  variationNumber: variation.variationNumber,
-                  characterVariation: true,
-                  characterName: character.name || 'Unnamed Character',
-                  characterDescription: character.description,
-                  // Rich metadata from generation
-                  generationMetadata: variation.metadata,
-                  artifactContext: options?.selectedArtifact ? {
-                    id: options.selectedArtifact.id,
-                    title: options.selectedArtifact.title,
-                    isPublic: options.selectedArtifact.isPublic,
-                    type: options.selectedArtifact.type,
-                    section: options.selectedArtifact.section
-                  } : null,
-                  generationTimestamp: data.metadata.generationTimestamp,
-                  autoSaved: true
-                },
-                is_template: isPublicArtifact // Only set as template if the source artifact was public
-              })
-              console.log(`✅ Character variation ${variation.variationNumber} saved ${isPublicArtifact ? 'to Templates' : 'to main artifacts'} with rich metadata`)
-            } catch (error) {
-              console.error(`❌ Failed to save character variation ${variation.variationNumber}:`, error)
-            }
-          }
-        }
         
         toast({
           title: "🎉 Character Generated!",
@@ -229,62 +182,6 @@ export function useCharacterGeneration() {
     setGenerationResult(null)
   }, [])
 
-  // Function to save all existing variations to Templates
-  const saveAllVariationsToTemplates = useCallback(async (comicTitle: string = 'Previous Generation') => {
-    if (variations.length === 0) {
-      console.log('No variations to save')
-      return
-    }
-
-    console.log('💾 Saving all existing variations to Templates with metadata...')
-    
-    // Use generation result metadata if available, otherwise create basic metadata
-    const baseMetadata = generationResult?.metadata || {
-      totalVariations: variations.length,
-      generationTimestamp: new Date().toISOString(),
-      comicTitle: comicTitle,
-      selectedArtifact: null,
-      generationContext: { formType: 'comics-form', timestamp: new Date().toISOString() }
-    }
-    
-    const isPublicArtifact = baseMetadata.selectedArtifact?.isPublic || false
-    
-    for (let i = 0; i < variations.length; i++) {
-      const variationUrl = variations[i]
-      const variationMetadata = generationResult?.variations?.[i]?.metadata
-      
-      try {
-        await createArtifact({
-          title: `${comicTitle} - Character Variation ${i + 1}`,
-          description: `Character variation from previous generation${baseMetadata.selectedArtifact ? ` using ${baseMetadata.selectedArtifact.title || 'selected artifact'}` : ''}`,
-          type: (baseMetadata.selectedArtifact?.type || 'comic') as any, // Use the original artifact type
-          content: { image: variationUrl },
-          metadata: { 
-            isPublic: isPublicArtifact, // Use the same public status as the selected artifact
-            originalComic: comicTitle,
-            variationNumber: i + 1,
-            characterVariation: true,
-            savedFromPreviousGeneration: true,
-            // Include rich metadata if available
-            generationMetadata: variationMetadata || null,
-            artifactContext: baseMetadata.selectedArtifact,
-            generationTimestamp: baseMetadata.generationTimestamp,
-            generationContext: baseMetadata.generationContext,
-            manualSave: true
-          },
-          is_template: isPublicArtifact // Only set as template if the source artifact was public
-        })
-        console.log(`✅ Saved variation ${i + 1} ${isPublicArtifact ? 'to Templates' : 'to main artifacts'} with metadata`)
-      } catch (error) {
-        console.error(`❌ Failed to save variation ${i + 1}:`, error)
-      }
-    }
-    
-    toast({
-      title: "💾 All Variations Saved!",
-      description: `${variations.length} variations have been saved ${isPublicArtifact ? 'to Templates' : 'to main artifacts'} with rich metadata`,
-    })
-  }, [variations, generationResult, createArtifact, toast])
 
   return {
     variations,
@@ -296,6 +193,5 @@ export function useCharacterGeneration() {
     selectVariation,
     confirmSelection,
     clearVariations,
-    saveAllVariationsToTemplates
   }
 }

@@ -2,11 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+// Cache for 30 seconds
+export const revalidate = 30
+
 // Validation schema for concept world creation
 const createConceptWorldSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
-  selected_artifact: z.string().optional(),
   world_type: z.string().optional(),
   setting: z.string().optional(),
   time_period: z.string().optional(),
@@ -60,7 +62,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch concept worlds' }, { status: 500 })
     }
 
-    return NextResponse.json({ conceptWorlds }, { status: 200 })
+    return NextResponse.json({ conceptWorlds }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'max-age=30'
+      }
+    })
   } catch (error) {
     console.error('Unexpected error in GET /api/concept-worlds:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -89,7 +97,6 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         title: validatedData.title,
         description: validatedData.description,
-        selected_artifact: validatedData.selected_artifact,
         world_type: validatedData.world_type,
         setting: validatedData.setting,
         time_period: validatedData.time_period,

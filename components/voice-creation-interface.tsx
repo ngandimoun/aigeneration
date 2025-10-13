@@ -496,8 +496,6 @@ const PURPOSE_IN_SCENE_OPTIONS = [
 export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationInterfaceProps) {
   const { toast } = useToast()
   
-  // Public/Private Toggle
-  const [isPublic, setIsPublic] = useState(true)
   
   // Voice Identity
   const [voicePurpose, setVoicePurpose] = useState("")
@@ -560,6 +558,7 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
   const [voiceId, setVoiceId] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
+  const [prompt, setPrompt] = useState("")
   
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
@@ -673,19 +672,10 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
   }
 
   const handleSaveVoice = async () => {
-    if (!voiceName.trim()) {
+    if (!prompt.trim()) {
       toast({
-        title: "Voice name required",
-        description: "Please enter a name for your voice.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (!selectedPreview) {
-      toast({
-        title: "Select a preview",
-        description: "Please select a voice preview to save.",
+        title: "Prompt required",
+        description: "Please enter a prompt describing the voice you want to create.",
         variant: "destructive"
       })
       return
@@ -693,8 +683,8 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
 
     try {
       const voiceData = {
-        name: voiceName,
-        generated_voice_id: selectedPreview,
+        prompt: prompt.trim(),
+        name: voiceName || `Voice_${Date.now()}`,
         purpose: voicePurpose,
         language,
         gender,
@@ -718,19 +708,7 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
         asmr_intensity: asmrIntensity[0],
         asmr_triggers: asmrTriggers,
         asmr_background: asmrBackground,
-        // Sound FX Integration
-        sound_category: soundCategory,
-        usage_context: usageContext,
-        sound_texture: soundTexture,
-        attack_type: attackType,
-        environment_style: environmentStyle,
-        reverb_character: reverbCharacter,
-        stereo_behavior: stereoBehavior,
-        ambience_layer: ambienceLayer,
-        motion_character: motionCharacter,
-        purpose_in_scene: purposeInScene,
         tags,
-        is_public: isPublic,
         created_at: new Date().toISOString()
       }
 
@@ -743,8 +721,8 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
 
       if (response.ok) {
         toast({
-          title: "Voice saved successfully!",
-          description: `Voice '${voiceName}' is now part of your DreamCut Voice Library.`
+          title: "Voice generated successfully!",
+          description: `Voice '${voiceName || 'Unnamed Voice'}' has been created and added to your DreamCut Voice Library.`
         })
         onClose()
       } else {
@@ -780,23 +758,6 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
               <h2 className="text-xs font-bold">Voice Creation</h2>
               <p className="text-[10px] text-muted-foreground">Craft unique, emotionally intelligent voices that match your world's DNA.</p>
           </div>
-            {/* Public/Private Toggle */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className={cn(
-                "text-[9px] font-medium px-2 rounded-full transition-colors whitespace-nowrap",
-                isPublic 
-                  ? "bg-green-100 text-green-700 border border-green-200" 
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              )}>
-                {isPublic ? "Public" : "Private"}
-              </span>
-              <Switch
-                id="public-toggle"
-                checked={isPublic}
-                onCheckedChange={setIsPublic}
-                className="scale-75"
-              />
-            </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-5 w-5 shrink-0">
             <X className="h-3 w-3" />
@@ -819,6 +780,38 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
             </CardHeader>
             <CardContent className="space-y-2 p-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">📝 Voice Name</Label>
+                  <Input
+                    value={voiceName}
+                    onChange={(e) => setVoiceName(e.target.value)}
+                    placeholder="e.g., Ava – Calm Narrator"
+                    className="h-7 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Voice ID</Label>
+                  <Input
+                    value={voiceId}
+                    onChange={(e) => setVoiceId(e.target.value)}
+                    placeholder="Auto-generated from selection"
+                    disabled
+                    className="h-7 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <Label className="text-xs">📝 Prompt *</Label>
+                  <Textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe the voice you want to create... (e.g., A warm, friendly female voice with a slight British accent, perfect for educational content)"
+                    className="min-h-[60px] text-xs resize-none"
+                    required
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <Label className="text-xs">🎯 Voice Purpose</Label>
                   <Select value={voicePurpose} onValueChange={setVoicePurpose}>
@@ -965,6 +958,46 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Default Script Tone</Label>
+                  <Select value={defaultScriptTone} onValueChange={setDefaultScriptTone}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Select tone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="friendly">Friendly</SelectItem>
+                      <SelectItem value="professional">Professional</SelectItem>
+                      <SelectItem value="epic">Epic</SelectItem>
+                      <SelectItem value="conversational">Conversational</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">🏷️ Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Add tag"
+                      onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                      className="h-7 text-xs"
+                    />
+                    <Button onClick={addTag} size="sm" className="h-7 text-xs">Add</Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs">
+                        {tag}
+                        <X 
+                          className="h-3 w-3 cursor-pointer" 
+                          onClick={() => removeTag(tag)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1204,6 +1237,7 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
             </CardContent>
           </Card>
 
+
           {/* ASMR Voice Options Section */}
           <Card>
             <CardHeader className="p-2">
@@ -1294,398 +1328,8 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
             </CardContent>
           </Card>
 
-          {/* Sound FX Integration Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Zap className="h-3 w-3" />
-                🎵 Sound FX Integration
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Enhance your voice with cinematic sound design and spatial audio characteristics.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Category / Use Case</Label>
-                  <Select value={soundCategory} onValueChange={setSoundCategory}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SOUND_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category.toLowerCase()}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="space-y-1">
-                      <Label className="text-xs">🎬 Usage Context</Label>
-                  <Select value={usageContext} onValueChange={setUsageContext}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select context" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {USAGE_CONTEXTS.map((context) => (
-                        <SelectItem key={context} value={context.toLowerCase()}>
-                          {context}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="space-y-1">
-                      <Label className="text-xs">🎨 Sound Texture</Label>
-                  <Select value={soundTexture} onValueChange={setSoundTexture}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select texture" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SOUND_TEXTURES.map((texture) => (
-                        <SelectItem key={texture} value={texture.toLowerCase()}>
-                          {texture}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                      <Label className="text-xs">⚡ Attack Type</Label>
-                  <Select value={attackType} onValueChange={setAttackType}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select attack" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ATTACK_TYPES.map((attack) => (
-                        <SelectItem key={attack} value={attack.toLowerCase()}>
-                          {attack}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                      <Label className="text-xs">🏞️ Environment Style</Label>
-                  <Select value={environmentStyle} onValueChange={setEnvironmentStyle}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select environment" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ENVIRONMENT_STYLES.map((env) => (
-                        <SelectItem key={env} value={env.toLowerCase()}>
-                          {env}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                      <Label className="text-xs">🔊 Reverb Character</Label>
-                  <Select value={reverbCharacter} onValueChange={setReverbCharacter}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select reverb" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REVERB_CHARACTERS.map((reverb) => (
-                        <SelectItem key={reverb} value={reverb.toLowerCase()}>
-                          {reverb}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                      <Label className="text-xs">🎧 Stereo Behavior</Label>
-                  <Select value={stereoBehavior} onValueChange={setStereoBehavior}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select stereo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STEREO_BEHAVIORS.map((stereo) => (
-                        <SelectItem key={stereo} value={stereo.toLowerCase()}>
-                          {stereo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Ambience Layer (optional)</Label>
-                  <Select value={ambienceLayer} onValueChange={setAmbienceLayer}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select ambience" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AMBIENCE_LAYERS.map((ambience) => (
-                        <SelectItem key={ambience} value={ambience.toLowerCase()}>
-                          {ambience}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                      <Label className="text-xs">🎬 Motion Character</Label>
-                  <Select value={motionCharacter} onValueChange={setMotionCharacter}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select motion" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MOTION_CHARACTERS.map((motion) => (
-                        <SelectItem key={motion} value={motion.toLowerCase()}>
-                          {motion}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                      <Label className="text-xs">🎯 Purpose in Scene</Label>
-                  <Select value={purposeInScene} onValueChange={setPurposeInScene}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select purpose" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PURPOSE_IN_SCENE_OPTIONS.map((purpose) => (
-                        <SelectItem key={purpose} value={purpose.toLowerCase()}>
-                          {purpose}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="text-xs text-muted-foreground italic">
-                "Sound FX integration adds cinematic depth and spatial characteristics to your voice, creating immersive audio experiences."
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Preview & Fine-tuning Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Volume2 className="h-3 w-3" />
-                🔊 Preview & Fine-Tuning
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Generate 3 variations, compare, and fine-tune your voice.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 p-2">
-              <Button 
-                onClick={handleGeneratePreviews}
-                disabled={isGenerating}
-                className="w-full h-7 text-xs"
-              >
-                {isGenerating ? (
-                  <>
-                    <Sparkles className="h-3 w-3 mr-2 animate-spin" />
-                    🎙️ Crafting your audition...
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-3 w-3 mr-2" />
-                    Generate Voice Previews
-                  </>
-                )}
-              </Button>
-
-              {voicePreviews.length > 0 && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    {voicePreviews.map((preview) => (
-                      <Card key={preview.id} className={cn(
-                        "cursor-pointer transition-all",
-                        selectedPreview === preview.id && "ring-2 ring-primary"
-                      )} onClick={() => setSelectedPreview(preview.id)}>
-                        <CardContent className="p-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge variant="secondary" className="text-xs">{preview.variation}</Badge>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handlePlayPreview(preview.id)
-                              }}
-                            >
-                              {isPlaying === preview.id ? (
-                                <Pause className="h-3 w-3" />
-                              ) : (
-                                <Play className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {preview.duration_secs}s • {preview.language}
-                          </div>
-                          {/* Waveform visualization would go here */}
-                          <div className="h-5 bg-muted rounded mt-1 flex items-center justify-center">
-                            <span className="text-[9px] text-muted-foreground">Waveform</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-xs">Fine-tuning Controls</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Pitch: {fineTuningPitch[0]}</Label>
-                        <Slider
-                          value={fineTuningPitch}
-                          onValueChange={setFineTuningPitch}
-                          min={0}
-                          max={100}
-                          step={1}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Speed: {fineTuningSpeed[0]}</Label>
-                        <Slider
-                          value={fineTuningSpeed}
-                          onValueChange={setFineTuningSpeed}
-                          min={0}
-                          max={100}
-                          step={1}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Volume: {fineTuningVolume[0]}</Label>
-                        <Slider
-                          value={fineTuningVolume}
-                          onValueChange={setFineTuningVolume}
-                          min={0}
-                          max={100}
-                          step={1}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Warmth: {fineTuningWarmth[0]}</Label>
-                        <Slider
-                          value={fineTuningWarmth}
-                          onValueChange={setFineTuningWarmth}
-                          min={0}
-                          max={100}
-                          step={1}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Breathiness: {fineTuningBreathiness[0]}</Label>
-                        <Slider
-                          value={fineTuningBreathiness}
-                          onValueChange={setFineTuningBreathiness}
-                          min={0}
-                          max={100}
-                          step={1}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Export & Save Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Save className="h-3 w-3" />
-                💾 Export & Save
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Name, tag, and store the selected voice as a reusable Voice Kit.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">📝 Voice Name</Label>
-                  <Input
-                    value={voiceName}
-                    onChange={(e) => setVoiceName(e.target.value)}
-                    placeholder="e.g., Ava – Calm Narrator"
-                    className="h-7 text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Voice ID</Label>
-                  <Input
-                    value={voiceId}
-                    onChange={(e) => setVoiceId(e.target.value)}
-                    placeholder="Auto-generated from selection"
-                    disabled
-                    className="h-7 text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Default Script Tone</Label>
-                  <Select value={defaultScriptTone} onValueChange={setDefaultScriptTone}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select tone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="friendly">Friendly</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="epic">Epic</SelectItem>
-                      <SelectItem value="conversational">Conversational</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">🏷️ Tags</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Add tag"
-                      onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                      className="h-7 text-xs"
-                    />
-                    <Button onClick={addTag} size="sm" className="h-7 text-xs">Add</Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs">
-                        {tag}
-                        <X 
-                          className="h-3 w-3 cursor-pointer" 
-                          onClick={() => removeTag(tag)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* <Button onClick={handleSaveVoice} className="w-full h-7 text-xs">
-                <Save className="h-3 w-3 mr-2" />
-                Save Voice Kit
-              </Button> */}
-            </CardContent>
-          </Card>
 
           {/* Smart Message */}
           {smartMessage && (
@@ -1712,11 +1356,11 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
           </Button>
                 <Button 
                   onClick={handleSaveVoice} 
-                  disabled={!voiceName.trim() || !selectedPreview} 
-                  className="h-10 text-sm font-semibold min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!prompt.trim()} 
+                  className="h-10 text-sm font-semibold min-w-[120px] bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-            <Save className="h-4 w-4 mr-2" />
-            Save Voice
+            <Sparkles className="h-4 w-4 mr-2" />
+            Generate Voice
           </Button>
               </div>
             </CardContent>

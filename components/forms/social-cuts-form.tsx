@@ -10,9 +10,8 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface SocialCutsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string }) => void
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
 // Données de simulation pour les artifacts
@@ -27,7 +26,7 @@ const mockArtifacts = [
   { id: "8", title: "Meme Format", image: "/placeholder.jpg", description: "Meme-style social content" }
 ]
 
-export function SocialCutsForm({ onSave, onCancel, availableArtifacts }: SocialCutsFormProps) {
+export function SocialCutsForm({ onSave, onCancel }: SocialCutsFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)

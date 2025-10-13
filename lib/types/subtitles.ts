@@ -25,9 +25,6 @@ export type AutocaptionModelInputs = {
   keyword_emphasis?: boolean;      // default: false
   keywords?: string[];
   keyword_style?: "CAPS" | "EMOJI_WRAP" | "ASTERISKS";
-  save_to_supabase?: boolean;      // default: true
-  supabase_bucket?: string;
-  supabase_pathPrefix?: string;
 };
 
 // Sensible defaults reflecting the model version's published defaults
@@ -55,10 +52,7 @@ export const DEFAULT_AUTOCAPTION_INPUTS: Readonly<AutocaptionModelInputs> = {
   emoji_map: { fire: "🔥", wow: "🤯", money: "💰" },
   keyword_emphasis: false,
   keywords: [],
-  keyword_style: "CAPS",
-  save_to_supabase: true,
-  supabase_bucket: "videos",
-  supabase_pathPrefix: "captioned/"
+  keyword_style: "CAPS"
 } as const;
 
 // Form sections for rendering
@@ -94,10 +88,7 @@ export const AUTOCAPTION_FORM_SECTIONS = [
       "emoji_map",
       "keyword_emphasis",
       "keywords",
-      "keyword_style",
-      "save_to_supabase",
-      "supabase_bucket",
-      "supabase_pathPrefix"
+      "keyword_style"
     ]
   }
 ] as const;

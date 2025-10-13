@@ -10,9 +10,8 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface CinematicClipsFormProps {
-  onSave: (project: { title: string; image: string; description: string; selectedArtifact: string }) => void
+  onSave: (project: { title: string; image: string; description: string }) => void
   onCancel: () => void
-  availableArtifacts: Array<{ id: string; title: string; image: string; description: string }>
 }
 
 // Données de simulation pour les artifacts
@@ -27,7 +26,7 @@ const mockArtifacts = [
   { id: "8", title: "Epic Finale", image: "/placeholder.jpg", description: "Grand finale sequence" }
 ]
 
-export function CinematicClipsForm({ onSave, onCancel, availableArtifacts }: CinematicClipsFormProps) {
+export function CinematicClipsForm({ onSave, onCancel }: CinematicClipsFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
