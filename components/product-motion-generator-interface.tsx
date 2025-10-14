@@ -51,7 +51,10 @@ import {
 } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface ProductMotionGeneratorInterfaceProps {
   onClose: () => void
@@ -84,6 +87,7 @@ export function ProductMotionGeneratorInterface({
   selectedArtifact 
 }: ProductMotionGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 1️⃣ Product Description & Intent Capture
@@ -299,6 +303,51 @@ export function ProductMotionGeneratorInterface({
     setIsGenerating(true)
     
     try {
+      // Collect all creative fields
+      const allFields = {
+        // Product Description & Intent Capture
+        product_category: productCategory,
+        product_name: productName.trim() || null,
+        core_moment: coreMoment.trim() || null,
+        emotional_tone: emotionalTone,
+        visual_style: visualStyle,
+        duration: duration[0],
+        
+        // Visual Context
+        environment: environment,
+        custom_environment: environment === "Custom" ? customEnvironment.trim() || null : null,
+        lighting_mood: lightingMood,
+        material_focus: materialFocus,
+        camera_type: cameraType,
+        frame_rate: frameRate,
+        
+        // Motion & Energy
+        reveal_type: revealType,
+        camera_energy: cameraEnergy[0],
+        loop_mode: loopMode,
+        hook_intensity: hookIntensity[0],
+        end_emotion: endEmotion[0],
+        
+        // Audio DNA
+        sound_mode: soundMode,
+        sound_mood: soundMood,
+        key_effects: keyEffects,
+        mix_curve: mixCurve[0],
+        
+        // Brand Touch
+        accent_color_sync: accentColorSync,
+        accent_color: accentColorSync ? accentColor : null,
+        logo_moment: logoMoment,
+        text_constraint: textConstraint,
+        
+        // Metadata
+        projectTitle,
+        selectedArtifact
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
       // Prepare data for API
       const motionData = {
         // Product Description & Intent Capture
@@ -1025,6 +1074,9 @@ export function ProductMotionGeneratorInterface({
           </div>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="product_motions" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

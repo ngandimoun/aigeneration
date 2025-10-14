@@ -6,13 +6,49 @@ import { ManimGenerationOptions } from '@/lib/manim/claude-prompts'
 import { getUserFriendlyError } from '@/lib/manim/error-messages'
 import { reportBug } from '@/lib/manim/bug-reporter'
 
+// Language detection helper
+function detectLanguage(text: string): string {
+  const lowerText = text.toLowerCase();
+  
+  // French detection
+  const frenchKeywords = ['fais', 'faire', 'une', 'dans', 'pour', 'avec', 'français', 'francais', 'animation', 'vidéo', 'explication'];
+  const frenchCount = frenchKeywords.filter(keyword => lowerText.includes(keyword)).length;
+  
+  // Spanish detection
+  const spanishKeywords = ['hace', 'hacer', 'una', 'para', 'con', 'español', 'animación', 'vídeo', 'explicación'];
+  const spanishCount = spanishKeywords.filter(keyword => lowerText.includes(keyword)).length;
+  
+  // Arabic detection (check for Arabic characters)
+  const arabicRegex = /[\u0600-\u06FF]/;
+  if (arabicRegex.test(text)) {
+    return 'arabic';
+  }
+  
+  // Japanese detection (check for Japanese characters)
+  const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/;
+  if (japaneseRegex.test(text)) {
+    return 'japanese';
+  }
+  
+  // Determine language based on keyword counts
+  if (frenchCount >= 2) {
+    return 'french';
+  }
+  if (spanishCount >= 2) {
+    return 'spanish';
+  }
+  
+  // Default to English
+  return 'english';
+}
+
 // Validation schema for explainer generation
 const generateExplainerSchema = z.object({
   title: z.string().min(3).max(100),
   prompt: z.string().min(10).max(5000), // Increased from 2000 to support detailed prompts
   hasVoiceover: z.boolean().default(false),
   voiceStyle: z.string().default('fable'),
-  language: z.string().default('english'),
+  language: z.string().optional(), // Language will be auto-detected from prompt
   duration: z.number().min(1).max(180).default(8),
   aspectRatio: z.string().default('16:9'),
   resolution: z.string().default('720p'),
@@ -44,6 +80,12 @@ export async function POST(request: NextRequest) {
         error: 'Invalid request data', 
         details: validationError.errors || validationError.message 
       }, { status: 400 })
+    }
+
+    // Auto-detect language from prompt if not provided
+    if (!validatedData.language) {
+      validatedData.language = detectLanguage(validatedData.prompt);
+      console.log(`🌍 Auto-detected language: ${validatedData.language}`);
     }
 
     console.log('📝 Generation request:', {
@@ -250,17 +292,14 @@ async function generateExplainerAsync(
         })
         .eq('id', jobId)
 
-      // Add to library_items table
+      // Add to library_items table with correct schema
       const { error: libraryError } = await supabase
         .from('library_items')
         .insert({
           user_id: userId,
-          item_id: jobId,
-          item_type: 'explainer',
-          title: validatedData.title,
-          description: validatedData.prompt,
-          image_url: null, // No image for explainers
-          created_at: new Date().toISOString()
+          content_type: 'explainers',  // Changed from item_type
+          content_id: jobId,           // Changed from item_id
+          // Removed: title, description, image_url, created_at (not in schema)
         })
 
       if (libraryError) {
@@ -296,22 +335,22 @@ async function generateExplainerAsync(
       try {
         await reportBug({
           type: 'manim_render_failure',
-          userPrompt: validatedData.prompt,
+          userPrompt: options.prompt,
           generatedCode: result.code || '',
           technicalError: result.error || 'Unknown error',
           errorCategory: friendlyError.category,
           errorSeverity: friendlyError.severity,
-          userId: user.id,
+          userId: userId,
           attemptNumber: result.retryCount || 0,
           timestamp: new Date(),
           metadata: {
-            duration: validatedData.duration,
-            style: validatedData.style,
-            aspectRatio: validatedData.aspectRatio,
-            resolution: validatedData.resolution,
-            hasVoiceover: validatedData.hasVoiceover,
-            voiceStyle: validatedData.voiceStyle,
-            language: validatedData.language
+            duration: options.duration,
+            style: options.style,
+            aspectRatio: options.aspectRatio,
+            resolution: options.resolution,
+            hasVoiceover: options.hasVoiceover,
+            voiceStyle: options.voiceStyle,
+            language: options.language
           }
         })
       } catch (bugReportError) {

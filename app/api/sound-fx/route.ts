@@ -48,7 +48,7 @@ const createSoundFxSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -238,20 +238,9 @@ export async function POST(request: NextRequest) {
         .insert([
           {
             user_id: user.id,
-            item_type: 'sound_fx',
-            item_id: soundFxData[0].id,
-            title: validatedData.name,
-            description: validatedData.prompt,
-            tags: validatedData.tags,
-            metadata: {
-              category: validatedData.category,
-              duration: validatedData.duration,
-              loop_mode: validatedData.loop_mode,
-            },
-            content: {
-              audio_url: generatedAudioUrl,
-              storage_path: generatedStoragePath,
-            },
+            content_type: 'sound_fx',  // Changed from item_type
+            content_id: soundFxData[0].id,  // Changed from item_id
+            // Removed: title, description, tags, metadata, content (not in schema)
           },
         ]);
 
@@ -276,7 +265,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -306,7 +295,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {

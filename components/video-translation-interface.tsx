@@ -18,8 +18,10 @@ import {
   Edit
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { VideoTranslationForm } from "@/components/forms/video-translation-form"
 import { VideoTranslationProject, VideoTranslationInputs } from "@/lib/types/video-translation"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface VideoTranslationInterfaceProps {
   onClose: () => void
@@ -31,6 +33,7 @@ export function VideoTranslationInterface({ onClose, projectTitle, hideHeader = 
   const [videoTranslations, setVideoTranslations] = useState<VideoTranslationProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
@@ -286,6 +289,8 @@ export function VideoTranslationInterface({ onClose, projectTitle, hideHeader = 
           ))}
         </div>
       )}
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="video_translations" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

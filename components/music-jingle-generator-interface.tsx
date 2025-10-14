@@ -49,7 +49,10 @@ import {
   FileAudio
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface MusicJingleGeneratorInterfaceProps {
   onClose: () => void
@@ -136,12 +139,12 @@ const STYLE_TAGS = Object.values(STYLE_CATEGORIES).flatMap(category => category.
 
 export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJingleGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   
   // Core State
   const [description, setDescription] = useState("")
   const [title, setTitle] = useState("")
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
-  const [isPublic, setIsPublic] = useState(true)
   
   // New Suno v5 State
   const [selectedModel, setSelectedModel] = useState<'V3_5' | 'V4' | 'V4_5' | 'V4_5PLUS' | 'V5'>('V5')
@@ -634,6 +637,25 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
 
     setIsGenerating(true)
     try {
+      // Collect all creative fields
+      const allFields = {
+        title: title ? truncateToLimit(title, 'title') : undefined,
+        style: style ? truncateToLimit(style, 'style') : undefined,
+        customMode: !isSimpleMode,
+        instrumental: isInstrumental,
+        model: selectedModel,
+        vocalGender: !isInstrumental ? vocalGender : undefined,
+        styleWeight: styleWeight[0],
+        weirdnessConstraint: weirdnessConstraint[0],
+        audioWeight: audioUploaded ? audioWeight[0] : undefined,
+        negativeTags: negativeTags.length > 0 ? negativeTags.join(', ') : undefined,
+        audioAction: audioUploaded ? audioAction : undefined,
+        uploadUrl: audioUploaded && uploadedAudioFile ? 'uploaded_audio_url' : undefined
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
       // Prepare data for Suno API with proper character limits
       const apiData = {
         // Core parameters
@@ -829,7 +851,6 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
         fade_out: fadeOut[0],
         loop_mode: loopMode,
         stereo_mode: stereoMode,
-        is_public: isPublic,
         created_at: new Date().toISOString()
       }
 
@@ -2211,6 +2232,9 @@ In the
            )}
          </div>
        </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="music_jingles" userId={user?.id || ''} className="mt-8" />
      </div>
    )
  }

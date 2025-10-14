@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Select,
   SelectContent,
@@ -53,7 +54,25 @@ import {
   Info,
 } from "lucide-react"
 import { STYLE_MAP, CHART_PURPOSE_MAP, MOOD_CONTEXTS, LIGHTING_PRESETS } from "@/lib/styles/chart-style-map"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
+import type { FalModel } from '@/lib/utils/fal-generation'
+import { PreviousGenerations } from "@/components/ui/previous-generations"
+
+// Logo Placement options (multi-select)
+const LOGO_PLACEMENT_OPTIONS = [
+  { value: "top-right", label: "Top-Right Corner", icon: "↗️", desc: "Logo overlay in top-right" },
+  { value: "bottom-left", label: "Bottom-Left Corner", icon: "↙️", desc: "Logo overlay in bottom-left" },
+  { value: "bottom-right", label: "Bottom-Right Corner", icon: "↘️", desc: "Logo overlay in bottom-right" },
+  { value: "top-left", label: "Top-Left Corner", icon: "↖️", desc: "Logo overlay in top-left" },
+  { value: "on-chart", label: "On Chart", icon: "📊", desc: "Logo on chart area" },
+  { value: "on-title", label: "On Title", icon: "📝", desc: "Logo near chart title" },
+  { value: "on-legend", label: "On Legend", icon: "🏷️", desc: "Logo on legend area" },
+  { value: "background", label: "Background", icon: "🖼️", desc: "Logo on background" },
+  { value: "center-badge", label: "Center Badge", icon: "🎯", desc: "Logo as centered badge" }
+]
 
 interface ChartsInfographicsGeneratorInterfaceProps {
   onClose: () => void
@@ -97,7 +116,8 @@ interface ChartState {
     background: "light" | "dark" | "transparent" | "gradient"
     fontFamily: string
     logoUpload: File | null
-    logoPlacement: "none" | "top-right" | "bottom-left"
+    logoPlacement: string[]
+    logoDescription: string
   }
   annotations: {
     dataLabels: boolean
@@ -160,7 +180,8 @@ const initialChartState: ChartState = {
     background: "light",
     fontFamily: "Inter",
     logoUpload: null,
-    logoPlacement: "none"
+    logoPlacement: [],
+    logoDescription: ""
   },
   annotations: {
     dataLabels: false,
@@ -190,9 +211,20 @@ export function ChartsInfographicsGeneratorInterface({
   onClose, 
   projectTitle 
 }: ChartsInfographicsGeneratorInterfaceProps) {
+  const { user } = useAuth()
   const [chartState, setChartState] = useState<ChartState>(initialChartState)
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewMode, setPreviewMode] = useState(false)
+
+  // Dynamic aspect ratio filtering based on selected model (default to Nano-banana)
+  const model = 'Nano-banana' as FalModel
+  const supportedRatios = getSupportedAspectRatios(model)
+  const availableAspectRatios = [
+    { ratio: "1:1", label: "⬜ 1:1 (Square)" },
+    { ratio: "4:5", label: "📱 4:5 (Portrait)" },
+    { ratio: "16:9", label: "📺 16:9 (Widescreen)" },
+    { ratio: "9:16", label: "📱 9:16 (Story)" }
+  ].filter(ar => supportedRatios.includes(ar.ratio))
 
   // Smart visibility helpers
   const is3DStyle = () => chartState.style.artDirection === "3D Data Art"
@@ -266,44 +298,101 @@ export function ChartsInfographicsGeneratorInterface({
       // Prepare FormData for file uploads
       const formData = new FormData()
       
-      // Add all chart state fields
+      // Collect all creative fields
+      const allFields = {
+        // Data & Processing
+        title: chartState.data.title || `Chart ${new Date().toLocaleDateString()}`,
+        dataSource: chartState.data.source,
+        autoDetected: chartState.data.autoDetected,
+        aggregationType: chartState.data.aggregationType,
+        units: chartState.data.units || '',
+        labels: chartState.data.labels || '',
+        
+        // Purpose & Chart Configuration
+        purpose: chartState.purpose.purpose || '',
+        chartType: chartState.purpose.chartType || '',
+        axisMapping: chartState.purpose.axisMapping,
+        multiSeries: chartState.purpose.multiSeries,
+        orientation: chartState.purpose.orientation,
+        
+        // Visual Style
+        artDirection: chartState.style.artDirection || '',
+        visualInfluence: chartState.style.visualInfluence || '',
+        chartDepth: chartState.style.chartDepth,
+        backgroundTexture: chartState.style.backgroundTexture || '',
+        accentShapes: chartState.style.accentShapes,
+        
+        // Mood & Atmosphere
+        moodContext: chartState.mood.moodContext || '',
+        toneIntensity: chartState.mood.toneIntensity,
+        lightingTemperature: chartState.mood.lightingTemperature,
+        motionAccent: chartState.mood.motionAccent,
+        
+        // Branding
+        brandSync: chartState.branding.brandSync,
+        paletteMode: chartState.branding.paletteMode,
+        backgroundType: chartState.branding.background,
+        fontFamily: chartState.branding.fontFamily,
+        logoPlacement: chartState.branding.logoPlacement,
+        logoDescription: chartState.branding.logoDescription,
+        
+        // Annotations & Labels
+        dataLabels: chartState.annotations.dataLabels,
+        labelPlacement: chartState.annotations.labelPlacement,
+        legends: chartState.annotations.legends,
+        callouts: chartState.annotations.callouts,
+        calloutThreshold: chartState.annotations.calloutThreshold,
+        tooltipStyle: chartState.annotations.tooltipStyle,
+        axisTitles: chartState.annotations.axisTitles || '',
+        gridlines: chartState.annotations.gridlines,
+        
+        // Layout
+        layoutTemplate: chartState.layout.layoutTemplate,
+        aspectRatio: chartState.layout.aspectRatio,
+        marginDensity: chartState.layout.marginDensity,
+        safeZoneOverlay: chartState.layout.safeZoneOverlay,
+        
+        // Narrative
+        headline: chartState.narrative.headline || '',
+        caption: chartState.narrative.caption || '',
+        tone: chartState.narrative.tone,
+        platform: chartState.narrative.platform
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
+      // Add original prompt
+      formData.append('prompt', chartState.data.textData || '')
+      
+      // Add metadata and required chart state fields
       formData.append('title', chartState.data.title || `Chart ${new Date().toLocaleDateString()}`)
       formData.append('description', chartState.narrative.caption || '')
-      formData.append('prompt', chartState.data.textData || '')
       formData.append('dataSource', chartState.data.source)
       formData.append('autoDetected', chartState.data.autoDetected.toString())
       formData.append('aggregationType', chartState.data.aggregationType)
       formData.append('units', chartState.data.units || '')
       formData.append('labels', chartState.data.labels || '')
-      
-      // Purpose & Chart Configuration
       formData.append('purpose', chartState.purpose.purpose || '')
       formData.append('chartType', chartState.purpose.chartType || '')
       formData.append('axisMapping', JSON.stringify(chartState.purpose.axisMapping))
       formData.append('multiSeries', chartState.purpose.multiSeries.toString())
       formData.append('orientation', chartState.purpose.orientation)
-      
-      // Visual Style
       formData.append('artDirection', chartState.style.artDirection || '')
       formData.append('visualInfluence', chartState.style.visualInfluence || '')
       formData.append('chartDepth', chartState.style.chartDepth.toString())
       formData.append('backgroundTexture', chartState.style.backgroundTexture || '')
       formData.append('accentShapes', chartState.style.accentShapes.toString())
-      
-      // Mood & Atmosphere
       formData.append('moodContext', chartState.mood.moodContext || '')
       formData.append('toneIntensity', chartState.mood.toneIntensity.toString())
       formData.append('lightingTemperature', chartState.mood.lightingTemperature.toString())
       formData.append('motionAccent', chartState.mood.motionAccent)
-      
-      // Branding
       formData.append('brandSync', chartState.branding.brandSync.toString())
       formData.append('paletteMode', chartState.branding.paletteMode)
       formData.append('backgroundType', chartState.branding.background)
       formData.append('fontFamily', chartState.branding.fontFamily)
-      formData.append('logoPlacement', chartState.branding.logoPlacement)
-      
-      // Annotations & Labels
+      formData.append('logoPlacement', JSON.stringify(chartState.branding.logoPlacement))
+      formData.append('logoDescription', chartState.branding.logoDescription || '')
       formData.append('dataLabels', chartState.annotations.dataLabels.toString())
       formData.append('labelPlacement', chartState.annotations.labelPlacement)
       formData.append('legends', chartState.annotations.legends)
@@ -312,20 +401,14 @@ export function ChartsInfographicsGeneratorInterface({
       formData.append('tooltipStyle', chartState.annotations.tooltipStyle)
       formData.append('axisTitles', chartState.annotations.axisTitles || '')
       formData.append('gridlines', chartState.annotations.gridlines)
-      
-      // Layout
       formData.append('layoutTemplate', chartState.layout.layoutTemplate)
       formData.append('aspectRatio', chartState.layout.aspectRatio)
       formData.append('marginDensity', chartState.layout.marginDensity.toString())
       formData.append('safeZoneOverlay', chartState.layout.safeZoneOverlay.toString())
-      
-      // Narrative
       formData.append('headline', chartState.narrative.headline || '')
       formData.append('caption', chartState.narrative.caption || '')
       formData.append('tone', chartState.narrative.tone)
       formData.append('platform', chartState.narrative.platform)
-      
-      // Metadata
       formData.append('metadata', JSON.stringify({
         projectTitle,
         timestamp: new Date().toISOString()
@@ -660,6 +743,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue placeholder="Select visual style" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div>
+                          <div className="font-medium text-xs">🚫 None</div>
+                          <div className="text-xs text-muted-foreground">No visual influence</div>
+                        </div>
+                      </SelectItem>
                       {getAvailableVisualInfluences().map((influence) => (
                         <SelectItem key={influence.label} value={influence.label}>
                           <div>
@@ -886,23 +975,38 @@ export function ChartsInfographicsGeneratorInterface({
 
               <div className="space-y-2">
                 <Label className="text-xs">🏷️ Logo Placement</Label>
-                <Select 
-                  value={chartState.branding.logoPlacement} 
-                  onValueChange={(value: "none" | "top-right" | "bottom-left") => 
-                    updateChartState("branding", { logoPlacement: value })
-                  }
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select logo placement" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">❌ None</SelectItem>
-                    <SelectItem value="top-right">↗️ Top-Right</SelectItem>
-                    <SelectItem value="bottom-left">↙️ Bottom-Left</SelectItem>
-                  </SelectContent>
-                </Select>
                 
-                {(chartState.branding.logoPlacement === "top-right" || chartState.branding.logoPlacement === "bottom-left") && (
+                {/* Logo Placement Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-foreground">Logo Positions (select multiple)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {LOGO_PLACEMENT_OPTIONS.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`logo-${option.value}`}
+                          checked={chartState.branding.logoPlacement.includes(option.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              updateChartState("branding", { 
+                                logoPlacement: [...chartState.branding.logoPlacement, option.value] 
+                              })
+                            } else {
+                              updateChartState("branding", { 
+                                logoPlacement: chartState.branding.logoPlacement.filter(p => p !== option.value) 
+                              })
+                            }
+                          }}
+                        />
+                        <label htmlFor={`logo-${option.value}`} className="text-xs cursor-pointer">
+                          <span className="mr-1">{option.icon}</span>
+                          {option.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {chartState.branding.logoPlacement.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-xs">📁 Upload Logo</Label>
                     
@@ -956,6 +1060,20 @@ export function ChartsInfographicsGeneratorInterface({
                         </div>
                       </div>
                     )}
+
+                    {/* Logo Description Field */}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Logo Description (optional)</Label>
+                      <Textarea
+                        placeholder="Describe your logo style (e.g., modern tech company logo with blue accent, vintage circular badge, minimalist geometric symbol)"
+                        value={chartState.branding.logoDescription}
+                        onChange={(e) => updateChartState("branding", { logoDescription: e.target.value })}
+                        className="min-h-[50px] text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        You can upload a logo image and/or describe it. The AI will use both to create the logo appearance.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1104,10 +1222,11 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1:1">⬜ 1:1 (Square)</SelectItem>
-                    <SelectItem value="4:5">📱 4:5 (Portrait)</SelectItem>
-                    <SelectItem value="16:9">📺 16:9 (Widescreen)</SelectItem>
-                    <SelectItem value="9:16">📱 9:16 (Story)</SelectItem>
+                    {availableAspectRatios.map((ar) => (
+                      <SelectItem key={ar.ratio} value={ar.ratio}>
+                        {ar.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1244,6 +1363,9 @@ export function ChartsInfographicsGeneratorInterface({
           </Button>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="charts_infographics" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

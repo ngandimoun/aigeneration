@@ -8,7 +8,6 @@ const createTemplateSchema = z.object({
   description: z.string().optional(),
   content: z.record(z.any()).optional(),
   metadata: z.record(z.any()).optional(),
-  is_public: z.boolean().optional().default(false),
   is_default: z.boolean().optional().default(false),
 })
 
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const isPinned = searchParams.get('is_pinned')
     const isFavorite = searchParams.get('is_favorite')
-    const isPublic = searchParams.get('is_public')
     const isDefault = searchParams.get('is_default')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
@@ -49,9 +47,6 @@ export async function GET(request: NextRequest) {
     }
     if (isFavorite !== null) {
       query = query.eq('is_favorite', isFavorite === 'true')
-    }
-    if (isPublic !== null) {
-      query = query.eq('is_public', isPublic === 'true')
     }
     if (isDefault !== null) {
       query = query.eq('is_default', isDefault === 'true')
@@ -99,7 +94,6 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         content: validatedData.content,
         metadata: validatedData.metadata,
-        is_public: validatedData.is_public,
         is_default: validatedData.is_default,
         status: 'draft'
       })

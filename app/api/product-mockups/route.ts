@@ -9,6 +9,7 @@ export const revalidate = 30
 const createProductMockupSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
+  model: z.string().default('Nano-banana'),
   product_type: z.string().optional(),
   mockup_style: z.string().optional(),
   device_type: z.string().optional(),
@@ -22,7 +23,6 @@ const createProductMockupSchema = z.object({
   content: z.record(z.any()).optional(),
   metadata: z.record(z.any()).optional(),
   is_template: z.boolean().optional().default(false),
-  is_public: z.boolean().optional().default(true),
 })
 
 // GET /api/product-mockups - Get user's product mockups
@@ -63,6 +63,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch product mockups' }, { status: 500 })
     }
 
+    // Regenerate expired signed URLs from storage_paths
+    if (productMockups && productMockups.length > 0) {
+      for (const mockup of productMockups) {
+        if (mockup.storage_paths && mockup.storage_paths.length > 0) {
+          // Regenerate fresh signed URLs from storage paths
+          const freshUrls: string[] = []
+          for (const storagePath of mockup.storage_paths) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+            if (signedUrlData?.signedUrl) {
+              freshUrls.push(signedUrlData.signedUrl)
+            }
+          }
+          // Replace expired URLs with fresh ones
+          if (freshUrls.length > 0) {
+            mockup.generated_images = freshUrls
+          }
+        }
+      }
+    }
+
     return NextResponse.json({ productMockups }, { 
       status: 200,
       headers: {
@@ -98,6 +120,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         title: validatedData.title,
         description: validatedData.description,
+        model: validatedData.model,
         product_type: validatedData.product_type,
         mockup_style: validatedData.mockup_style,
         device_type: validatedData.device_type,
@@ -111,7 +134,6 @@ export async function POST(request: NextRequest) {
         content: validatedData.content,
         metadata: validatedData.metadata,
         is_template: validatedData.is_template,
-        is_public: validatedData.is_public,
         status: 'draft'
       })
       .select()

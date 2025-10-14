@@ -85,12 +85,107 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, typeof libraryItems>)
 
+    // Define column mappings for each content type
+    const getSelectColumns = (type: string): string => {
+      switch (type) {
+        case 'explainers':
+          return 'id, title, prompt, content, generated_images, storage_paths, created_at'
+        
+        case 'illustrations':
+          return 'id, title, prompt, model, content, generated_images, storage_paths, created_at'
+        
+        case 'avatars_personas':
+          return 'id, title, prompt, model, content, generated_images, storage_paths, created_at'
+        
+        case 'concept_worlds':
+          return 'id, title, prompt, model, content, generated_images, storage_paths, created_at'
+        
+        case 'product_mockups':
+          return 'id, title, description, model, content, generated_images, storage_paths, created_at'
+        
+        case 'ugc_ads':
+          return 'id, brand_name, brand_prompt, content, generated_images, storage_paths, created_at'
+        
+        case 'product_motions':
+          return 'id, product_category, product_name, prompt, content, generated_images, storage_paths, created_at'
+        
+        case 'sound_fx':
+          return 'id, name, prompt, content, generated_images, storage_paths, created_at'
+        
+        case 'voices_creations':
+          return 'id, title, description, prompt, content, generated_images, storage_paths, created_at'
+        
+        case 'charts_infographics':
+          return 'id, title, description, prompt, content, generated_images, storage_paths, created_at'
+        
+        default:
+          // Standard columns for all other tables
+          return 'id, title, description, content, generated_images, storage_paths, created_at'
+      }
+    }
+
+    // Normalize data to have consistent field names (title, description)
+    const normalizeContentData = (type: string, contentData: any[]): any[] => {
+      if (!contentData) return []
+      
+      return contentData.map((item: any) => {
+        const normalized = { ...item }
+        
+        switch (type) {
+          case 'explainers':
+          case 'illustrations':
+            // Map prompt to description
+            normalized.description = item.prompt || ''
+            delete normalized.prompt
+            break
+          
+          case 'ugc_ads':
+            // Map brand_name to title and brand_prompt to description
+            normalized.title = item.brand_name || 'Untitled'
+            normalized.description = item.brand_prompt || ''
+            delete normalized.brand_name
+            delete normalized.brand_prompt
+            break
+          
+          case 'product_motions':
+            // Map product_name to title and prompt to description
+            normalized.title = item.product_name || item.product_category || 'Untitled'
+            normalized.description = item.prompt || ''
+            delete normalized.product_name
+            delete normalized.product_category
+            delete normalized.prompt
+            break
+          
+          case 'sound_fx':
+            // Map name to title and prompt to description
+            normalized.title = item.name || 'Untitled'
+            normalized.description = item.prompt || ''
+            delete normalized.name
+            delete normalized.prompt
+            break
+          
+          case 'charts_infographics':
+            // Keep description if it exists, otherwise use prompt
+            if (!normalized.description && item.prompt) {
+              normalized.description = item.prompt
+              delete normalized.prompt
+            }
+            break
+        }
+        
+        return normalized
+      })
+    }
+
     // Fetch all content in batches (one query per content type)
     const contentPromises = Object.entries(itemsByContentType).map(async ([type, items]) => {
       const contentIds = items.map(item => item.content_id)
+      
+      const selectColumns = getSelectColumns(type)
+      
       const { data: contentData, error: contentError } = await supabase
         .from(type)
-        .select('id, title, description, content, created_at, is_public')
+        .select(selectColumns)
         .in('id', contentIds)
         .eq('user_id', user.id)
       
@@ -99,7 +194,10 @@ export async function GET(request: NextRequest) {
         return { type, data: [] }
       }
       
-      return { type, data: contentData || [] }
+      // Normalize data to have consistent field names
+      const normalizedData = normalizeContentData(type, contentData)
+      
+      return { type, data: normalizedData }
     })
 
     const contentResults = await Promise.all(contentPromises)
@@ -120,10 +218,17 @@ export async function GET(request: NextRequest) {
       'explainers': { path: 'renders/explainers', extension: 'mp4' },
       'comics': { path: 'renders/comics', extension: 'png' },
       'product_mockups': { path: 'renders/product-mockups', extension: 'png' },
+      'avatars_personas': { path: 'renders/avatars', extension: 'jpg' },
+      'illustrations': { path: 'renders/illustrations', extension: 'jpg' },
+      'concept_worlds': { path: 'renders/concept-worlds', extension: 'jpg' },
+      'charts_infographics': { path: 'renders/charts-infographics', extension: 'png' },
       'watermarks': { path: 'renders/watermarks', extension: 'mp4' },
       'subtitles': { path: 'renders/subtitles', extension: 'mp4' },
       'video_translations': { path: 'renders/translations', extension: 'mp4' }
     }
+
+    // Content types that use storage_paths field for generated content
+    const generatedContentTypes = ['product_mockups', 'avatars_personas', 'illustrations', 'concept_worlds']
 
     // Group items by content type for signed URL generation
     const itemsForSignedUrls = new Map<string, typeof libraryItems>()
@@ -147,7 +252,22 @@ export async function GET(request: NextRequest) {
         const urlsToGenerate: Array<{ item: any; filePath: string }> = []
         
         for (const item of items) {
-          const filePath = `${mapping.path}/${user.id}/${item.content_id}.${mapping.extension}`
+          let filePath: string
+          
+          // For generated content types, use the actual storage_paths from database
+          if (generatedContentTypes.includes(contentType)) {
+            const content = contentMap.get(`${contentType}:${item.content_id}`)
+            if (content?.storage_paths?.[0]) {
+              filePath = content.storage_paths[0] // Use first storage path
+            } else {
+              // Fallback to hardcoded pattern if no storage_paths
+              filePath = `${mapping.path}/${user.id}/${item.content_id}.${mapping.extension}`
+            }
+          } else {
+            // For non-generated content, use hardcoded pattern
+            filePath = `${mapping.path}/${user.id}/${item.content_id}.${mapping.extension}`
+          }
+          
           const cachedUrl = signedUrlCache.get(filePath)
           
           if (cachedUrl) {
@@ -173,11 +293,11 @@ export async function GET(request: NextRequest) {
             const batchPromises = batch.map(async ({ item, filePath }) => {
               const { data: signedUrlData, error: urlError } = await supabase.storage
                 .from('dreamcut')
-                .createSignedUrl(filePath, 3600) // 1 hour expiry
+                .createSignedUrl(filePath, 86400) // 24 hour expiry
               
               if (!urlError && signedUrlData?.signedUrl) {
                 // Store in cache for future requests
-                signedUrlCache.set(filePath, signedUrlData.signedUrl, 3600)
+                signedUrlCache.set(filePath, signedUrlData.signedUrl, 86400)
                 return { contentId: item.content_id, signedUrl: signedUrlData.signedUrl }
               }
               return null
@@ -208,12 +328,24 @@ export async function GET(request: NextRequest) {
       let image = '/placeholder.jpg'
       let video_url = ''
       
+      console.log(`🔍 Processing ${item.content_type}:${item.content_id}`, {
+        hasContent: !!content,
+        hasGeneratedImages: content?.generated_images?.length > 0,
+        generatedImages: content?.generated_images,
+        hasStoragePaths: content?.storage_paths?.length > 0,
+        storagePaths: content?.storage_paths
+      })
+      
       if (content) {
         // Extract image from content
         if (content.content?.image) {
           image = content.content.image
         } else if (content.content?.images?.[0]) {
           image = content.content.images[0]
+        } else if (content.generated_images?.[0]) {
+          // For generated content (product_mockups, avatars, illustrations, etc.)
+          image = content.generated_images[0]
+          console.log(`🖼️ Using generated image for ${item.content_type}:`, image)
         }
         
         // Extract video_url for motion-type content
@@ -237,7 +369,10 @@ export async function GET(request: NextRequest) {
               video_url = signedUrl
             } else {
               image = signedUrl
+              console.log(`🔗 Using signed URL for ${item.content_type}:`, signedUrl)
             }
+          } else {
+            console.log(`⚠️ No signed URL found for ${item.content_type}:${item.content_id}`)
           }
         }
 
@@ -260,7 +395,6 @@ export async function GET(request: NextRequest) {
         description: content?.description || '',
         image: image,
         video_url: video_url,
-        is_public: content?.is_public || false,
         created_at: content?.created_at || item.created_at
       }
     })

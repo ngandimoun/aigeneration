@@ -18,8 +18,10 @@ import {
   Droplets
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { WatermarkProject } from "@/lib/types/watermark"
 import { convertToSignedUrls } from "@/lib/storage/signed-urls"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface WatermarkInterfaceProps {
   onClose: () => void
@@ -30,6 +32,7 @@ export function WatermarkInterface({ onClose, projectTitle }: WatermarkInterface
   const [watermarkProjects, setWatermarkProjects] = useState<WatermarkProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map())
+  const { user } = useAuth()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -350,6 +353,9 @@ export function WatermarkInterface({ onClose, projectTitle }: WatermarkInterface
           ))}
         </div>
       )}
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="watermarks" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

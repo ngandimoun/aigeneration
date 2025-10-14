@@ -27,7 +27,6 @@ interface LibraryItem {
   description: string
   image: string
   video_url?: string
-  is_public: boolean
   created_at: string
 }
 
@@ -307,12 +306,6 @@ export function LibraryGrid({ columns = 3 }: LibraryGridProps) {
                   <Badge variant="secondary" className="text-xs">
                     {getContentTypeDisplayName(item.content_type)}
                   </Badge>
-                  {item.is_public && (
-                    <Badge variant="outline" className="text-xs">
-                      <Eye className="h-3 w-3 mr-1" />
-                      Public
-                    </Badge>
-                  )}
                 </div>
                 {!libraryIsSelectionMode && (
                   <Button

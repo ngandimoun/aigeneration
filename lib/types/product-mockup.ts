@@ -67,18 +67,24 @@ export type ProductMockupGenerationRequest = {
   compositionTemplate: "Centered Hero" | "Rule of Thirds" | "Floating Object" | "Flat Lay" | "Collage";
   objectCount: 1 | 2 | 3;
   shadowType: "Soft" | "Hard" | "Floating" | "Mirror";
-  logoPlacement: "Auto" | "Top Left" | "Top Right" | "Bottom Left" | "Bottom Right" | "Center";
+  logoPlacement: string[];
+  logoDescription?: string;
   
   // Text & CTA Overlay
   headline?: string;
+  headlineColor?: string;
+  headlineColorAuto?: boolean;
   subtext?: string;
+  subtextColor?: string;
+  subtextColorAuto?: boolean;
   ctaText?: string;
+  ctaColor?: string;
+  ctaColorAuto?: boolean;
   fontFamily: "serif" | "sans" | "condensed" | "rounded" | "monospace" | "script" | "display" | "handwriting" | "decorative" | "modern" | "classic" | "futuristic" | "elegant" | "bold" | "minimal" | "vintage" | "tech" | "artistic" | "playful" | "professional" | "luxury" | "casual" | "formal" | "creative" | "clean" | "stylized" | "geometric" | "organic" | "industrial" | "romantic" | "edgy" | "sophisticated" | "friendly" | "dramatic" | "subtle" | "expressive" | "refined" | "dynamic" | "serene" | "energetic" | "mysterious" | "vibrant" | "calm" | "powerful" | "gentle" | "striking" | "smooth" | "rough" | "precise" | "flowing" | "structured" | "freeform" | "technical" | "corporate" | "personal" | "trendy" | "timeless" | "innovative" | "traditional" | "contemporary" | "retro" | "cutting-edge" | "nostalgic" | "avant-garde" | "minimalist" | "maximalist" | "raw" | "polished" | "rustic" | "urban" | "natural" | "synthetic" | "warm" | "cool" | "neutral" | "delicate" | "strong" | "soft" | "hard" | "fluid" | "rigid" | "curved" | "angular" | "sharp" | "blunt" | "pointed" | "textured" | "flat" | "dimensional" | "layered" | "simple" | "complex" | "abstract" | "literal" | "symbolic" | "direct" | "indirect" | "obvious" | "loud" | "quiet" | "bright" | "dark" | "light" | "heavy" | "thin" | "thick" | "wide" | "narrow" | "tall" | "short" | "expanded" | "extended" | "compressed" | "spacious" | "tight" | "loose" | "dense" | "sparse" | "full" | "empty" | "rich" | "poor" | "luxurious" | "basic" | "premium" | "standard" | "exclusive" | "common" | "rare" | "unique" | "ordinary" | "special" | "regular" | "irregular" | "consistent" | "inconsistent" | "stable" | "unstable" | "balanced" | "unbalanced" | "symmetrical" | "asymmetrical" | "proportional" | "disproportional" | "harmonious" | "discordant" | "melodic" | "rhythmic" | "static" | "still" | "moving" | "frozen" | "solid" | "liquid" | "gaseous" | "crystalline" | "amorphous" | "unstructured" | "organized" | "chaotic" | "orderly" | "random" | "planned" | "spontaneous" | "calculated" | "intuitive" | "logical" | "emotional" | "rational" | "irrational" | "scientific" | "mathematical" | "poetic" | "prosaic" | "lyrical" | "musical" | "visual" | "tactile" | "auditory" | "olfactory" | "gustatory" | "kinesthetic" | "spatial" | "temporal" | "conceptual" | "perceptual" | "cognitive" | "affective" | "behavioral" | "physiological" | "psychological" | "social" | "cultural" | "historical" | "postmodern" | "premodern" | "antique" | "neo" | "proto" | "meta" | "para" | "anti" | "pro" | "pre" | "post" | "inter" | "intra" | "trans" | "cis" | "ultra" | "infra" | "super" | "sub" | "hyper" | "hypo" | "macro" | "micro" | "mega" | "mini" | "maxi" | "giga" | "tera" | "peta" | "exa" | "zetta" | "yotta" | "deca" | "hecto" | "kilo" | "milli" | "nano" | "pico" | "femto" | "atto" | "zepto" | "yocto"; // Massive font collection
   fontWeight: "light" | "normal" | "medium" | "bold";
   textCase: "uppercase" | "title" | "sentence";
   letterSpacing: number;
   lineHeight: number;
-  textColor: string;
   textAlignment: "left" | "center" | "right";
   textEffects: string[]; // ["brilliance", "frosted_glass", "drop_shadow"]
   

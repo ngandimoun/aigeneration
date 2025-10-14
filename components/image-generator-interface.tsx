@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"

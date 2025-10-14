@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
         if (!signedUrl) {
           const { data, error } = await supabase.storage
             .from('dreamcut')
-            .createSignedUrl(storagePath, 3600)
+            .createSignedUrl(storagePath, 86400)
 
           if (error || !data?.signedUrl) {
             console.warn(`Failed to generate signed URL for ${storagePath}`)

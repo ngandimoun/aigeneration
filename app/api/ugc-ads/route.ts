@@ -301,18 +301,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create UGC ad' }, { status: 500 })
     }
 
-    // Add to library_items
+    // Add to library_items with correct schema
     const { error: libraryError } = await supabase
       .from('library_items')
       .insert([
         {
           user_id: user.id,
-          item_id: ugcAd.id,
-          item_type: 'ugc_ad',
-          title: validatedData.brand_name,
-          description: validatedData.brand_prompt,
-          image_url: null, // No image for UGC ads
-          created_at: new Date().toISOString(),
+          content_type: 'ugc_ads',  // Changed from item_type
+          content_id: ugcAd.id,     // Changed from item_id
+          // Removed: title, description, image_url, created_at (not in schema)
         },
       ])
 

@@ -39,8 +39,11 @@ import {
   FileAudio,
   ExternalLink
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast} from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface VoiceoverGeneratorInterfaceProps {
   onClose: () => void
@@ -184,6 +187,7 @@ const LATENCY_OPTIONS = [
 
 export function VoiceoverGeneratorInterface({ onClose, projectTitle }: VoiceoverGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   
   // Voiceover Configuration
   const [prompt, setPrompt] = useState("")
@@ -258,6 +262,27 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
 
     setIsGenerating(true)
     try {
+      // Collect all creative fields
+      const allFields = {
+        title: title || `Voiceover_${Date.now()}`,
+        description,
+        language,
+        voice_id: selectedVoice?.voice_id,
+        emotion,
+        use_case: useCase,
+        model_id: modelId,
+        stability: stability[0] / 100,
+        similarity_boost: similarityBoost[0] / 100,
+        style: style[0] / 100,
+        use_speaker_boost: useSpeakerBoost,
+        output_format: outputFormat,
+        optimize_streaming_latency: optimizeStreamingLatency,
+        enable_logging: enableLogging
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
       // Call ElevenLabs API to generate voiceover with proper parameter mapping
       const elevenLabsResponse = await fetch('/api/elevenlabs/text-to-voice', {
         method: 'POST',
@@ -909,6 +934,9 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
           </Card>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="voiceovers" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

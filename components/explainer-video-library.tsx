@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 interface ExplainerVideo {
   id: string
   title: string
-  description: string
+  prompt: string
   status: string
   created_at: string
   video_url?: string
@@ -57,7 +57,7 @@ export function ExplainerVideoLibrary({ userId, onVideoSelect, onVideoClick, cla
       // Fetch explainer jobs from database
       const { data: jobs, error: jobsError } = await supabase
         .from('explainers')
-        .select('id, title, description, status, created_at, metadata')
+        .select('id, title, prompt, status, created_at, metadata')
         .eq('user_id', userId)
         .eq('status', 'completed')
         .order('created_at', { ascending: false })
@@ -87,7 +87,7 @@ export function ExplainerVideoLibrary({ userId, onVideoSelect, onVideoClick, cla
             const videoData = {
               id: job.id,
               title: job.title || 'Untitled Animation',
-              description: job.description || '',
+              prompt: job.prompt || '',
               status: job.status,
               created_at: job.created_at,
               video_url: data?.signedUrl,
@@ -109,7 +109,7 @@ export function ExplainerVideoLibrary({ userId, onVideoSelect, onVideoClick, cla
             return {
               id: job.id,
               title: job.title || 'Untitled Animation',
-              description: job.description || '',
+              prompt: job.prompt || '',
               status: job.status,
               created_at: job.created_at,
               video_url: undefined
@@ -297,7 +297,7 @@ export function ExplainerVideoLibrary({ userId, onVideoSelect, onVideoClick, cla
                   
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground line-clamp-2">
-                      {video.description}
+                      {video.prompt}
                     </p>
                     
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">

@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
         status: 'draft',
         content: body.content,
         metadata: body.metadata,
-        is_public: body.is_public || false,
         is_template: body.is_template || false
       })
       .select()

@@ -4,6 +4,10 @@ export interface RunManimOptions {
   uploadUrl?: string;           // Optional Supabase signed URL
   timeout?: number;             // Defaults to 30 minutes
   verbose?: boolean;
+  resolution?: string;          // 480p, 720p, 1080p
+  aspectRatio?: string;         // 16:9, 9:16, 1:1
+  duration?: number;            // Duration in seconds
+  style?: string;               // auto, clean, cinematic, academic
 }
 
 export async function runManimRender({
@@ -12,6 +16,10 @@ export async function runManimRender({
   uploadUrl,
   timeout = 1800, // 30 minutes in seconds
   verbose = false,
+  resolution = "720p",
+  aspectRatio = "16:9",
+  duration = 8,
+  style = "auto",
 }: RunManimOptions) {
   console.log("🔹 Calling Modal function...");
   console.log("🔹 Scene name:", sceneName);
@@ -46,6 +54,10 @@ try:
     scene_name = sys.argv[1]
     upload_url = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] != 'None' else None
     openai_api_key = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != 'None' else None
+    resolution = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] != 'None' else '720p'
+    aspect_ratio = sys.argv[5] if len(sys.argv) > 5 and sys.argv[5] != 'None' else '16:9'
+    duration = int(sys.argv[6]) if len(sys.argv) > 6 and sys.argv[6] != 'None' else 8
+    style = sys.argv[7] if len(sys.argv) > 7 and sys.argv[7] != 'None' else 'auto'
     
     # Read the code from stdin
     code = sys.stdin.read()
@@ -56,7 +68,11 @@ try:
             code=code,
             scene_name=scene_name,
             upload_url=upload_url,
-            openai_api_key=openai_api_key
+            openai_api_key=openai_api_key,
+            resolution=resolution,
+            aspect_ratio=aspect_ratio,
+            duration=duration,
+            style=style
         )
     
     print(json.dumps(result))
@@ -72,7 +88,11 @@ except Exception as e:
         tempScriptPath,
         sceneName,
         uploadUrl || 'None',
-        process.env.OPENAI_API_KEY || 'None'
+        process.env.OPENAI_API_KEY || 'None',
+        resolution,
+        aspectRatio,
+        duration.toString(),
+        style
       ], {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: process.cwd()  // Run from project root
@@ -158,6 +178,31 @@ export function getManimQualityFlag(resolution: string): string {
     '1080p': '-qk', // 4K quality
   };
   return qualityMap[resolution] || '-qh';
+}
+
+// Helper function to get Manim resolution string from aspect ratio and resolution
+export function getManimResolution(aspectRatio: string, resolution: string): string {
+  // Extract height from resolution (480p, 720p, 1080p)
+  const height = parseInt(resolution.replace('p', ''));
+  
+  // Calculate width based on aspect ratio
+  let width: number;
+  switch (aspectRatio) {
+    case '16:9':
+      width = Math.round(height * 16 / 9);
+      break;
+    case '9:16':
+      width = Math.round(height * 9 / 16);
+      break;
+    case '1:1':
+      width = height;
+      break;
+    default:
+      // Default to 16:9
+      width = Math.round(height * 16 / 9);
+  }
+  
+  return `${width}x${height}`;
 }
 
 // Helper function to get output path based on resolution

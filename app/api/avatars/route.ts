@@ -26,7 +26,6 @@ const createAvatarSchema = z.object({
   content: z.record(z.any()).optional(),
   metadata: z.record(z.any()).optional(),
   is_template: z.boolean().optional().default(false),
-  is_public: z.boolean().optional().default(true),
 })
 
 // GET /api/avatars - Get user's avatars
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Build query with filters
     let query = supabase
-      .from('avatars')
+      .from('avatars_personas')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -65,6 +64,28 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching avatars:', error)
       return NextResponse.json({ error: 'Failed to fetch avatars' }, { status: 500 })
+    }
+
+    // Regenerate expired signed URLs from storage_paths
+    if (avatars && avatars.length > 0) {
+      for (const avatar of avatars) {
+        if (avatar.storage_paths && avatar.storage_paths.length > 0) {
+          // Regenerate fresh signed URLs from storage paths
+          const freshUrls: string[] = []
+          for (const storagePath of avatar.storage_paths) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+            if (signedUrlData?.signedUrl) {
+              freshUrls.push(signedUrlData.signedUrl)
+            }
+          }
+          // Replace expired URLs with fresh ones
+          if (freshUrls.length > 0) {
+            avatar.generated_images = freshUrls
+          }
+        }
+      }
     }
 
     return NextResponse.json({ avatars }, { 
@@ -97,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     // Create avatar
     const { data: avatar, error } = await supabase
-      .from('avatars')
+      .from('avatars_personas')
       .insert({
         user_id: user.id,
         title: validatedData.title,
@@ -119,7 +140,6 @@ export async function POST(request: NextRequest) {
         content: validatedData.content,
         metadata: validatedData.metadata,
         is_template: validatedData.is_template,
-        is_public: validatedData.is_public,
         status: 'draft'
       })
       .select()

@@ -9,6 +9,9 @@ import {
   validateManimCode
 } from './claude-prompts';
 import { runManimRender, getManimOutputPath } from '../modal/setup';
+import { enhancePromptToSpec, type TechnicalSpecification } from './prompt-enhancer';
+import { validateGeneratedCode, getValidationSummary, formatValidationIssues } from './static-validator';
+import { smartFix } from './quick-fixer';
 
 export interface GenerationResult {
   success: boolean;
@@ -35,6 +38,62 @@ export interface JobUpdate {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
+
+// Enhanced error context for AI retry attempts
+function enhanceErrorContext(error: string, stderr: string, attempt: number): string {
+  let enhancedError = error;
+  
+  // Detect if this is a fallback error
+  const isFallbackError = stderr.includes('fallback_scene.py') || error.includes('fallback');
+  
+  if (isFallbackError) {
+    enhancedError = `FALLBACK CLEANUP ERROR: The fallback code cleanup introduced errors. Original error: ${error}`;
+    
+    // Extract line number and code snippet if available
+    const lineMatch = stderr.match(/line (\d+)/);
+    if (lineMatch) {
+      enhancedError += `\n\nError occurred at line ${lineMatch[1]} in fallback code.`;
+    }
+    
+    // Add specific guidance for fallback errors
+    enhancedError += `\n\nIMPORTANT: This error was caused by the fallback cleanup process, not your original code. `;
+    enhancedError += `Please generate clean, valid Python code that doesn't require fallback processing. `;
+    enhancedError += `Focus on: proper indentation, correct imports, valid Manim syntax.`;
+  } else {
+    // For original code errors, provide more context
+    enhancedError = `ORIGINAL CODE ERROR (attempt ${attempt}): ${error}`;
+    
+    // Add specific error type detection and guidance
+    if (error.toLowerCase().includes('indentation')) {
+      enhancedError += `\n\nINDENTATION ERROR: Check that all code blocks are properly indented. `;
+      enhancedError += `Class methods should be indented 4 spaces, method content should be indented 8 spaces.`;
+    } else if (error.toLowerCase().includes('syntax')) {
+      enhancedError += `\n\nSYNTAX ERROR: Check for missing colons, parentheses, or quotes. `;
+      enhancedError += `Ensure all strings are properly closed and all function calls have matching parentheses.`;
+    } else if (error.toLowerCase().includes('import') || error.toLowerCase().includes('module')) {
+      enhancedError += `\n\nIMPORT ERROR: Check that all imports are correct and available in Manim 0.18.1. `;
+      enhancedError += `Use only standard Manim imports: from manim import *`;
+    } else if (error.toLowerCase().includes('name') && error.toLowerCase().includes('not defined')) {
+      enhancedError += `\n\nUNDEFINED NAME ERROR: Check that all variables and functions are properly defined before use. `;
+      enhancedError += `Ensure all Manim objects are created before being used in animations.`;
+    } else if (error.toLowerCase().includes('notimplementederror') && error.toLowerCase().includes('animation is not defined')) {
+      enhancedError += `\n\nANIMATION API ERROR: You are using an invalid animation pattern. `;
+      enhancedError += `NEVER use Create(Group(...)) or Write(Group(...)) - this causes NotImplementedError. `;
+      enhancedError += `CORRECT PATTERNS:\n`;
+      enhancedError += `- Use: self.play(LaggedStart(*[Create(obj) for obj in objects], lag_ratio=0.1))\n`;
+      enhancedError += `- Or: self.play(*[Create(obj) for obj in objects])\n`;
+      enhancedError += `- Or: Create/Write each object individually\n`;
+      enhancedError += `Group() and VGroup() are for POSITIONING only, not for animations.`;
+    }
+  }
+  
+  // Add general guidance for retry attempts
+  if (attempt > 1) {
+    enhancedError += `\n\nThis is retry attempt ${attempt}. Please carefully review the error and generate corrected code.`;
+  }
+  
+  return enhancedError;
+}
 
 // Update job status in Supabase
 async function updateJobStatus(
@@ -87,22 +146,26 @@ async function updateJobStatus(
   }
 }
 
-// Generate Manim code using OpenAI
-async function generateManimCode(
-  options: ManimGenerationOptions,
-  isRetry: boolean = false,
-  previousError?: string,
-  previousCode?: string
+// Helper function to generate code from technical specification
+async function generateCodeFromSpec(
+  spec: TechnicalSpecification | string,
+  options: ManimGenerationOptions
 ): Promise<{ code: string; sceneName: string }> {
   const systemPrompt = options.hasVoiceover 
     ? getVoiceoverSystemPrompt(options)
     : getStandardSystemPrompt(options);
   
-  const userPrompt = isRetry && previousError
-    ? getFixOnFailPrompt(previousCode || '', previousError)
-    : buildUserPrompt(options);
+  // Convert spec to user prompt
+  const userPrompt = typeof spec === 'string' 
+    ? spec  // For retry attempts, spec is the fix prompt
+    : `Generate Manim code from this technical specification:
 
-  console.log(`🤖 Generating Manim code (attempt ${isRetry ? 'retry' : 'initial'})...`);
+${JSON.stringify(spec, null, 2)}
+
+Follow the specification EXACTLY. Generate complete, working Manim Python code.
+Return ONLY Python code, no markdown, no explanations.`;
+
+  console.log(`💻 Stage 2: Generating Manim code...`);
   
   // Use the new GPT-5 API format
   let response;
@@ -143,49 +206,98 @@ async function generateManimCode(
     });
   }
 
-  // Handle different response formats with better debugging
+  // Handle different response formats
   let rawCode = '';
-  console.log('🔍 Response structure keys:', Object.keys(response));
-  
   if (response.choices && response.choices[0]?.message?.content) {
-    // GPT-4o fallback format
     rawCode = response.choices[0].message.content.trim();
-    console.log('📝 Using GPT-4o response format');
   } else if (response.output_text) {
-    // GPT-5 new format - the actual code is in output_text
     rawCode = response.output_text.trim();
-    console.log('📝 Using GPT-5 output_text format');
   } else if (response.text && response.text.content) {
-    // GPT-5 alternative format
     rawCode = response.text.content.trim();
-    console.log('📝 Using GPT-5 text.content format');
   } else if (response.text && typeof response.text === 'string') {
-    // GPT-5 string format
     rawCode = response.text.trim();
-    console.log('📝 Using GPT-5 string format');
   } else if (response.content) {
-    // Another possible GPT-5 format
     rawCode = response.content.trim();
-    console.log('📝 Using GPT-5 content format');
-  } else {
-    console.log('❌ No valid response content found');
-    console.log('🔍 Available fields:', Object.keys(response));
-    rawCode = '';
   }
   
-  console.log('📄 Raw code length:', rawCode.length);
-  console.log('📄 Raw code preview:', rawCode.substring(0, 200) + '...');
+  const sceneName = typeof spec === 'object' ? generateSceneName(options.title) : generateSceneName(options.title);
   
-  const sceneName = generateSceneName(options.title);
-  
-  // Validate the generated code
+  // Basic validation
   const validation = validateManimCode(rawCode);
-  if (!validation.isValid) {
-    console.log('⚠️ Generated code validation failed, creating intelligent fallback code');
-    
-    // Create a fallback that actually tries to fulfill the user's request
-    const prompt = options.prompt.toLowerCase();
-    let fallbackCode = `from manim import *
+  const code = validation.cleanedCode || rawCode;
+
+  return { code, sceneName };
+}
+
+// Generate Manim code using OpenAI with full pipeline
+async function generateManimCode(
+  options: ManimGenerationOptions,
+  isRetry: boolean = false,
+  previousError?: string,
+  previousCode?: string
+): Promise<{ code: string; sceneName: string }> {
+  
+  // STAGE 1: Enhance prompt to technical specification (only on first attempt)
+  let technicalSpec: TechnicalSpecification | string;
+  
+  if (!isRetry) {
+    console.log(`📋 Stage 1: Enhancing prompt to technical specification...`);
+    try {
+      technicalSpec = await enhancePromptToSpec(options);
+      console.log(`✅ Stage 1: Complete - Language: ${technicalSpec.language}, Scenes: ${technicalSpec.scenes.length}`);
+    } catch (error) {
+      console.error('❌ Stage 1 failed, using direct prompt:', error);
+      technicalSpec = buildUserPrompt(options);
+    }
+  } else {
+    // For retries, use fix prompt
+    technicalSpec = getFixOnFailPrompt(previousCode || '', previousError || '');
+    console.log(`🔄 Retry attempt: Using fix prompt`);
+  }
+
+  // STAGE 2: Generate code from specification
+  const { code: generatedCode, sceneName } = await generateCodeFromSpec(technicalSpec, options);
+  console.log(`✅ Stage 2: Code generated (${generatedCode.length} characters)`);
+
+  // STAGE 2.5: Static validation
+  console.log(`🔍 Stage 2.5: Running static validation...`);
+  const validationIssues = validateGeneratedCode(generatedCode, options.hasVoiceover ? options.voiceStyle : undefined);
+  const summary = getValidationSummary(validationIssues);
+  
+  console.log(`📊 Validation: ${summary.critical} critical, ${summary.high} high, ${summary.medium} medium, ${summary.low} low`);
+  
+  if (validationIssues.length > 0) {
+    console.log(formatValidationIssues(validationIssues));
+  }
+
+  // STAGE 3: Quick fix if critical issues found
+  let finalCode = generatedCode;
+  if (summary.critical > 0) {
+    console.log(`🔧 Stage 3: Fixing ${summary.critical} critical issue(s)...`);
+    try {
+      finalCode = await smartFix(generatedCode, validationIssues, true);
+      
+      // Re-validate after fix
+      const remainingIssues = validateGeneratedCode(finalCode);
+      const remainingSummary = getValidationSummary(remainingIssues);
+      console.log(`✅ Stage 3: Complete - ${remainingSummary.critical} critical issues remaining`);
+    } catch (error) {
+      console.error('❌ Stage 3 failed:', error);
+      finalCode = generatedCode;
+    }
+  } else {
+    console.log(`✅ Stage 2.5: No critical issues found`);
+  }
+
+  console.log(`🎬 Pipeline complete: ${finalCode.length} characters, scene: ${sceneName}`);
+  
+  return { code: finalCode, sceneName };
+}
+
+// Legacy fallback function (kept for backward compatibility if validation fails)
+function createIntelligentFallback(options: ManimGenerationOptions, sceneName: string): string {
+  const prompt = options.prompt.toLowerCase();
+  let fallbackCode = `from manim import *
 
 class ${sceneName}(Scene):
     def construct(self):
@@ -200,9 +312,9 @@ class ${sceneName}(Scene):
         # Generate content based on prompt analysis
         `;
 
-    // Add specific content based on prompt keywords
-    if (prompt.includes('chart') || prompt.includes('graph') || prompt.includes('data')) {
-        fallbackCode += `
+  // Add specific content based on prompt keywords
+  if (prompt.includes('chart') || prompt.includes('graph') || prompt.includes('data')) {
+    fallbackCode += `
         # Data visualization
         ax = Axes(x_range=[0, 10, 2], y_range=[0, 20, 5], x_length=8, y_length=4)
         ax_labels = ax.get_axis_labels(x_label="X", y_label="Y")
@@ -220,8 +332,8 @@ class ${sceneName}(Scene):
         self.play(LaggedStart(*[Create(dot) for dot in dots], lag_ratio=0.2))
         self.wait(1)
         `;
-    } else if (prompt.includes('math') || prompt.includes('formula') || prompt.includes('equation')) {
-        fallbackCode += `
+  } else if (prompt.includes('math') || prompt.includes('formula') || prompt.includes('equation')) {
+    fallbackCode += `
         # Mathematical content
         formula = MathTex(r"f(x) = x^2 + 2x + 1", font_size=48)
         explanation = Text("Quadratic Function", font_size=24, color=GRAY)
@@ -238,8 +350,8 @@ class ${sceneName}(Scene):
         self.play(Create(graph))
         self.wait(1)
         `;
-    } else if (prompt.includes('circle') || prompt.includes('round')) {
-        fallbackCode += `
+  } else if (prompt.includes('circle') || prompt.includes('round')) {
+    fallbackCode += `
         # Circular shapes
         circle = Circle(radius=1.5, color=BLUE)
         inner_circle = Circle(radius=0.8, color=RED)
@@ -250,29 +362,8 @@ class ${sceneName}(Scene):
         self.play(Rotating(circle, radians=PI))
         self.wait(1)
         `;
-    } else if (prompt.includes('square') || prompt.includes('rectangle')) {
-        fallbackCode += `
-        # Square/rectangle shapes
-        square = Square(side_length=2, color=GREEN)
-        rectangle = Rectangle(width=3, height=1.5, color=ORANGE)
-        
-        self.play(Create(square))
-        self.play(Transform(square, rectangle))
-        self.play(square.animate.rotate(PI/4))
-        self.wait(1)
-        `;
-    } else if (prompt.includes('triangle')) {
-        fallbackCode += `
-        # Triangle shapes
-        triangle = Triangle(color=PURPLE)
-        triangle.scale(1.5)
-        
-        self.play(Create(triangle))
-        self.play(triangle.animate.rotate(PI))
-        self.wait(1)
-        `;
-    } else {
-        fallbackCode += `
+  } else {
+    fallbackCode += `
         # General animation
         shapes = VGroup(
             Circle(radius=0.8, color=BLUE),
@@ -286,21 +377,15 @@ class ${sceneName}(Scene):
         self.play(LaggedStart(*[shape.animate.rotate(PI) for shape in shapes], lag_ratio=0.2))
         self.wait(1)
         `;
-    }
+  }
 
-    fallbackCode += `
+  fallbackCode += `
         # Cleanup
         self.play(FadeOut(VGroup(title, *[obj for obj in self.mobjects if obj != title])))
         self.wait(0.5)`;
-    
-    console.log('📝 Using intelligent fallback code based on user prompt');
-    return { code: fallbackCode, sceneName };
-  }
-
-  // Use the cleaned code
-  const code = validation.cleanedCode || rawCode;
-
-  return { code, sceneName };
+  
+  console.log('📝 Using intelligent fallback code based on user prompt');
+  return fallbackCode;
 }
 
 // Main function with self-healing retry logic
@@ -350,7 +435,11 @@ export async function generateManimCodeWithRetry(
         code,
         sceneName,
         uploadUrl,
-        verbose: true
+        verbose: true,
+        resolution: options.resolution,
+        aspectRatio: options.aspectRatio,
+        duration: options.duration,
+        style: options.style
       });
 
       if (renderResult.success) {
@@ -378,6 +467,10 @@ export async function generateManimCodeWithRetry(
         // Render failed, capture error for next attempt
         lastError = renderResult.error || 'Unknown render error';
         console.log(`❌ Render failed on attempt ${attempt}: ${lastError}`);
+        
+        // Enhanced error context for AI retry
+        const enhancedError = enhanceErrorContext(lastError, renderResult.stderr, attempt);
+        lastError = enhancedError;
         
         // If this was the last attempt, return failure
         if (attempt === maxRetries) {

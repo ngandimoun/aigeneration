@@ -34,7 +34,10 @@ import {
   Sun
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface VoiceCreationInterfaceProps {
   onClose: () => void
@@ -495,6 +498,7 @@ const PURPOSE_IN_SCENE_OPTIONS = [
 
 export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   
   
   // Voice Identity
@@ -682,6 +686,38 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
     }
 
     try {
+      // Collect all creative fields
+      const allFields = {
+        name: voiceName || `Voice_${Date.now()}`,
+        purpose: voicePurpose,
+        language,
+        gender,
+        age: perceivedAge,
+        accent,
+        tone,
+        pitch: pitchLevel[0],
+        pacing,
+        fidelity,
+        mood: moodContext,
+        emotional_weight: emotionalWeight[0],
+        role: characterRole,
+        style: performanceStyle,
+        audio_quality: audioQualityIntent,
+        guidance_scale: guidanceScale[0],
+        preview_text: previewText,
+        brand_sync: brandSync,
+        world_link: worldLink,
+        tone_match: toneMatchLevel[0],
+        is_asmr_voice: isASMRVoice,
+        asmr_intensity: asmrIntensity[0],
+        asmr_triggers: asmrTriggers,
+        asmr_background: asmrBackground,
+        tags
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
       const voiceData = {
         prompt: prompt.trim(),
         name: voiceName || `Voice_${Date.now()}`,
@@ -724,6 +760,10 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
           title: "Voice generated successfully!",
           description: `Voice '${voiceName || 'Unnamed Voice'}' has been created and added to your DreamCut Voice Library.`
         })
+
+        // Invalidate SWR cache to refresh previous generations
+        mutate('/api/library?content_type=voices_creations')
+
         onClose()
       } else {
         throw new Error('Failed to save voice')
@@ -1367,6 +1407,9 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
           </Card>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="voices_creations" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

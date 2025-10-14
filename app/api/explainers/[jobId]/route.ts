@@ -33,7 +33,7 @@ export async function GET(
     if (job.status === 'completed' && job.output_url) {
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('dreamcut')
-        .createSignedUrl(job.output_url, 3600) // 1 hour expiration
+        .createSignedUrl(job.output_url, 86400) // 24 hour expiration
       
       if (!signedUrlError && signedUrlData) {
         downloadUrl = signedUrlData.signedUrl

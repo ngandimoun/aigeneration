@@ -73,18 +73,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Add to library_items
+    // Add to library_items with correct schema
     const { error: libraryError } = await supabase
       .from('library_items')
       .insert([
         {
           user_id: user.id,
-          item_id: data[0].id,
-          item_type: 'subtitle',
-          title: validatedData.title,
-          description: validatedData.description || `Subtitle project with ${validatedData.emoji_enrichment ? 'emoji enrichment' : 'no emoji enrichment'} and ${validatedData.keyword_emphasis ? 'keyword emphasis' : 'no keyword emphasis'}`,
-          image_url: null, // No image for subtitles
-          created_at: new Date().toISOString(),
+          content_type: 'subtitles',  // Changed from item_type
+          content_id: data[0].id,     // Changed from item_id
+          // Removed: title, description, image_url, created_at (not in schema)
         },
       ]);
 

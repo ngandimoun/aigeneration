@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { generateWithFal, downloadImage } from '@/lib/utils/fal-generation'
+import { validateImageFiles, validateImageUrls } from '@/lib/utils/image-validation'
+import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,8 +21,9 @@ export async function POST(request: NextRequest) {
     // Extract form data
     const title = formData.get('title') as string
     const prompt = formData.get('prompt') as string
+    const model = (formData.get('model') as string) || 'Nano-banana'
     const purpose = formData.get('purpose') as string
-    const aspectRatio = formData.get('aspectRatio') as string
+    const aspectRatio = (formData.get('aspectRatio') as string) || '1:1'
     const artDirection = formData.get('artDirection') as string
     const visualInfluence = formData.get('visualInfluence') as string
     const mediumTexture = formData.get('mediumTexture') as string
@@ -56,6 +60,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate uploaded reference images
+    if (referenceImages.length > 0) {
+      const validation = await validateImageFiles(referenceImages)
+      if (!validation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid reference images: ${validation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+    }
+
     // Upload reference images to Supabase Storage
     if (referenceImages.length > 0) {
       for (let i = 0; i < referenceImages.length; i++) {
@@ -81,6 +95,14 @@ export async function POST(request: NextRequest) {
     let logoImagePath: string | null = null
     const logoImage = formData.get('logoImage') as File
     if (logoImage) {
+      // Validate logo image
+      const logoValidation = await validateImageFiles([logoImage])
+      if (!logoValidation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid logo image: ${logoValidation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+
       const fileExt = logoImage.name.split('.').pop()
       const fileName = `logo_${Date.now()}.${fileExt}`
       const filePath = `renders/illustrations/${user.id}/references/${fileName}`
@@ -104,6 +126,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         title: title || 'Untitled Illustration',
         prompt,
+        model: model || 'Nano-banana',
         purpose,
         aspect_ratio: aspectRatio,
         art_direction: artDirection,
@@ -162,30 +185,137 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create illustration record' }, { status: 500 })
     }
 
-    // TODO: Integrate with image generation service (fal.ai, DALL-E, etc.)
-    // For now, we'll simulate the generation process
-    // In a real implementation, you would:
-    // 1. Call the image generation API
-    // 2. Download the generated images
-    // 3. Upload them to Supabase Storage
-    // 4. Update the illustration record with the results
+    // Generate images using fal.ai
+    try {
+      // Get signed URLs for uploaded images (required for private bucket)
+      const imageUrls: string[] = []
+      
+      // Add logo image first if present
+      if (logoImagePath) {
+        const { data: { signedUrl: logoUrl } } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(logoImagePath, 86400) // 24 hour expiry
+        if (logoUrl) imageUrls.push(logoUrl)
+      }
+      
+      // Add reference images
+      for (const path of referenceImagesPaths) {
+        const { data: { signedUrl: refUrl } } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(path, 86400) // 24 hour expiry
+        if (refUrl) imageUrls.push(refUrl)
+      }
 
-    // Simulate successful generation (remove this in production)
-    setTimeout(async () => {
+      // Validate that all image URLs are accessible
+      if (imageUrls.length > 0) {
+        const urlValidation = await validateImageUrls(imageUrls)
+        if (!urlValidation.accessible) {
+          throw new Error(`Reference images are not accessible: ${urlValidation.errors.join(', ')}`)
+        }
+      }
+
+      // Call fal.ai generation
+      const generationResult = await generateWithFal({
+        prompt,
+        aspectRatio,
+        numImages: 1,
+        model: model as any,
+        hasImages: imageUrls.length > 0,
+        imageUrls,
+        logoImagePath
+      })
+
+      if (!generationResult.success) {
+        throw new Error(generationResult.error || 'Generation failed')
+      }
+
+      // Download and upload generated images to Supabase Storage
+      const generatedImageUrls: string[] = []
+      const generatedStoragePaths: string[] = []
+
+      for (let i = 0; i < generationResult.images.length; i++) {
+        const imageUrl = generationResult.images[i]
+        
+        // Download image
+        const imageBuffer = await downloadImage(imageUrl)
+        
+        // Upload to Supabase Storage
+        const fileName = `${uuidv4()}-generated_${i + 1}.jpg`
+        const filePath = `renders/illustrations/${user.id}/generated/${fileName}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('dreamcut')
+          .upload(filePath, imageBuffer, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600'
+          })
+
+        if (uploadError) {
+          console.error('Error uploading generated image:', uploadError)
+          throw new Error('Failed to upload generated image')
+        }
+
+        // Get signed URL (24 hour expiry)
+        const { data: signedUrlData } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(filePath, 86400) // 24 hour expiry
+        if (signedUrlData?.signedUrl) {
+          generatedImageUrls.push(signedUrlData.signedUrl)
+        }
+        generatedStoragePaths.push(filePath)
+      }
+
+      // Update illustration record with generated images
       await supabase
         .from('illustrations')
         .update({
           status: 'completed',
-          generated_images: [
-            {
-              url: 'https://example.com/generated-image-1.jpg',
-              path: `renders/illustrations/${user.id}/generated/${illustration.id}_1.jpg`
+          generated_images: generatedImageUrls,
+          storage_paths: generatedStoragePaths,
+          metadata: {
+            ...illustration.metadata,
+            fal_generation: {
+              model,
+              requestId: generationResult.requestId,
+              timestamp: new Date().toISOString()
             }
-          ],
-          storage_paths: [`renders/illustrations/${user.id}/generated/${illustration.id}_1.jpg`]
+          }
         })
         .eq('id', illustration.id)
-    }, 2000)
+
+      // Add to library_items table
+      const { error: libraryError } = await supabase
+        .from('library_items')
+        .insert({
+          user_id: user.id,
+          content_type: 'illustrations',
+          content_id: illustration.id,
+          date_added_to_library: new Date().toISOString()
+        })
+
+      if (libraryError) {
+        console.error('Failed to add illustration to library:', libraryError)
+      } else {
+        console.log(`✅ Illustration ${illustration.id} added to library`)
+      }
+
+    } catch (generationError) {
+      console.error('Image generation error:', generationError)
+      
+      // Update status to failed
+      await supabase
+        .from('illustrations')
+        .update({
+          status: 'failed',
+          metadata: {
+            ...illustration.metadata,
+            error: generationError instanceof Error ? generationError.message : 'Unknown error'
+          }
+        })
+        .eq('id', illustration.id)
+
+      throw generationError
+    }
 
     return NextResponse.json({
       success: true,
@@ -223,6 +353,28 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Database error:', error)
       return NextResponse.json({ error: 'Failed to fetch illustrations' }, { status: 500 })
+    }
+
+    // Regenerate expired signed URLs from storage_paths
+    if (illustrations && illustrations.length > 0) {
+      for (const illustration of illustrations) {
+        if (illustration.storage_paths && illustration.storage_paths.length > 0) {
+          // Regenerate fresh signed URLs from storage paths
+          const freshUrls: string[] = []
+          for (const storagePath of illustration.storage_paths) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+            if (signedUrlData?.signedUrl) {
+              freshUrls.push(signedUrlData.signedUrl)
+            }
+          }
+          // Replace expired URLs with fresh ones
+          if (freshUrls.length > 0) {
+            illustration.generated_images = freshUrls
+          }
+        }
+      }
     }
 
     return NextResponse.json({ illustrations })

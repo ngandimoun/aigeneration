@@ -23,7 +23,6 @@ const createChartInfographicSchema = z.object({
   content: z.record(z.any()).optional(),
   metadata: z.record(z.any()).optional(),
   is_template: z.boolean().optional().default(false),
-  is_public: z.boolean().optional().default(true),
 })
 
 // GET /api/charts-infographics - Get user's charts/infographics
@@ -62,6 +61,28 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching charts/infographics:', error)
       return NextResponse.json({ error: 'Failed to fetch charts/infographics' }, { status: 500 })
+    }
+
+    // Regenerate expired signed URLs from storage_paths
+    if (chartsInfographics && chartsInfographics.length > 0) {
+      for (const chart of chartsInfographics) {
+        if (chart.storage_paths && chart.storage_paths.length > 0) {
+          // Regenerate fresh signed URLs from storage paths
+          const freshUrls: string[] = []
+          for (const storagePath of chart.storage_paths) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+            if (signedUrlData?.signedUrl) {
+              freshUrls.push(signedUrlData.signedUrl)
+            }
+          }
+          // Replace expired URLs with fresh ones
+          if (freshUrls.length > 0) {
+            chart.generated_images = freshUrls
+          }
+        }
+      }
     }
 
     return NextResponse.json({ chartsInfographics }, { 
@@ -133,7 +154,10 @@ export async function POST(request: NextRequest) {
     const paletteMode = formData.get('paletteMode')?.toString() || 'categorical'
     const backgroundType = formData.get('backgroundType')?.toString() || 'light'
     const fontFamily = formData.get('fontFamily')?.toString() || 'Inter'
-    const logoPlacement = formData.get('logoPlacement')?.toString() || 'none'
+    const logoPlacement = formData.get('logoPlacement')?.toString() 
+      ? JSON.parse(formData.get('logoPlacement')?.toString() || '[]') 
+      : []
+    const logoDescription = formData.get('logoDescription')?.toString() || null
     
     // Annotations & Labels
     const dataLabels = formData.get('dataLabels')?.toString() === 'true'
@@ -268,6 +292,7 @@ export async function POST(request: NextRequest) {
         font_family: fontFamily,
         logo_image_path: logoImagePath,
         logo_placement: logoPlacement,
+        logo_description: logoDescription,
         
         // Annotations & Labels
         data_labels: dataLabels,
@@ -341,6 +366,7 @@ export async function POST(request: NextRequest) {
             backgroundType,
             fontFamily,
             logoPlacement,
+            logoDescription,
             dataLabels,
             labelPlacement,
             legends,

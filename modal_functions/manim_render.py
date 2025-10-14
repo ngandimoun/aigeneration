@@ -90,6 +90,7 @@ def fix_indentation(code):
     fixed_lines = []
     in_class = False
     in_method = False
+    first_non_empty_line = True
     
     for i, line in enumerate(lines):
         line_stripped = line.strip()
@@ -97,6 +98,28 @@ def fix_indentation(code):
         # Skip empty lines - preserve them
         if not line_stripped:
             fixed_lines.append('')
+            continue
+        
+        # CRITICAL: First non-empty line should NEVER have indentation
+        if first_non_empty_line:
+            if line_stripped.startswith('import ') or line_stripped.startswith('from '):
+                fixed_lines.append(line_stripped)  # NO indentation for imports
+                in_class = False
+                in_method = False
+                first_non_empty_line = False
+            elif line_stripped.startswith('class '):
+                fixed_lines.append(line_stripped)  # NO indentation for class
+                in_class = True
+                in_method = False
+                first_non_empty_line = False
+            elif line_stripped.startswith('def '):
+                fixed_lines.append(line_stripped)  # NO indentation for top-level def
+                in_method = False
+                first_non_empty_line = False
+            else:
+                # Any other first line should also have no indentation
+                fixed_lines.append(line_stripped)
+                first_non_empty_line = False
             continue
         
         # Top-level imports and class definitions - NO indentation
@@ -195,6 +218,10 @@ class RenderRequest(BaseModel):
     scene_name: str
     upload_url: str = None
     openai_api_key: str = None
+    resolution: str = "720p"
+    aspect_ratio: str = "16:9"
+    duration: int = 8
+    style: str = "auto"
 
 def validate_chart_completeness(code: str) -> list[str]:
     """Validate that charts have required elements."""
@@ -296,12 +323,37 @@ image = (
     cpu=4.0,
     memory=8192,
 )
-def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_key: str = None):
+def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_key: str = None, 
+                 resolution: str = "720p", aspect_ratio: str = "16:9", duration: int = 8, style: str = "auto"):
     """Render Manim animation and optionally upload to Supabase."""
     
     # Set OpenAI API key if provided
     if openai_api_key:
         os.environ['OPENAI_API_KEY'] = openai_api_key
+    
+    # Map resolution to Manim quality flag
+    quality_map = {
+        '480p': '-ql',  # Low quality
+        '720p': '-qh',  # High quality
+        '1080p': '-qk', # 4K quality
+    }
+    quality_flag = quality_map.get(resolution, '-qh')
+    
+    # Calculate resolution dimensions from aspect ratio and resolution
+    height = int(resolution.replace('p', ''))
+    if aspect_ratio == '16:9':
+        width = int(height * 16 / 9)
+    elif aspect_ratio == '9:16':
+        width = int(height * 9 / 16)
+    elif aspect_ratio == '1:1':
+        width = height
+    else:
+        # Default to 16:9
+        width = int(height * 16 / 9)
+    
+    resolution_str = f"{width}x{height}"
+    
+    print(f"🎬 Rendering with: {quality_flag} (resolution: {resolution_str}, duration: {duration}s, style: {style})")
     
     result = None
     
@@ -346,8 +398,27 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
         
         # Try rendering with voiceover
         try:
+            # Build Manim command with dynamic parameters
+            manim_cmd = [
+                "manim", 
+                "--disable_caching", 
+                "scene.py", 
+                scene_name, 
+                quality_flag,  # Dynamic quality flag
+                "--format=mp4",
+                f"--resolution={resolution_str}"  # Dynamic resolution
+            ]
+            
+            # Add style-based background color if specified
+            if style in ['dark', 'cinematic']:
+                manim_cmd.extend(["--background_color", "BLACK"])
+            elif style == 'clean':
+                manim_cmd.extend(["--background_color", "WHITE"])
+            
+            print(f"🔧 Running Manim command: {' '.join(manim_cmd)}")
+            
             result = subprocess.run(
-                ["manim", "--disable_caching", "scene.py", scene_name, "-qk", "--format=mp4"],
+                manim_cmd,
                 capture_output=True,
                 text=True,
                 timeout=1200  # 20 minutes
@@ -359,8 +430,43 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
             print("✅ Render completed successfully")
             
         except Exception as e:
-            # Fallback: try without voiceover
-            print(f"⚠️ Original render failed, trying fallback without voiceover: {e}")
+            error_msg = str(e)
+            print(f"⚠️ Original render failed: {error_msg}")
+            
+            # Smart fallback decision based on error type
+            should_use_fallback = False
+            fallback_reason = ""
+            
+            # Check if this is a voiceover-specific error
+            voiceover_errors = [
+                "voiceover", "speech", "tts", "openai", "audio", 
+                "manim_voiceover", "set_speech_service", "voiceover("
+            ]
+            
+            if any(keyword in error_msg.lower() for keyword in voiceover_errors):
+                should_use_fallback = True
+                fallback_reason = "voiceover service error"
+            elif "syntax" in error_msg.lower() or "indentation" in error_msg.lower():
+                should_use_fallback = False
+                fallback_reason = "syntax error - let AI fix the code"
+            elif "import" in error_msg.lower() or "module" in error_msg.lower():
+                should_use_fallback = False
+                fallback_reason = "import error - let AI fix the code"
+            elif "name" in error_msg.lower() and "not defined" in error_msg.lower():
+                should_use_fallback = False
+                fallback_reason = "undefined name error - let AI fix the code"
+            else:
+                # For other errors, try fallback as a last resort
+                should_use_fallback = True
+                fallback_reason = "unknown error - attempting fallback"
+            
+            print(f"🔍 Error analysis: {fallback_reason}")
+            
+            if not should_use_fallback:
+                print("❌ Not using fallback - error should be fixed by AI retry")
+                raise Exception(f"Original render failed: {error_msg}")
+            
+            print(f"🔄 Using fallback: {fallback_reason}")
             
             # Create fallback code by removing voiceover components line by line
             # First sanitize the original code
@@ -369,22 +475,49 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
             lines = code.split('\n')
             cleaned_lines = []
             skip_until_dedent = False
+            skip_until_closing_paren = False
+            paren_depth = 0
             base_indent = None
             skip_string_literal = False
 
             for i, line in enumerate(lines):
                 # Sanitize each line
                 line = sanitize_unicode(line)
+                
                 # Skip voiceover imports
-                if 'from manim_voiceover' in line:
+                if 'from manim_voiceover' in line or 'import OpenAIService' in line:
+                    print(f"⚠️ Removing voiceover import at line {i+1}")
                     continue
 
                 # Replace VoiceoverScene with Scene
                 if 'VoiceoverScene' in line:
                     line = line.replace('VoiceoverScene', 'Scene')
 
+                # Skip OpenAIService instantiation (direct calls)
+                if 'OpenAIService(' in line:
+                    print(f"⚠️ Skipping OpenAIService call at line {i+1}")
+                    skip_until_closing_paren = True
+                    paren_depth = line.count('(') - line.count(')')
+                    # If the line closes all parens, we're done
+                    if paren_depth <= 0:
+                        skip_until_closing_paren = False
+                    continue
+
+                # If we're skipping a multi-line OpenAIService or set_speech_service block
+                if skip_until_closing_paren:
+                    paren_depth += line.count('(') - line.count(')')
+                    if paren_depth <= 0:
+                        skip_until_closing_paren = False
+                        print(f"⚠️ Ending multi-line voiceover service block at line {i+1}")
+                    continue
+
                 # Skip voiceover service setup
                 if 'self.set_speech_service(' in line:
+                    print(f"⚠️ Skipping set_speech_service at line {i+1}")
+                    skip_until_closing_paren = True
+                    paren_depth = line.count('(') - line.count(')')
+                    if paren_depth <= 0:
+                        skip_until_closing_paren = False
                     continue
 
                 # Check if this line starts a voiceover block
@@ -676,28 +809,92 @@ def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_
                         fallback_class_name = match.group(1)
                         break
             
-            # Clean up any remaining issues in the fallback code
-            fallback_code = fix_syntax_errors(fallback_code)
+            # CRITICAL: Do NOT modify indentation unless absolutely necessary
+            # The fallback cleanup above should preserve original indentation
+            # Only apply fixes if compilation fails
             
-            # Fix indentation issues
-            fallback_code = fix_indentation(fallback_code)
-            
-            # Validate fallback code syntax before writing
+            # First, try to compile without any modifications
             try:
-                compile(fallback_code, "fallback_scene.py", "exec")
-                print("✅ Fallback code syntax is valid")
-            except SyntaxError as e:
-                print(f"❌ Fallback code still has syntax error after fixes: {e}")
-                print(f"   Line {e.lineno}: {e.text}")
-                # Try one more aggressive cleanup
-                fallback_code = aggressive_syntax_cleanup(fallback_code)
-                print("🔧 Attempted aggressive syntax cleanup")
+                compile(fallback_code, "<test>", "exec")
+                print("✅ Fallback code is syntactically valid without fixes")
+            except SyntaxError as initial_error:
+                print(f"⚠️ Initial syntax error: {initial_error}")
+                print("🔧 Attempting syntax fixes...")
+                
+                # Only now try to fix syntax errors
+                fallback_code = fix_syntax_errors(fallback_code)
+                
+                # Try compilation again
+                try:
+                    compile(fallback_code, "<test>", "exec")
+                    print("✅ Fallback code fixed by fix_syntax_errors")
+                except SyntaxError as second_error:
+                    print(f"⚠️ Still has syntax error: {second_error}")
+                    print("🔧 Attempting indentation fix...")
+                    # Only as last resort, try indentation fix
+                    fallback_code = fix_indentation(fallback_code)
+            
+            # Enhanced validation before writing fallback code
+            validation_attempts = 0
+            max_validation_attempts = 3
+            
+            while validation_attempts < max_validation_attempts:
+                try:
+                    compile(fallback_code, "fallback_scene.py", "exec")
+                    print("✅ Fallback code syntax is valid")
+                    break
+                except SyntaxError as e:
+                    validation_attempts += 1
+                    print(f"❌ Fallback code syntax error (attempt {validation_attempts}/{max_validation_attempts}): {e}")
+                    print(f"   Line {e.lineno}: {e.text}")
+                    print(f"   Error type: {type(e).__name__}")
+                    
+                    if validation_attempts < max_validation_attempts:
+                        if "unexpected indent" in str(e).lower():
+                            print("🔧 Indentation error detected - applying aggressive indentation fix")
+                            # For indentation errors, try a more aggressive approach
+                            fallback_code = aggressive_syntax_cleanup(fallback_code)
+                            # Re-apply indentation fix
+                            fallback_code = fix_indentation(fallback_code)
+                        else:
+                            print("🔧 General syntax error - applying aggressive cleanup")
+                            fallback_code = aggressive_syntax_cleanup(fallback_code)
+                    else:
+                        print("❌ Failed to fix syntax after maximum attempts - will attempt render anyway")
+                        # Log the problematic code for debugging
+                        print("🔍 Problematic code preview:")
+                        lines = fallback_code.split('\n')
+                        start_line = max(0, e.lineno - 3)
+                        end_line = min(len(lines), e.lineno + 2)
+                        for i in range(start_line, end_line):
+                            marker = ">>> " if i == e.lineno - 1 else "    "
+                            print(f"{marker}{i+1:3d}: {lines[i]}")
+                        break
             
             with open("fallback_scene.py", "w", encoding='utf-8') as f:
                 f.write(fallback_code)
             
+            # Use same dynamic parameters for fallback render
+            fallback_cmd = [
+                "manim", 
+                "--disable_caching", 
+                "fallback_scene.py", 
+                fallback_class_name, 
+                quality_flag,  # Dynamic quality flag
+                "--format=mp4",
+                f"--resolution={resolution_str}"  # Dynamic resolution
+            ]
+            
+            # Add style-based background color if specified
+            if style in ['dark', 'cinematic']:
+                fallback_cmd.extend(["--background_color", "BLACK"])
+            elif style == 'clean':
+                fallback_cmd.extend(["--background_color", "WHITE"])
+            
+            print(f"🔧 Running fallback Manim command: {' '.join(fallback_cmd)}")
+            
             result = subprocess.run(
-                ["manim", "--disable_caching", "fallback_scene.py", fallback_class_name, "-qk", "--format=mp4"],
+                fallback_cmd,
                 capture_output=True,
                 text=True,
                 timeout=1200

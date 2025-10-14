@@ -60,9 +60,9 @@ class SignedUrlCache {
    * Set a signed URL in cache
    * @param storagePath The storage path
    * @param url The signed URL
-   * @param expiresInSeconds How long the URL is valid (default 3600 = 1 hour)
+   * @param expiresInSeconds How long the URL is valid (default 86400 = 24 hours)
    */
-  set(storagePath: string, url: string, expiresInSeconds: number = 3600): void {
+  set(storagePath: string, url: string, expiresInSeconds: number = 86400): void {
     const expiresAt = Date.now() + (expiresInSeconds * 1000)
     
     this.cache.set(storagePath, {
@@ -76,7 +76,7 @@ class SignedUrlCache {
    * Check if a URL needs to be refreshed
    * Returns true if the URL has less than 20% of its TTL remaining
    */
-  needsRefresh(storagePath: string, ttlSeconds: number = 3600): boolean {
+  needsRefresh(storagePath: string, ttlSeconds: number = 86400): boolean {
     const cached = this.cache.get(storagePath)
     
     if (!cached) {
@@ -94,7 +94,7 @@ class SignedUrlCache {
   /**
    * Get all storage paths that need to be refreshed
    */
-  getPathsNeedingRefresh(ttlSeconds: number = 3600): string[] {
+  getPathsNeedingRefresh(ttlSeconds: number = 86400): string[] {
     const paths: string[] = []
     
     for (const [storagePath, cached] of this.cache.entries()) {
@@ -114,7 +114,7 @@ class SignedUrlCache {
   /**
    * Update a cached URL (used by refresh job)
    */
-  refresh(storagePath: string, newUrl: string, expiresInSeconds: number = 3600): void {
+  refresh(storagePath: string, newUrl: string, expiresInSeconds: number = 86400): void {
     this.set(storagePath, newUrl, expiresInSeconds)
     this.metrics.refreshes++
   }

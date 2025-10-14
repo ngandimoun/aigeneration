@@ -45,6 +45,9 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface UGCAdsGeneratorInterfaceProps {
   onClose: () => void
@@ -109,6 +112,7 @@ interface UGCVideoConfig {
 
 export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Main state
@@ -409,12 +413,65 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       // Generate JSON output first
       generateJSON()
       
+      // Collect all creative fields
+      const allFields = {
+        // Brand DNA
+        brand_name: config.brandDNA.name,
+        brand_tone: config.brandDNA.tone,
+        brand_color_code: config.brandDNA.colorCode,
+        brand_logo: config.brandDNA.logo,
+        
+        // Product Essence
+        product_name: config.productEssence.name,
+        product_hero_benefit: config.productEssence.heroBenefit,
+        product_visual_focus: config.productEssence.visualFocus,
+        product_environment: config.productEssence.environment,
+        product_materials: config.productEssence.materials,
+        product_transformation_type: config.productEssence.transformationType,
+        
+        // Story DNA
+        story_core_angle: config.storyDNA.coreAngle,
+        story_persona: config.storyDNA.persona,
+        story_emotion_tone: config.storyDNA.emotionTone,
+        story_pattern_interrupt_type: config.storyDNA.patternInterruptType,
+        story_hook_framework: config.storyDNA.hookFramework,
+        
+        // Dialogue DNA
+        dialogue_voice_type: config.dialogueDNA.voiceType,
+        dialogue_script: config.dialogueDNA.script,
+        dialogue_tone_of_voice: config.dialogueDNA.toneOfVoice,
+        dialogue_language: config.dialogueDNA.language,
+        dialogue_voice_asset_source: config.dialogueDNA.voiceAssetSource,
+        
+        // Camera DNA
+        camera_rhythm: config.cameraDNA.rhythm,
+        camera_movement_style: config.cameraDNA.movementStyle,
+        camera_cut_frequency: config.cameraDNA.cutFrequency,
+        camera_ending_type: config.cameraDNA.endingType,
+        
+        // Audio DNA
+        audio_sound_mode: config.audioDNA.soundMode,
+        audio_sound_emotion: config.audioDNA.soundEmotion,
+        audio_key_sounds: config.audioDNA.keySounds,
+        
+        // Product Source
+        use_custom_product: useCustomProduct,
+        selected_product_id: selectedProductId,
+        custom_product_image: customProductFile,
+        generated_json: generatedJSON
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
       // Create FormData for API call
       const formData = new FormData()
       
+      // Add original prompt
+      formData.append('brand_prompt', config.brandDNA.prompt || '')
+      
       // Brand DNA
       formData.append('brand_name', config.brandDNA.name)
-      formData.append('brand_prompt', config.brandDNA.prompt || '')
       if (config.brandDNA.tone) formData.append('brand_tone', config.brandDNA.tone)
       if (config.brandDNA.colorCode) formData.append('brand_color_code', config.brandDNA.colorCode)
       if (config.brandDNA.logo) formData.append('brand_logo', config.brandDNA.logo)
@@ -1391,6 +1448,8 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         </Button>
       </div>
 
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="ugc_ads" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

@@ -18,6 +18,8 @@ import {
   Edit
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface SubtitleProject {
   id: string
@@ -43,6 +45,7 @@ export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfacePr
   const [subtitleProjects, setSubtitleProjects] = useState<SubtitleProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchSubtitleProjects()
@@ -231,6 +234,9 @@ export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfacePr
           ))}
         </div>
       )}
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="subtitles" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

@@ -2,6 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
+import { generateWithFal, downloadImage } from '@/lib/utils/fal-generation'
+import { validateImageFiles, validateImageUrls } from '@/lib/utils/image-validation'
+import { buildAvatarPrompt, buildAvatarPromptSummary } from '@/lib/utils/avatar-prompt-builder'
+import { sanitizeFilename } from '@/lib/utils'
 
 // Helper function to convert empty strings to null
 const emptyStringToNull = <T>(value: T): T | null => {
@@ -15,6 +19,7 @@ const emptyStringToNull = <T>(value: T): T | null => {
 const avatarPersonaGenerationSchema = z.object({
   // Basic settings
   prompt: z.string().min(1).max(5000), // Increased to support detailed prompts
+  model: z.string().default('Nano-banana'),
   aspectRatio: z.enum(['1:1', '3:4', '4:5', '2:3', '16:9', '4:3', '9:16', '21:9']).default('1:1'),
   aiPromptEnabled: z.boolean().default(true),
   
@@ -129,6 +134,7 @@ export async function POST(request: NextRequest) {
     // Extract form fields
     const personaName = formData.get('personaName')?.toString() || ''
     const prompt = formData.get('prompt')?.toString() || ''
+    const model = 'Nano-banana' // Hardcoded for avatar generation
     const aspectRatio = formData.get('aspectRatio')?.toString() || '1:1'
     const aiPromptEnabled = formData.get('aiPromptEnabled')?.toString() === 'true'
     const artDirection = formData.get('artDirection')?.toString() || null
@@ -139,6 +145,7 @@ export async function POST(request: NextRequest) {
     const roleArchetype = formData.get('roleArchetype')?.toString() || null
     const ageRange = formData.get('ageRange')?.toString() || null
     const genderExpression = formData.get('genderExpression')?.toString() || null
+    const ethnicity = formData.get('ethnicity')?.toString() || null
     const emotionBias = parseInt(formData.get('emotionBias')?.toString() || '50')
     const bodyType = formData.get('bodyType')?.toString() || null
     const skinTone = formData.get('skinTone')?.toString() || null
@@ -152,30 +159,57 @@ export async function POST(request: NextRequest) {
     
     // Handle reference images upload
     const referenceImagePaths: string[] = []
+    const referenceImages: File[] = []
+    
     for (let i = 0; i < 3; i++) {
       const file = formData.get(`referenceImage_${i}`) as File | null
       if (file) {
-        const filePath = `renders/avatars/${user.id}/references/${uuidv4()}-${file.name}`
-        const { error: uploadError } = await supabase.storage
-          .from('dreamcut')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-          })
-
-        if (uploadError) {
-          console.error(`Error uploading reference image ${file.name}:`, uploadError)
-          return NextResponse.json({ error: `Failed to upload reference image: ${uploadError.message}` }, { status: 500 })
-        }
-        referenceImagePaths.push(filePath)
+        referenceImages.push(file)
       }
+    }
+
+    // Validate uploaded reference images
+    if (referenceImages.length > 0) {
+      const validation = await validateImageFiles(referenceImages)
+      if (!validation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid reference images: ${validation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+    }
+
+    // Upload validated reference images
+    for (const file of referenceImages) {
+      const sanitizedName = sanitizeFilename(file.name)
+      const filePath = `renders/avatars/${user.id}/references/${uuidv4()}-${sanitizedName}`
+      const { error: uploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (uploadError) {
+        console.error(`Error uploading reference image ${file.name}:`, uploadError)
+        return NextResponse.json({ error: `Failed to upload reference image: ${uploadError.message}` }, { status: 500 })
+      }
+      referenceImagePaths.push(filePath)
     }
 
     // Handle logo upload
     let logoImagePath: string | null = null
     const logoImage = formData.get('logoImage') as File | null
     if (logoImage) {
-      const filePath = `renders/avatars/${user.id}/logo/${uuidv4()}-${logoImage.name}`
+      // Validate logo image
+      const logoValidation = await validateImageFiles([logoImage])
+      if (!logoValidation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid logo image: ${logoValidation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+
+      const sanitizedName = sanitizeFilename(logoImage.name)
+      const filePath = `renders/avatars/${user.id}/logo/${uuidv4()}-${sanitizedName}`
       const { error: uploadError } = await supabase.storage
         .from('dreamcut')
         .upload(filePath, logoImage, {
@@ -190,9 +224,16 @@ export async function POST(request: NextRequest) {
       logoImagePath = filePath
     }
 
+    // Parse logo placement and description from form data
+    const logoPlacement = formData.get('logoPlacement')?.toString() 
+      ? JSON.parse(formData.get('logoPlacement')?.toString() || '[]') 
+      : []
+    const logoDescription = formData.get('logoDescription')?.toString() || null
+
     // Prepare metadata from form data
     const metadata = {
-      logoPlacement: formData.get('logoPlacement')?.toString() || 'None',
+      logoPlacement: logoPlacement,
+      logoDescription: logoDescription,
       logoImage: logoImage ? {
         name: logoImage.name,
         size: logoImage.size,
@@ -201,27 +242,201 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📥 Received avatar generation data:', {
+      // Basic Settings
       personaName,
-      prompt,
+      prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+      model,
       aspectRatio,
-      referenceImagePaths,
-      logoImagePath
+      aiPromptEnabled,
+      
+      // Visual Style Stack
+      visualStyle: {
+        artDirection,
+        visualInfluence,
+        lightingPreset,
+        backgroundEnvironment,
+        moodContext
+      },
+      
+      // Identity & Role
+      identity: {
+        roleArchetype,
+        ageRange,
+        genderExpression,
+        ethnicity,
+        emotionBias
+      },
+      
+      // Physical Traits
+      physicalTraits: {
+        bodyType,
+        skinTone,
+        hairStyle,
+        hairColor,
+        eyeColor,
+        eyeShape
+      },
+      
+      // Outfit
+      outfit: {
+        outfitCategory,
+        outfitPalette,
+        accessories: accessories.length > 0 ? accessories : 'none'
+      },
+      
+      // Media Assets
+      media: {
+        referenceImagesCount: referenceImagePaths.length,
+        hasLogo: !!logoImagePath,
+        logoPlacement: logoPlacement,
+        logoDescription: logoDescription
+      }
     })
 
-    // Placeholder for actual image generation logic (e.g., calling an external AI service)
-    // For now, we'll simulate generated images
-    const generatedImageUrls = [
-      'https://example.com/generated_avatar_1.jpg',
-      'https://example.com/generated_avatar_2.jpg',
-      'https://example.com/generated_avatar_3.jpg',
-      'https://example.com/generated_avatar_4.jpg',
-    ]
-    const generatedStoragePaths = [
-      `renders/avatars/${user.id}/generated/${uuidv4()}-generated_1.jpg`,
-      `renders/avatars/${user.id}/generated/${uuidv4()}-generated_2.jpg`,
-      `renders/avatars/${user.id}/generated/${uuidv4()}-generated_3.jpg`,
-      `renders/avatars/${user.id}/generated/${uuidv4()}-generated_4.jpg`,
-    ]
+    // Build enhanced prompt from all parameters (outside try-catch for scope)
+    const enhancedPrompt = buildAvatarPrompt({
+      prompt,
+      artDirection,
+      visualInfluence,
+      lightingPreset,
+      backgroundEnvironment,
+      moodContext,
+      personaName,
+      roleArchetype,
+      ageRange,
+      genderExpression,
+      ethnicity,
+      emotionBias,
+      bodyType,
+      skinTone,
+      hairStyle,
+      hairColor,
+      eyeColor,
+      eyeShape,
+      outfitCategory,
+      outfitPalette,
+      accessories,
+      logoPlacement: logoPlacement,
+      logoDescription: logoDescription
+    })
+
+    // Generate images using fal.ai
+    let generatedImageUrls: string[] = []
+    let generatedStoragePaths: string[] = []
+
+    try {
+      // Get signed URLs for uploaded images (required for private bucket)
+      const imageUrls: string[] = []
+      
+      // Add logo image first if present
+      if (logoImagePath) {
+        const { data: { signedUrl: logoUrl } } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(logoImagePath, 86400) // 24 hour expiry
+        if (logoUrl) imageUrls.push(logoUrl)
+      }
+      
+      // Add reference images
+      for (const path of referenceImagePaths) {
+        const { data: { signedUrl: refUrl } } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(path, 86400) // 24 hour expiry
+        if (refUrl) imageUrls.push(refUrl)
+      }
+
+      // Validate that all image URLs are accessible
+      if (imageUrls.length > 0) {
+        const urlValidation = await validateImageUrls(imageUrls)
+        if (!urlValidation.accessible) {
+          throw new Error(`Reference images are not accessible: ${urlValidation.errors.join(', ')}`)
+        }
+      }
+
+      // Log the enhanced prompt for debugging
+      console.log('🎨 Enhanced avatar prompt:', enhancedPrompt)
+      console.log('📋 Prompt summary:', buildAvatarPromptSummary({
+        prompt,
+        artDirection,
+        visualInfluence,
+        ageRange,
+        genderExpression,
+        bodyType,
+        hairColor,
+        eyeColor,
+        outfitCategory
+      }))
+
+      // Call fal.ai generation with enhanced prompt
+      const generationResult = await generateWithFal({
+        prompt: enhancedPrompt,
+        aspectRatio,
+        numImages: 1, // Generate avatar
+        model: model as any,
+        hasImages: imageUrls.length > 0,
+        imageUrls,
+        logoImagePath
+      })
+
+      if (!generationResult.success) {
+        throw new Error(generationResult.error || 'Generation failed')
+      }
+
+      // Download and upload generated images to Supabase Storage
+      for (let i = 0; i < generationResult.images.length; i++) {
+        const imageUrl = generationResult.images[i]
+        
+        // Download image
+        const imageBuffer = await downloadImage(imageUrl)
+        
+        // Upload to Supabase Storage
+        const fileName = `${uuidv4()}-generated_${i + 1}.jpg`
+        const filePath = `renders/avatars/${user.id}/generated/${fileName}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('dreamcut')
+          .upload(filePath, imageBuffer, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600'
+          })
+
+        if (uploadError) {
+          console.error('Error uploading generated image:', uploadError)
+          throw new Error('Failed to upload generated image')
+        }
+
+        // Get signed URL (public URLs don't work with authenticated-only buckets)
+        const { data: signedUrlData } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(filePath, 86400) // 24 hour expiry
+        if (signedUrlData?.signedUrl) {
+          generatedImageUrls.push(signedUrlData.signedUrl)
+        }
+        generatedStoragePaths.push(filePath)
+        
+        console.log(`✅ Successfully uploaded avatar image ${i + 1}/${generationResult.images.length}: ${filePath}`)
+      }
+      
+      console.log(`✅ Avatar generation completed successfully: ${generatedImageUrls.length} images generated`)
+
+    } catch (generationError) {
+      console.error('❌ Avatar generation error:', generationError)
+      console.error('❌ Error details:', {
+        message: generationError instanceof Error ? generationError.message : 'Unknown error',
+        stack: generationError instanceof Error ? generationError.stack : undefined,
+        prompt,
+        model,
+        aspectRatio,
+        referenceImagePaths,
+        logoImagePath
+      })
+      
+      // Continue with empty arrays - the record will be created but without generated images
+      generatedImageUrls = []
+      generatedStoragePaths = []
+      
+      // Log the failure for debugging
+      console.log('⚠️ Avatar generation failed, creating record with failed status')
+    }
 
     // Create comprehensive avatar/persona generation record
     const { data: avatar, error } = await supabase
@@ -231,12 +446,14 @@ export async function POST(request: NextRequest) {
         title: personaName || `Avatar ${new Date().toLocaleDateString()}`,
         description: prompt,
         prompt: prompt,
+        model: 'Nano-banana', // Hardcoded for avatar generation
         
         // Identity & Role
         persona_name: emptyStringToNull(personaName),
         role_archetype: emptyStringToNull(roleArchetype),
         age_range: emptyStringToNull(ageRange),
         gender_expression: emptyStringToNull(genderExpression),
+        ethnicity: emptyStringToNull(ethnicity),
         emotion_bias: emotionBias,
         
         // Physical Traits & Outfits
@@ -262,12 +479,14 @@ export async function POST(request: NextRequest) {
         ai_prompt_enabled: aiPromptEnabled,
         reference_images_paths: referenceImagePaths,
         logo_image_path: logoImagePath,
+        logo_description: emptyStringToNull(logoDescription),
         generated_images: generatedImageUrls,
         storage_paths: generatedStoragePaths,
         
         // Metadata and content
         content: {
-          prompt: prompt,
+          prompt: prompt, // Original user prompt
+          enhanced_prompt: enhancedPrompt, // Enhanced prompt sent to Fal.ai
           generation_settings: {
             aspectRatio: aspectRatio,
             aiPromptEnabled: aiPromptEnabled
@@ -284,6 +503,7 @@ export async function POST(request: NextRequest) {
             roleArchetype: roleArchetype,
             ageRange: ageRange,
             genderExpression: genderExpression,
+            ethnicity: ethnicity,
             emotionBias: emotionBias
           },
           physical_traits: {
@@ -299,8 +519,15 @@ export async function POST(request: NextRequest) {
           },
           reference_images: referenceImagePaths
         },
-        metadata: metadata,
-        status: 'completed' // Assuming immediate completion for now
+        metadata: {
+          ...metadata,
+          fal_generation: {
+            model: 'Nano-banana', // Hardcoded for avatar generation
+            timestamp: new Date().toISOString(),
+            success: generatedImageUrls.length > 0
+          }
+        },
+        status: generatedImageUrls.length > 0 ? 'completed' : 'failed'
       })
       .select()
       .single()
@@ -308,6 +535,22 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('❌ Error creating avatar/persona generation:', error)
       return NextResponse.json({ error: 'Failed to create avatar/persona generation' }, { status: 500 })
+    }
+
+    // Add to library_items table
+    const { error: libraryError } = await supabase
+      .from('library_items')
+      .insert({
+        user_id: user.id,
+        content_type: 'avatars_personas',
+        content_id: avatar.id,
+        date_added_to_library: new Date().toISOString()
+      })
+
+    if (libraryError) {
+      console.error('Failed to add avatar/persona to library:', libraryError)
+    } else {
+      console.log(`✅ Avatar/persona ${avatar.id} added to library`)
     }
 
     return NextResponse.json({ message: 'Avatar/persona generated and saved successfully', avatar }, { status: 201 })

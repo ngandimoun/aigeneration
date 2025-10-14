@@ -34,7 +34,10 @@ import {
   Upload
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface SoundFxInterfaceProps {
   onClose: () => void
@@ -348,6 +351,7 @@ const SOUND_PRESET_MAP = {
 
 export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   
   // Sound Intent & Description
   const [prompt, setPrompt] = useState("")
@@ -524,9 +528,46 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
       // Create FormData for file uploads
       const formData = new FormData()
       
-      // Add all form fields
-      formData.append('name', soundName || `Sound_${Date.now()}`)
+      // Collect all creative fields
+      const allFields = {
+        name: soundName || `Sound_${Date.now()}`,
+        category: category || '',
+        usage_context: usageContext || '',
+        world_link: worldLink || '',
+        seed_variability: seedVariability[0],
+        sound_texture: soundTexture || '',
+        frequency_focus: frequencyFocus[0],
+        density: density[0],
+        attack_type: attackType || '',
+        tail_decay: tailDecay[0],
+        audio_quality: audioQuality || '',
+        environment_type: environmentType || '',
+        distance_from_listener: distanceFromListener[0],
+        reverb_character: reverbCharacter || '',
+        stereo_behavior: stereoBehavior || '',
+        ambience_layer: ambienceLayer || '',
+        mood_context: moodContext || '',
+        tension_level: tensionLevel[0],
+        motion_character: motionCharacter || '',
+        purpose_in_scene: purposeInScene || '',
+        prompt_influence: promptInfluence[0],
+        duration: duration[0],
+        loop_mode: loopMode,
+        loop_type: loopType || '',
+        tempo_bpm: tempoBpm || '',
+        fade_in: fadeIn[0],
+        fade_out: fadeOut[0],
+        tags
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
+      // Add original prompt
       formData.append('prompt', prompt)
+      
+      // Add metadata fields (needed for database/tracking)
+      formData.append('name', soundName || `Sound_${Date.now()}`)
       formData.append('category', category || '')
       formData.append('usage_context', usageContext || '')
       formData.append('world_link', worldLink || '')
@@ -1231,6 +1272,9 @@ export function SoundFxInterface({ onClose, projectTitle }: SoundFxInterfaceProp
           </Card>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="sound_fx" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

@@ -17,7 +17,6 @@ const createMusicJingleSchema = z.object({
   fade_out: z.number().optional(),
   loop_mode: z.string().optional(),
   stereo_mode: z.string().optional(),
-  is_public: z.boolean().optional(),
   created_at: z.string().optional(),
 })
 
@@ -161,7 +160,6 @@ export async function POST(request: NextRequest) {
           fade_out: validatedData.fade_out,
           loop_mode: validatedData.loop_mode,
           stereo_mode: validatedData.stereo_mode,
-          is_public: validatedData.is_public,
           generated_via: 'music-jingle-generation',
           created_at: validatedData.created_at
         },

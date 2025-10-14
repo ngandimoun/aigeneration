@@ -7,6 +7,8 @@ import { CharacterVariations } from "@/components/character-variations"
 import { LibraryInterface } from "@/components/library-interface"
 import { LibraryGrid } from "@/components/library-grid"
 import { Button } from "@/components/ui/button"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
+import { useAuth } from "@/components/auth/auth-provider"
 
 export function MainContent() {
   const { 
@@ -16,6 +18,7 @@ export function MainContent() {
     characterVariationsMetadata,
     isGeneratingVariations = false
   } = useNavigation()
+  const { user } = useAuth()
   const [selectedVariation, setSelectedVariation] = useState<number | undefined>(undefined)
 
   // Debug global context
@@ -63,170 +66,48 @@ export function MainContent() {
         
         
         
-        {/* Illustration section - Welcome message */}
+        {/* Illustration section - Previous Generations */}
         {selectedSection === 'illustration' && (
-          <div className="text-center py-8">
-            <div className="max-w-lg mx-auto">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                <Palette className="h-6 w-6 text-purple-600" />
-              </div>
-              <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent">
-                Welcome to Illustrations
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                Create stunning custom illustrations with AI-powered tools. Choose from various art styles, 
-                from flat vector designs to photorealistic renders, and bring your creative vision to life.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
-                <span>Click "New Project" to start creating your first illustration</span>
-              </div>
-            </div>
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="illustrations" 
+              userId={user?.id || ''} 
+            />
           </div>
         )}
 
-        {/* Product Mockups section - Project details or Welcome message */}
+        {/* Product Mockups section - Previous Generations */}
         {selectedSection === 'product-mockups' && (
-          false ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Project Image */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <img 
-                    src={"/placeholder.jpg"} 
-                    alt={"Placeholder Title"}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-                
-                {/* Project Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {"Placeholder Title"}
-                    </h2>
-                  </div>
-                  
-                  {/* Project Status */}
-                  <div className="flex items-center gap-2">
-                    {false ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
-                        <Globe className="h-4 w-4" />
-                        Public
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
-                        <Lock className="h-4 w-4" />
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Project Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {"Placeholder description"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="max-w-lg mx-auto">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-                  <Package className="h-6 w-6 text-violet-600" />
-                </div>
-                <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
-                  Welcome to Product Mockups
-                </h2>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  Create stunning product presentations with AI-powered tools. Design professional mockups with 
-                  customizable backgrounds, perfect lighting, and seamless brand integration to showcase your products 
-                  in their best light.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Click "New Project" to create your first product mockup</span>
-                </div>
-              </div>
-            </div>
-          )
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="product_mockups" 
+              userId={user?.id || ''} 
+            />
+          </div>
         )}
 
-        {/* Concept Worlds section - Project details or Welcome message */}
+        {/* Concept Worlds section - Previous Generations */}
         {selectedSection === 'concept-worlds' && (
-          false ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Project Image */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <img 
-                    src={"/placeholder.jpg"} 
-                    alt={"Placeholder Title"}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-                
-                {/* Project Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {"Placeholder Title"}
-                    </h2>
-                  </div>
-                  
-                  {/* Project Status */}
-                  <div className="flex items-center gap-2">
-                    {false ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
-                        <Globe className="h-4 w-4" />
-                        Public
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
-                        <Lock className="h-4 w-4" />
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Project Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {"Placeholder description"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="max-w-lg mx-auto">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-sky-600" />
-                </div>
-                <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-                  Welcome to Concept Worlds
-                </h2>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  Design immersive universes with consistent visual DNA. Create everything from fantasy realms to 
-                  futuristic environments with unified art direction, lighting systems, and spatial logic that 
-                  brings your creative vision to life.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Click "New Project" to build your first concept world</span>
-                </div>
-              </div>
-            </div>
-          )
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="concept_worlds" 
+              userId={user?.id || ''} 
+            />
+          </div>
         )}
 
-        {/* Charts & Infographics section - Project details or Welcome message */}
+        {/* Charts & Infographics section - Previous Generations */}
         {selectedSection === 'charts-infographics' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="charts_infographics" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Charts & Infographics section - Project details or Welcome message (OLD) */}
+        {false && selectedSection === 'charts-infographics' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -295,8 +176,18 @@ export function MainContent() {
           )
         )}
 
-        {/* Avatars & Personas section - Project details or Welcome message */}
+        {/* Avatars & Personas section - Previous Generations */}
         {selectedSection === 'avatars-personas' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="avatars_personas" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Avatars & Personas section - Project details or Welcome message (OLD) */}
+        {false && selectedSection === 'avatars-personas' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -365,8 +256,48 @@ export function MainContent() {
           )
         )}
 
-        {/* Music & Jingles section - Project details or Welcome message */}
+        {/* Music & Jingles section - Previous Generations */}
         {selectedSection === 'music-jingles' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="music_jingles" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Voice Creation section - Previous Generations */}
+        {selectedSection === 'voice-creation' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="voices_creations" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Voiceovers section - Previous Generations */}
+        {selectedSection === 'voiceovers' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="voiceovers" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Sound FX section - Previous Generations */}
+        {selectedSection === 'sound-fx' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="sound_fx" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Music & Jingles section - Project details or Welcome message (OLD) */}
+        {false && selectedSection === 'music-jingles' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -475,8 +406,18 @@ export function MainContent() {
           </div>
         )}
 
-        {/* Explainers section - Project details or Attention Message */}
+        {/* Explainers section - Previous Generations */}
         {selectedSection === 'explainers' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="explainers" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Explainers section - Project details or Attention Message (OLD) */}
+        {false && selectedSection === 'explainers' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -560,8 +501,18 @@ export function MainContent() {
           )
         )}
 
-        {/* Talking Avatars section - Project details or Attention Message */}
+        {/* Talking Avatars section - Previous Generations */}
         {selectedSection === 'talking-avatars' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="talking_avatars" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Talking Avatars section - Project details or Attention Message (OLD) */}
+        {false && selectedSection === 'talking-avatars' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -634,8 +585,18 @@ export function MainContent() {
           )
         )}
 
-        {/* Product in Motion section - Project details or Attention Message */}
+        {/* Product in Motion section - Previous Generations */}
         {selectedSection === 'product-motion' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="product_motions" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Product in Motion section - Project details or Attention Message (OLD) */}
+        {false && selectedSection === 'product-motion' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -809,8 +770,18 @@ export function MainContent() {
           </div>
         )}
 
-        {/* UGC Ads section - Project details or Attention Message */}
+        {/* UGC Ads section - Previous Generations */}
         {selectedSection === 'ugc-ads' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="ugc_ads" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* UGC Ads section - Project details or Attention Message (OLD) */}
+        {false && selectedSection === 'ugc-ads' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

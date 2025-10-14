@@ -48,7 +48,9 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { ExplainerVideoLibrary } from "@/components/explainer-video-library"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface ExplainerGeneratorInterfaceProps {
   onClose: () => void
@@ -107,6 +109,7 @@ const STYLES = [
 ]
 
 export function ExplainerGeneratorInterface({ onClose, projectTitle }: ExplainerGeneratorInterfaceProps) {
+  const { user } = useAuth()
   // Core state
   const [title, setTitle] = useState("")
   const [prompt, setPrompt] = useState("")
@@ -269,6 +272,9 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
         title: "Animation complete!",
         description: "Your Manim animation is ready to watch.",
       })
+
+      // Invalidate SWR cache to refresh previous generations
+      mutate('/api/library?content_type=explainers')
     }
 
     // Handle failure
@@ -799,6 +805,9 @@ export function ExplainerGeneratorInterface({ onClose, projectTitle }: Explainer
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="explainers" userId={user?.id || ''} className="mt-8" />
 
       {/* Floating Scroll to Top Button */}
       {showScrollButton && (

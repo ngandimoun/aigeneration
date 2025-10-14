@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
+import { generateWithFal, downloadImage } from '@/lib/utils/fal-generation'
+import { validateImageFiles, validateImageUrls } from '@/lib/utils/image-validation'
+import { sanitizeFilename } from '@/lib/utils'
 
 // Helper function to convert null to undefined
 const nullToUndefined = (value: string | null): string | undefined => {
@@ -38,10 +41,11 @@ export async function POST(request: NextRequest) {
     // Extract form fields
     const name = formData.get('name')?.toString() || ''
     const prompt = formData.get('prompt')?.toString() || ''
+    const model = formData.get('model')?.toString() || 'Nano-banana'
     const worldPurpose = formData.get('worldPurpose')?.toString() || null
     const logoPlacement = formData.get('logoPlacement')?.toString() || null
     const customColor = formData.get('customColor')?.toString() || '#3b82f6'
-    const aspectRatio = formData.get('aspectRatio')?.toString() || '1:1'
+    const aspectRatio = (formData.get('aspectRatio')?.toString() || '1:1').match(/\d+:\d+/)?.[0] || '1:1'
     const seedVariability = parseInt(formData.get('seedVariability')?.toString() || '50')
     const artDirection = formData.get('artDirection')?.toString() || null
     const visualInfluence = formData.get('visualInfluence')?.toString() || null
@@ -70,29 +74,55 @@ export async function POST(request: NextRequest) {
 
     // Handle reference images upload
     const referenceImagePaths: string[] = []
+    const referenceImages: File[] = []
+    
     for (let i = 0; i < 3; i++) {
       const file = formData.get(`referenceImage_${i}`) as File | null
       if (file) {
-        const filePath = `renders/concept-worlds/${user.id}/references/${uuidv4()}-${file.name}`
-        const { error: uploadError } = await supabase.storage
-          .from('dreamcut')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-          })
-
-        if (uploadError) {
-          console.error(`Error uploading reference image ${file.name}:`, uploadError)
-          return NextResponse.json({ error: `Failed to upload reference image: ${uploadError.message}` }, { status: 500 })
-        }
-        referenceImagePaths.push(filePath)
+        referenceImages.push(file)
       }
+    }
+
+    // Validate uploaded reference images
+    if (referenceImages.length > 0) {
+      const validation = await validateImageFiles(referenceImages)
+      if (!validation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid reference images: ${validation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+    }
+
+    // Upload validated reference images
+    for (const file of referenceImages) {
+      const sanitizedName = sanitizeFilename(file.name)
+      const filePath = `renders/concept-worlds/${user.id}/references/${uuidv4()}-${sanitizedName}`
+      const { error: uploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (uploadError) {
+        console.error(`Error uploading reference image ${file.name}:`, uploadError)
+        return NextResponse.json({ error: `Failed to upload reference image: ${uploadError.message}` }, { status: 500 })
+      }
+      referenceImagePaths.push(filePath)
     }
 
     // Handle logo upload
     let logoImagePath: string | null = null
     const logoFile = formData.get('logoFile') as File | null
     if (logoFile) {
+      // Validate logo image
+      const logoValidation = await validateImageFiles([logoFile])
+      if (!logoValidation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid logo image: ${logoValidation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+
       const filePath = `renders/concept-worlds/${user.id}/logo/${uuidv4()}-${logoFile.name}`
       const { error: uploadError } = await supabase.storage
         .from('dreamcut')
@@ -121,16 +151,101 @@ export async function POST(request: NextRequest) {
     const generationId = `cw_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const generationTimestamp = new Date().toISOString()
 
-    // For now, we'll simulate image generation with placeholder URLs
-    // In a real implementation, you would call an AI image generation service
-    const imageUrls = Array.from({ length: 4 }, (_, index) => 
-      `https://picsum.photos/seed/${generationId}_${index}/1024/1024`
-    )
-    const generatedStoragePaths = Array.from({ length: 4 }, (_, index) => 
-      `renders/concept-worlds/${user.id}/generated/${uuidv4()}-generated_${index}.jpg`
-    )
+    // Generate images using fal.ai
+    let imageUrls: string[] = []
+    let generatedStoragePaths: string[] = []
 
-    console.log('🎨 Generated images:', imageUrls)
+    try {
+      // Get signed URLs for uploaded images (required for private bucket)
+      const inputImageUrls: string[] = []
+      
+      // Add logo image first if present
+      if (logoImagePath) {
+        const { data: { signedUrl: logoUrl } } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(logoImagePath, 86400) // 24 hour expiry
+        if (logoUrl) inputImageUrls.push(logoUrl)
+      }
+      
+      // Add reference images
+      for (const path of referenceImagePaths) {
+        const { data: { signedUrl: refUrl } } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(path, 86400) // 24 hour expiry
+        if (refUrl) inputImageUrls.push(refUrl)
+      }
+
+      // Validate that all image URLs are accessible
+      if (inputImageUrls.length > 0) {
+        const urlValidation = await validateImageUrls(inputImageUrls)
+        if (!urlValidation.accessible) {
+          throw new Error(`Reference images are not accessible: ${urlValidation.errors.join(', ')}`)
+        }
+      }
+
+      console.log('🤖 Using model:', model)
+      console.log('⏳ Calling fal.ai API...')
+      const startTime = Date.now()
+
+      // Call fal.ai generation
+      const generationResult = await generateWithFal({
+        prompt,
+        aspectRatio,
+        numImages: 1, // Generate concept world
+        model: model as any,
+        hasImages: inputImageUrls.length > 0,
+        imageUrls: inputImageUrls,
+        logoImagePath: logoImagePath || undefined
+      })
+
+      const endTime = Date.now()
+      console.log(`✅ fal.ai API completed in ${endTime - startTime}ms`)
+
+      if (!generationResult.success) {
+        throw new Error(generationResult.error || 'Generation failed')
+      }
+
+      // Download and upload generated images to Supabase Storage
+      for (let i = 0; i < generationResult.images.length; i++) {
+        const imageUrl = generationResult.images[i]
+        
+        // Download image
+        const imageBuffer = await downloadImage(imageUrl)
+        
+        // Upload to Supabase Storage
+        const fileName = `${uuidv4()}-generated_${i + 1}.jpg`
+        const filePath = `renders/concept-worlds/${user.id}/generated/${fileName}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('dreamcut')
+          .upload(filePath, imageBuffer, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600'
+          })
+
+        if (uploadError) {
+          console.error('Error uploading generated image:', uploadError)
+          throw new Error('Failed to upload generated image')
+        }
+
+        // Get signed URL (24 hour expiry)
+        const { data: signedUrlData } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(filePath, 86400) // 24 hour expiry
+        if (signedUrlData?.signedUrl) {
+          imageUrls.push(signedUrlData.signedUrl)
+        }
+        generatedStoragePaths.push(filePath)
+      }
+
+      console.log('🎨 Generated images:', imageUrls)
+
+    } catch (generationError) {
+      console.error('Concept world generation error:', generationError)
+      // Continue with empty arrays - the record will be created but without generated images
+      imageUrls = []
+      generatedStoragePaths = []
+    }
 
     // Save to concept_worlds table with new schema
     console.log('🔄 Attempting to save to concept_worlds table...')
@@ -139,6 +254,7 @@ export async function POST(request: NextRequest) {
         title: name,
         description: prompt,
         prompt: prompt,
+        model: model,
         
         // File Storage Paths
         reference_images_paths: referenceImagePaths,
@@ -187,7 +303,7 @@ export async function POST(request: NextRequest) {
         seed_variability: seedVariability,
         
         // Status & Metadata
-        status: 'completed',
+        status: imageUrls.length > 0 ? 'completed' : 'failed',
         metadata: {
           generationTimestamp,
           worldPurpose,
@@ -198,7 +314,12 @@ export async function POST(request: NextRequest) {
           generated_via: 'concept-world-generation',
           brandSync,
           culturalInfluence,
-          emotionalTone
+          emotionalTone,
+          fal_generation: {
+            model,
+            timestamp: new Date().toISOString(),
+            success: imageUrls.length > 0
+          }
         },
         content: {
           images: imageUrls,
@@ -334,6 +455,28 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('❌ Error fetching concept world generations:', error)
       return NextResponse.json({ error: 'Failed to fetch generations' }, { status: 500 })
+    }
+
+    // Regenerate expired signed URLs from storage_paths
+    if (generations && generations.length > 0) {
+      for (const generation of generations) {
+        if (generation.storage_paths && generation.storage_paths.length > 0) {
+          // Regenerate fresh signed URLs from storage paths
+          const freshUrls: string[] = []
+          for (const storagePath of generation.storage_paths) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+            if (signedUrlData?.signedUrl) {
+              freshUrls.push(signedUrlData.signedUrl)
+            }
+          }
+          // Replace expired URLs with fresh ones
+          if (freshUrls.length > 0) {
+            generation.generated_images = freshUrls
+          }
+        }
+      }
     }
 
     return NextResponse.json({ generations }, { status: 200 })

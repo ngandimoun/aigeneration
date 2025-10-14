@@ -45,7 +45,15 @@ import {
   PartyPopper
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
+import type { FalModel } from '@/lib/utils/fal-generation'
+import { GenerationLoading } from "@/components/ui/generation-loading"
+import { GenerationError } from "@/components/ui/generation-error"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
+import { toast as sonnerToast } from "sonner"
 
 interface IllustrationGeneratorInterfaceProps {
   onClose: () => void
@@ -242,7 +250,7 @@ const OUTLINE_STYLES = [
   { value: "none", label: "None", emoji: "◻️" }
 ]
 
-const ASPECT_RATIOS = [
+const ALL_ASPECT_RATIOS = [
   { 
     value: "1:1", 
     label: "Square (1:1)", 
@@ -311,14 +319,22 @@ const ASPECT_RATIOS = [
 
 export function IllustrationGeneratorInterface({ onClose, projectTitle, projectData }: IllustrationGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
 
   // Entry & Intent
   const [title, setTitle] = useState("")
   const [prompt, setPrompt] = useState("")
+  const [model, setModel] = useState("Nano-banana")
   const [purpose, setPurpose] = useState("")
   const [referenceImages, setReferenceImages] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const [aspectRatio, setAspectRatio] = useState("1:1") // Default to Square
+
+  // Dynamic aspect ratio filtering based on selected model
+  const supportedRatios = getSupportedAspectRatios(model as FalModel || 'Nano-banana')
+  const availableAspectRatios = ALL_ASPECT_RATIOS.filter(ar => 
+    supportedRatios.includes(ar.value)
+  )
 
   // Art Direction & Visual Style
   const [artDirection, setArtDirection] = useState("")
@@ -351,6 +367,17 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
+
+  // Reset aspect ratio when model changes to unsupported ratio
+  useEffect(() => {
+    if (model && aspectRatio) {
+      const supported = getSupportedAspectRatios(model as FalModel)
+      if (!supported.includes(aspectRatio)) {
+        setAspectRatio("1:1")
+      }
+    }
+  }, [model])
 
   // Smart behavior logic
   useEffect(() => {
@@ -554,38 +581,62 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
     try {
       const formData = new FormData()
 
-      // Entry & Intent
-      formData.append('title', title)
+      // Collect all creative fields
+      const allFields = {
+        // Art Direction & Visual Style
+        artDirection,
+        visualInfluence,
+        mediumTexture,
+        lightingPreset,
+        outlineStyle,
+        
+        // Mood Context
+        moodContext,
+        toneIntensity: toneIntensity[0],
+        paletteWarmth: paletteWarmth[0],
+        expressionHarmony,
+        
+        // Brand Sync & Palette
+        brandSync,
+        colorPaletteMode,
+        accentColor,
+        fontStyle,
+        watermarkPlacement,
+        
+        // Composition Template
+        compositionTemplate,
+        cameraAngle,
+        depthControl: depthControl[0],
+        subjectPlacement,
+        safeZoneOverlay
+      }
+
+      // Filter to only filled fields (excludes empty/metadata fields)
+      const filledFields = filterFilledFields(allFields)
+
+      // Add original prompt
       formData.append('prompt', prompt)
+      
+      // Add metadata fields (needed for database/tracking)
+      formData.append('title', title)
+      formData.append('model', model)
       formData.append('purpose', purpose)
       formData.append('aspectRatio', aspectRatio)
-
-      // Art Direction & Visual Style
-      formData.append('artDirection', artDirection)
-      formData.append('visualInfluence', visualInfluence)
-      formData.append('mediumTexture', mediumTexture)
-      formData.append('lightingPreset', lightingPreset)
-      formData.append('outlineStyle', outlineStyle)
-
-      // Mood Context
-      formData.append('moodContext', moodContext)
-      formData.append('toneIntensity', toneIntensity[0].toString())
-      formData.append('paletteWarmth', paletteWarmth[0].toString())
-      formData.append('expressionHarmony', expressionHarmony.toString())
-
-      // Brand Sync & Palette
-      formData.append('brandSync', brandSync.toString())
-      formData.append('colorPaletteMode', colorPaletteMode)
-      formData.append('accentColor', accentColor)
-      formData.append('fontStyle', fontStyle)
-      formData.append('watermarkPlacement', watermarkPlacement)
-
-      // Composition Template
-      formData.append('compositionTemplate', compositionTemplate)
-      formData.append('cameraAngle', cameraAngle)
-      formData.append('depthControl', depthControl[0].toString())
-      formData.append('subjectPlacement', subjectPlacement)
-      formData.append('safeZoneOverlay', safeZoneOverlay.toString())
+      
+      // Only add fields the user actually filled
+      for (const [key, value] of Object.entries(filledFields)) {
+        if (typeof value === 'boolean') {
+          formData.append(key, value.toString())
+        } else if (typeof value === 'number') {
+          formData.append(key, value.toString())
+        } else if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value))
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value))
+        } else {
+          formData.append(key, String(value))
+        }
+      }
 
       // Add reference images
       referenceImages.forEach((file, index) => {
@@ -610,20 +661,19 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
       const result = await response.json()
 
-      toast({
-        title: "Illustration generated!",
-        description: `Successfully created illustration(s) for "${projectTitle}".`,
+      sonnerToast.success("🎨 Illustration Generated!", {
+        description: `Successfully created illustration(s) for "${projectTitle}". Check your library to view them!`,
+        duration: 5000,
       })
+
+          // Previous generations will auto-refresh on next visit
 
       onClose()
 
     } catch (error) {
       console.error('Illustration generation failed:', error)
-      toast({
-        title: "Generation failed",
-        description: error instanceof Error ? error.message : "Failed to generate illustration. Please try again.",
-        variant: "destructive"
-      })
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate illustration. Please try again."
+      setGenerationError(errorMessage)
     } finally {
       setIsGenerating(false)
     }
@@ -640,7 +690,29 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
 
 
   return (
-    <div className="bg-background border border-border rounded-md max-h-[calc(100vh-8rem)] flex flex-col">
+    <>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <GenerationLoading 
+          model={model as "Nano-banana" | "gpt-image-1" | "seedream-v4"}
+          onCancel={() => setIsGenerating(false)}
+        />
+      )}
+
+      {/* Error Overlay */}
+      {generationError && (
+        <GenerationError
+          error={generationError}
+          model={model as "Nano-banana" | "gpt-image-1" | "seedream-v4"}
+          onRetry={() => {
+            setGenerationError(null)
+            handleGenerate()
+          }}
+          onClose={() => setGenerationError(null)}
+        />
+      )}
+
+      <div className="bg-background border border-border rounded-md max-h-[calc(100vh-8rem)] flex flex-col">
       {/* Header - Fixed */}
       <div className="flex items-center justify-between p-2 border-b border-border sticky top-0 bg-background z-10">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -691,6 +763,35 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                   className="mt-1"
                   rows={2}
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="model" className="text-xs">AI Model</Label>
+                <Select value={model} onValueChange={setModel}>
+                  <SelectTrigger className="mt-1 h-8 text-xs">
+                    <SelectValue placeholder="Select AI model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nano-banana">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">🍌</span>
+                        <span className="text-xs">Nano-banana</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="gpt-image-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">🤖</span>
+                        <span className="text-xs">Gpt-image-1</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="seedream-v4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">🌱</span>
+                        <span className="text-xs">Seedream-v4</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <hr className="" />
@@ -813,7 +914,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                   <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select aspect ratio">
                       {aspectRatio && (() => {
-                        const selectedOption = ASPECT_RATIOS.find(option => option.value === aspectRatio)
+                        const selectedOption = ALL_ASPECT_RATIOS.find(option => option.value === aspectRatio)
                         return selectedOption ? (
                           <div className="flex items-center gap-2">
                             <span className="text-xs">{selectedOption.icon}</span>
@@ -824,7 +925,7 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {ASPECT_RATIOS.map((option) => (
+                    {availableAspectRatios.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex items-center gap-2">
                           <span className="text-xs">{option.icon}</span>
@@ -1277,6 +1378,10 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
           </Button>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="illustrations" userId={user?.id || ''} className="mt-8" />
     </div>
+    </>
   )
 }

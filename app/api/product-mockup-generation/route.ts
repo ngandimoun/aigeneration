@@ -1,21 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { fal } from '@fal-ai/client'
 import { STYLE_MAP } from '@/lib/styles/style-map'
 import { ProductMockupGenerationRequest, ProductMockupGenerationResult } from '@/lib/types/product-mockup'
 import { downloadAndUploadMultipleImages } from '@/lib/storage/download-and-upload'
+import { generateWithFal, downloadImage } from '@/lib/utils/fal-generation'
+import { validateImageFiles, validateImageUrls } from '@/lib/utils/image-validation'
+import { sanitizeFilename } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
+import { buildProductMockupPrompt } from '@/lib/utils/product-mockup-prompt-builder'
 
 // Helper function to convert null to undefined
 const nullToUndefined = (value: string | null): string | undefined => {
   return value === null ? undefined : value
 }
 
-// Configure fal.ai client
-fal.config({
-  credentials: process.env.FAL_KEY,
-})
 
 // Validation schema for product mockup generation
 const productMockupGenerationSchema = z.object({
@@ -42,18 +41,24 @@ const productMockupGenerationSchema = z.object({
   compositionTemplate: z.enum(['Centered Hero', 'Rule of Thirds', 'Floating Object', 'Flat Lay', 'Collage']).default('Centered Hero'),
   objectCount: z.union([z.number(), z.enum(['1', '2', '3'])]).default(1).transform(val => typeof val === 'number' ? val as 1 | 2 | 3 : parseInt(val) as 1 | 2 | 3),
   shadowType: z.enum(['Soft', 'Hard', 'Floating', 'Mirror']).default('Soft'),
-  logoPlacement: z.enum(['Auto', 'Top Left', 'Top Right', 'Bottom Left', 'Bottom Right', 'Center']).default('Auto'),
+  logoPlacement: z.array(z.string()).default([]),
+  logoDescription: z.string().optional(),
   
   // Text & CTA Overlay
   headline: z.string().optional(),
+  headlineColor: z.string().default('#000000'),
+  headlineColorAuto: z.boolean().default(true),
   subtext: z.string().optional(),
+  subtextColor: z.string().default('#666666'),
+  subtextColorAuto: z.boolean().default(true),
   ctaText: z.string().optional(),
+  ctaColor: z.string().default('#3B82F6'),
+  ctaColorAuto: z.boolean().default(true),
   fontFamily: z.enum(['serif', 'sans', 'condensed', 'rounded']).default('sans'),
   fontWeight: z.enum(['light', 'normal', 'medium', 'bold']).default('normal'),
   textCase: z.enum(['uppercase', 'title', 'sentence']).default('sentence'),
   letterSpacing: z.number().default(0),
   lineHeight: z.number().default(1.2),
-  textColor: z.string().default('#000000'),
   textAlignment: z.enum(['left', 'center', 'right']).default('center'),
   textEffects: z.array(z.string()).default([]),
   
@@ -101,118 +106,6 @@ const productMockupGenerationSchema = z.object({
   metadata: z.record(z.any()).optional()
 })
 
-// Build comprehensive prompt from all settings
-function buildProductMockupPrompt(request: ProductMockupGenerationRequest): string {
-  const {
-    prompt,
-    logoFile,
-    logoUsagePrompt,
-    artDirection,
-    visualInfluence,
-    lightingPreset,
-    backgroundEnvironment,
-    moodContext,
-    compositionTemplate,
-    objectCount,
-    shadowType,
-    useAvatars,
-    useBasicAvatar,
-    basicAvatar,
-    avatarRole,
-    avatarInteraction,
-    productMultiplicity,
-    headline,
-    subtext,
-    ctaText,
-    fontFamily,
-    fontWeight,
-    textCase,
-    letterSpacing,
-    lineHeight,
-    textColor,
-    textAlignment,
-    textEffects,
-    highlightStyle,
-    accentElement,
-    brilliance,
-    frostedGlass,
-    dropShadowIntensity,
-    motionAccent,
-    layoutMode,
-    verticalPosition,
-    horizontalOffset,
-    smartAnchor,
-    safeZones,
-    platformTarget
-  } = request
-
-  // Get style information from STYLE_MAP
-  const styleInfo = artDirection ? STYLE_MAP[artDirection]?.find((inf: any) => inf.label === visualInfluence) : undefined
-  const moodInfo = styleInfo?.moodContexts.find((mc: any) => mc.name === moodContext)
-
-  let promptParts = [
-    // Base description
-    prompt,
-    
-    // Art direction and visual style
-    `${artDirection} style, ${visualInfluence} approach`,
-    
-    // Lighting and background
-    `${lightingPreset} lighting, ${backgroundEnvironment} background`,
-    
-    // Mood and atmosphere
-    moodInfo ? `${moodContext} mood with ${moodInfo.effect.temp || 'neutral'} temperature` : `${moodContext} mood`,
-    
-    // Composition
-    `${compositionTemplate} composition`,
-    `${objectCount} ${productMultiplicity.toLowerCase()} product${objectCount > 1 ? 's' : ''}`,
-    `${shadowType.toLowerCase()} shadow`,
-    
-    // Avatar integration
-    useAvatars ? (() => {
-      if (useBasicAvatar && basicAvatar) {
-        return `${avatarRole} (${basicAvatar.age} ${basicAvatar.gender.toLowerCase()} ${basicAvatar.race.toLowerCase()}, ${basicAvatar.description}) ${avatarInteraction.toLowerCase()} the product`
-      } else {
-        return `${avatarRole} ${avatarInteraction.toLowerCase()} the product`
-      }
-    })() : 'product-focused',
-    
-    // Logo integration
-    ...(logoFile && logoUsagePrompt ? [`logo placement: ${logoUsagePrompt}`] : []),
-    
-    // Text overlay with advanced typography
-    ...(headline ? [`headline: "${headline}" (${textCase} case, ${fontFamily} font, ${fontWeight} weight, letter-spacing: ${letterSpacing}px, line-height: ${lineHeight})`] : []),
-    ...(subtext ? [`subtext: "${subtext}"`] : []),
-    ...(ctaText ? [`CTA: "${ctaText}"`] : []),
-    
-    // Advanced typography effects
-    ...(highlightStyle !== 'none' ? [`highlight style: ${highlightStyle}`] : []),
-    ...(accentElement !== 'none' ? [`accent element: ${accentElement}`] : []),
-    ...(brilliance > 0 ? [`brilliance effect: ${brilliance}%`] : []),
-    ...(frostedGlass ? ['frosted glass background'] : []),
-    ...(dropShadowIntensity > 0 ? [`drop shadow: ${dropShadowIntensity}%`] : []),
-    ...(motionAccent !== 'none' ? [`motion accent: ${motionAccent}`] : []),
-    
-    // Layout and positioning
-    `layout mode: ${layoutMode}`,
-    `text alignment: ${textAlignment}`,
-    `vertical position: ${verticalPosition}%`,
-    `horizontal offset: ${horizontalOffset}px`,
-    ...(smartAnchor ? ['smart anchor enabled'] : []),
-    ...(safeZones ? ['platform safe zones enabled'] : []),
-    
-    // Platform optimization
-    ...(platformTarget ? [`optimized for ${platformTarget}`] : []),
-    
-    // Quality and technical specs
-    'high quality, professional product photography, commercial grade, detailed, sharp focus',
-    
-    // Style consistency
-    'consistent lighting, proper exposure, clean composition, brand-appropriate styling'
-  ]
-
-  return promptParts.filter(Boolean).join(', ')
-}
 
 // Convert aspect ratio to dimensions
 function getImageDimensions(aspectRatio: string): { width: number; height: number } {
@@ -251,6 +144,7 @@ export async function POST(request: NextRequest) {
     const prompt = formData.get('prompt')?.toString() || ''
     const title = formData.get('title')?.toString() || ''
     const description = formData.get('description')?.toString() || ''
+    const model = 'Nano-banana' // Hardcoded for product mockup generation
     const aspectRatio = formData.get('aspectRatio')?.toString() || '1:1'
     const artDirection = formData.get('artDirection')?.toString() || null
     const visualInfluence = formData.get('visualInfluence')?.toString() || null
@@ -260,16 +154,24 @@ export async function POST(request: NextRequest) {
     const compositionTemplate = formData.get('compositionTemplate')?.toString() || 'Centered Hero'
     const objectCount = parseInt(formData.get('objectCount')?.toString() || '1') as 1 | 2 | 3
     const shadowType = formData.get('shadowType')?.toString() || 'Soft'
-    const logoPlacement = formData.get('logoPlacement')?.toString() || 'Auto'
+    const logoPlacement = formData.get('logoPlacement')?.toString() 
+      ? JSON.parse(formData.get('logoPlacement')?.toString() || '[]') 
+      : []
+    const logoDescription = formData.get('logoDescription')?.toString() || null
     const headline = formData.get('headline')?.toString() || null
+    const headlineColor = formData.get('headlineColor')?.toString() || '#000000'
+    const headlineColorAuto = formData.get('headlineColorAuto')?.toString() === 'true'
     const subtext = formData.get('subtext')?.toString() || null
+    const subtextColor = formData.get('subtextColor')?.toString() || '#666666'
+    const subtextColorAuto = formData.get('subtextColorAuto')?.toString() === 'true'
     const ctaText = formData.get('ctaText')?.toString() || null
+    const ctaColor = formData.get('ctaColor')?.toString() || '#3B82F6'
+    const ctaColorAuto = formData.get('ctaColorAuto')?.toString() === 'true'
     const fontFamily = formData.get('fontFamily')?.toString() || 'sans'
     const fontWeight = formData.get('fontWeight')?.toString() || 'normal'
     const textCase = formData.get('textCase')?.toString() || 'sentence'
     const letterSpacing = parseFloat(formData.get('letterSpacing')?.toString() || '0')
     const lineHeight = parseFloat(formData.get('lineHeight')?.toString() || '1.2')
-    const textColor = formData.get('textColor')?.toString() || '#000000'
     const textAlignment = formData.get('textAlignment')?.toString() || 'center'
     const textEffects = formData.get('textEffects')?.toString() ? JSON.parse(formData.get('textEffects')?.toString() || '[]') : []
     const highlightStyle = formData.get('highlightStyle')?.toString() || 'none'
@@ -287,6 +189,24 @@ export async function POST(request: NextRequest) {
     const selectedAvatarId = formData.get('selectedAvatarId')?.toString() || null
     const useBasicAvatar = formData.get('useBasicAvatar')?.toString() === 'true'
     const basicAvatar = formData.get('basicAvatar')?.toString() ? JSON.parse(formData.get('basicAvatar')?.toString() || '{}') : null
+
+    // Fetch selected avatar data if provided
+    let selectedAvatarData = null
+    if (selectedAvatarId && selectedAvatarId !== '') {
+      const { data: avatarData, error: avatarError } = await supabase
+        .from('avatars_personas')
+        .select('id, persona_name, generated_images, storage_paths, content, age_range, gender_expression, ethnicity, body_type, skin_tone, hair_style, hair_color, eye_color, outfit_category')
+        .eq('id', selectedAvatarId)
+        .eq('user_id', user.id)
+        .single()
+      
+      if (!avatarError && avatarData) {
+        selectedAvatarData = avatarData
+        console.log('✅ Fetched avatar data:', avatarData.persona_name)
+      } else {
+        console.warn('⚠️ Could not fetch avatar data:', avatarError)
+      }
+    }
     const avatarRole = formData.get('avatarRole')?.toString() || 'Model'
     const avatarInteraction = formData.get('avatarInteraction')?.toString() || 'Holding'
     const productMultiplicity = formData.get('productMultiplicity')?.toString() || 'Single'
@@ -297,30 +217,57 @@ export async function POST(request: NextRequest) {
 
     // Handle product photos upload
     const productPhotosPaths: string[] = []
+    const productPhotos: File[] = []
+    
     for (let i = 0; i < 2; i++) {
       const file = formData.get(`productPhoto_${i}`) as File | null
       if (file) {
-        const filePath = `renders/product-mockups/${user.id}/references/${uuidv4()}-${file.name}`
-        const { error: uploadError } = await supabase.storage
-          .from('dreamcut')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-          })
-
-        if (uploadError) {
-          console.error(`Error uploading product photo ${file.name}:`, uploadError)
-          return NextResponse.json({ error: `Failed to upload product photo: ${uploadError.message}` }, { status: 500 })
-        }
-        productPhotosPaths.push(filePath)
+        productPhotos.push(file)
       }
+    }
+
+    // Validate uploaded product photos
+    if (productPhotos.length > 0) {
+      const validation = await validateImageFiles(productPhotos)
+      if (!validation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid product photos: ${validation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+    }
+
+    // Upload validated product photos
+    for (const file of productPhotos) {
+      const sanitizedName = sanitizeFilename(file.name)
+      const filePath = `renders/product-mockups/${user.id}/references/${uuidv4()}-${sanitizedName}`
+      const { error: uploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (uploadError) {
+        console.error(`Error uploading product photo ${file.name}:`, uploadError)
+        return NextResponse.json({ error: `Failed to upload product photo: ${uploadError.message}` }, { status: 500 })
+      }
+      productPhotosPaths.push(filePath)
     }
 
     // Handle logo upload
     let logoImagePath: string | null = null
     const logoFile = formData.get('logoFile') as File | null
     if (logoFile) {
-      const filePath = `renders/product-mockups/${user.id}/logo/${uuidv4()}-${logoFile.name}`
+      // Validate logo image
+      const logoValidation = await validateImageFiles([logoFile])
+      if (!logoValidation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid logo image: ${logoValidation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+
+      const sanitizedName = sanitizeFilename(logoFile.name)
+      const filePath = `renders/product-mockups/${user.id}/logo/${uuidv4()}-${sanitizedName}`
       const { error: uploadError } = await supabase.storage
         .from('dreamcut')
         .upload(filePath, logoFile, {
@@ -348,15 +295,21 @@ export async function POST(request: NextRequest) {
       objectCount,
       shadowType: shadowType as any,
       logoPlacement: logoPlacement as any,
+      logoDescription: nullToUndefined(logoDescription),
       headline: nullToUndefined(headline),
+      headlineColor,
+      headlineColorAuto,
       subtext: nullToUndefined(subtext),
+      subtextColor,
+      subtextColorAuto,
       ctaText: nullToUndefined(ctaText),
+      ctaColor,
+      ctaColorAuto,
       fontFamily: fontFamily as any,
       fontWeight: fontWeight as any,
       textCase: textCase as any,
       letterSpacing,
       lineHeight,
-      textColor,
       textAlignment: textAlignment as any,
       textEffects,
       highlightStyle: highlightStyle as any,
@@ -393,51 +346,92 @@ export async function POST(request: NextRequest) {
     })
 
     // Build comprehensive prompt
-    const fullPrompt = buildProductMockupPrompt(validatedData)
+    const fullPrompt = buildProductMockupPrompt({
+      ...validatedData,
+      selectedAvatarData: selectedAvatarData ? {
+        persona_name: selectedAvatarData.persona_name,
+        age_range: selectedAvatarData.age_range,
+        gender_expression: selectedAvatarData.gender_expression,
+        ethnicity: selectedAvatarData.ethnicity,
+        body_type: selectedAvatarData.body_type,
+        skin_tone: selectedAvatarData.skin_tone,
+        hair_style: selectedAvatarData.hair_style,
+        hair_color: selectedAvatarData.hair_color,
+        eye_color: selectedAvatarData.eye_color,
+        outfit_category: selectedAvatarData.outfit_category
+      } : null
+    })
     console.log('📏 Full prompt length:', fullPrompt.length, 'characters')
     
     // Get image dimensions
     const dimensions = getImageDimensions(validatedData.aspectRatio)
     console.log('📐 Image dimensions:', dimensions)
 
-    // Determine which model to use based on whether we have product photos
-    const hasProductPhotos = productPhotosPaths.length > 0
-    const model = hasProductPhotos 
-      ? 'fal-ai/flux/dev' // Use Flux for image-to-image generation
-      : 'fal-ai/flux/dev' // Use Flux for text-to-image generation
+    // Get signed URLs for uploaded images (required for private bucket)
+    const inputImageUrls: string[] = []
+    
+    // Add logo image first if present
+    if (logoImagePath) {
+      const { data } = await supabase.storage
+        .from('dreamcut')
+        .createSignedUrl(logoImagePath, 86400) // 24 hour expiry
+      if (data?.signedUrl) inputImageUrls.push(data.signedUrl)
+    }
+    
+    // Add product photos
+    for (const path of productPhotosPaths) {
+      const { data } = await supabase.storage
+        .from('dreamcut')
+        .createSignedUrl(path, 86400) // 24 hour expiry
+      if (data?.signedUrl) inputImageUrls.push(data.signedUrl)
+    }
 
-    console.log('🤖 Using model:', model)
-
-    // Prepare the request parameters
-    const requestParams: any = {
-      input: {
-        prompt: fullPrompt,
-        image_size: { width: dimensions.width, height: dimensions.height },
-        num_inference_steps: 28,
-        enable_safety_checker: true,
-        seed: Math.floor(Math.random() * 1000000) // Random seed for variety
+    // Add selected avatar image as reference if available
+    if (selectedAvatarData && selectedAvatarData.storage_paths && selectedAvatarData.storage_paths.length > 0) {
+      // Get first generated avatar image
+      const avatarImagePath = selectedAvatarData.storage_paths[0]
+      const { data } = await supabase.storage
+        .from('dreamcut')
+        .createSignedUrl(avatarImagePath, 86400)
+      if (data?.signedUrl) {
+        inputImageUrls.push(data.signedUrl)
+        console.log('✅ Added avatar image as reference')
       }
     }
 
-    // Add product photos if available (for image-to-image generation)
-    if (hasProductPhotos && model === 'fal-ai/flux/dev') {
-      // For now, we'll generate without using the uploaded photos as reference
-      // In a full implementation, you'd want to download and use the uploaded photos
-      console.log('🖼️ Product photos uploaded, but using text-to-image generation for now')
+    // Validate that all image URLs are accessible
+    if (inputImageUrls.length > 0) {
+      const urlValidation = await validateImageUrls(inputImageUrls)
+      if (!urlValidation.accessible) {
+        throw new Error(`Reference images are not accessible: ${urlValidation.errors.join(', ')}`)
+      }
     }
 
+    console.log('🤖 Using model:', model)
     console.log('⏳ Calling fal.ai API...')
     const startTime = Date.now()
 
-    // Generate images
-    const result = await fal.subscribe(model, requestParams)
+    // Generate images using fal.ai
+    const generationResult = await generateWithFal({
+      prompt: fullPrompt,
+      aspectRatio,
+      numImages: 1, // Generate product mockup
+      model: model as any,
+      hasImages: inputImageUrls.length > 0,
+      imageUrls: inputImageUrls,
+      logoImagePath: logoImagePath || undefined
+    })
 
     const endTime = Date.now()
     console.log(`✅ fal.ai API completed in ${endTime - startTime}ms`)
-    console.log('📊 Generated', result.data.images?.length || 0, 'images')
+
+    if (!generationResult.success) {
+      throw new Error(generationResult.error || 'Generation failed')
+    }
 
     // Extract image URLs
-    const imageUrls = result.data.images?.map((img: any) => img.url) || []
+    const imageUrls = generationResult.images
+    console.log('📊 Generated', imageUrls.length, 'images')
     console.log('🔗 Extracted image URLs:', imageUrls)
 
     // Generate unique ID for this generation
@@ -541,18 +535,24 @@ export async function POST(request: NextRequest) {
         object_count: validatedData.objectCount,
         shadow_type: validatedData.shadowType,
         logo_placement: validatedData.logoPlacement,
+        logo_description: validatedData.logoDescription,
         aspect_ratio: validatedData.aspectRatio,
         
         // Text & CTA Overlay
         headline: validatedData.headline,
+        headline_color: validatedData.headlineColor,
+        headline_color_auto: validatedData.headlineColorAuto,
         subtext: validatedData.subtext,
+        subtext_color: validatedData.subtextColor,
+        subtext_color_auto: validatedData.subtextColorAuto,
         cta_text: validatedData.ctaText,
+        cta_color: validatedData.ctaColor,
+        cta_color_auto: validatedData.ctaColorAuto,
         font_family: validatedData.fontFamily,
         font_weight: validatedData.fontWeight,
         text_case: validatedData.textCase,
         letter_spacing: validatedData.letterSpacing,
         line_height: validatedData.lineHeight,
-        text_color: validatedData.textColor,
         text_alignment: validatedData.textAlignment,
         text_effects: validatedData.textEffects,
         

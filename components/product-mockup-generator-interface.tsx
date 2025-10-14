@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   X, 
   Sparkles, 
@@ -46,14 +47,35 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
+import { toast } from "sonner"
+import { GenerationLoading } from "@/components/ui/generation-loading"
+import { GenerationError } from "@/components/ui/generation-error"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 import { cn } from "@/lib/utils"
 import { STYLE_MAP } from "@/lib/styles/style-map"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
+import type { FalModel } from '@/lib/utils/fal-generation'
 import { convertToSignedUrls } from "@/lib/storage/signed-urls"
 import { 
   ProductMockupGenerationRequest, 
   AvailableAvatar,
   ProductMockupGenerationResult 
 } from "@/lib/types/product-mockup"
+
+// Logo Placement options (multi-select)
+const LOGO_PLACEMENT_OPTIONS = [
+  { value: "Top-Right", label: "Top-Right Corner", icon: "↗️", desc: "Logo overlay in top-right" },
+  { value: "Bottom-Left", label: "Bottom-Left Corner", icon: "↙️", desc: "Logo overlay in bottom-left" },
+  { value: "Bottom-Right", label: "Bottom-Right Corner", icon: "↘️", desc: "Logo overlay in bottom-right" },
+  { value: "Top-Left", label: "Top-Left Corner", icon: "↖️", desc: "Logo overlay in top-left" },
+  { value: "On-Product", label: "On Product", icon: "📦", desc: "Logo on product surface" },
+  { value: "On-Packaging", label: "On Packaging", icon: "📋", desc: "Logo on packaging/label" },
+  { value: "On-Accessory", label: "On Accessory", icon: "👜", desc: "Logo on accessory item" },
+  { value: "Background-Wall", label: "Background", icon: "🖼️", desc: "Logo on background wall" },
+  { value: "Center-Badge", label: "Center Badge", icon: "🏷️", desc: "Logo as centered badge" }
+]
 
 interface ProductMockupGeneratorInterfaceProps {
   onClose: () => void
@@ -91,12 +113,16 @@ export function ProductMockupGeneratorInterface({
   selectedArtifact 
 }: ProductMockupGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Basic Settings
   const [title, setTitle] = useState("")
   const [prompt, setPrompt] = useState("")
   const [aspectRatio, setAspectRatio] = useState<"1:1" | "4:5" | "16:9" | "9:16" | "2:1" | "3:4" | "2:3" | "4:3" | "3:2">("1:1")
+
+  // Available aspect ratios for Nano-banana model
+  const availableAspectRatios = ["1:1", "4:5", "16:9", "9:16", "2:1", "3:4", "2:3", "4:3", "3:2"]
   
   // Product Photos
   const [productPhotos, setProductPhotos] = useState<File[]>([])
@@ -106,7 +132,8 @@ export function ProductMockupGeneratorInterface({
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoUsagePrompt, setLogoUsagePrompt] = useState("")
-  const [logoPlacementOption, setLogoPlacementOption] = useState<"None" | "Top-Right" | "Bottom-Left">("None")
+  const [logoPlacementOption, setLogoPlacementOption] = useState<string[]>([])
+  const [logoDescription, setLogoDescription] = useState<string>("")
   
   // Art Direction & Visual Influence
   const [artDirection, setArtDirection] = useState<string>("")
@@ -119,18 +146,22 @@ export function ProductMockupGeneratorInterface({
   const [compositionTemplate, setCompositionTemplate] = useState<"Centered Hero" | "Rule of Thirds" | "Floating Object" | "Flat Lay" | "Collage">("Centered Hero")
   const [objectCount, setObjectCount] = useState<1 | 2 | 3>(1)
   const [shadowType, setShadowType] = useState<"Soft" | "Hard" | "Floating" | "Mirror">("Soft")
-  const [logoPlacement, setLogoPlacement] = useState<"Auto" | "Top Left" | "Top Right" | "Bottom Left" | "Bottom Right" | "Center">("Auto")
   
   // Text & CTA Overlay
   const [headline, setHeadline] = useState("")
+  const [headlineColor, setHeadlineColor] = useState("#000000")
+  const [headlineColorAuto, setHeadlineColorAuto] = useState(true)
   const [subtext, setSubtext] = useState("")
+  const [subtextColor, setSubtextColor] = useState("#666666")
+  const [subtextColorAuto, setSubtextColorAuto] = useState(true)
   const [ctaText, setCtaText] = useState("")
+  const [ctaColor, setCtaColor] = useState("#3B82F6") // Brand primary by default
+  const [ctaColorAuto, setCtaColorAuto] = useState(true)
   const [fontFamily, setFontFamily] = useState<"serif" | "sans" | "condensed" | "rounded" | "monospace" | "script" | "display" | "handwriting" | "decorative" | "modern" | "classic" | "futuristic" | "elegant" | "bold" | "minimal" | "vintage" | "tech" | "artistic" | "playful" | "professional" | "luxury" | "casual" | "formal" | "creative" | "clean" | "stylized" | "geometric" | "organic" | "industrial" | "romantic" | "edgy" | "sophisticated" | "friendly" | "dramatic" | "subtle" | "expressive" | "refined" | "dynamic" | "serene" | "energetic" | "mysterious" | "vibrant" | "calm" | "powerful" | "gentle" | "striking" | "smooth" | "rough" | "precise" | "flowing" | "structured" | "freeform" | "technical" | "artistic" | "corporate" | "personal" | "trendy" | "timeless" | "innovative" | "traditional" | "contemporary" | "retro" | "cutting-edge" | "nostalgic" | "futuristic" | "classic" | "avant-garde" | "minimalist" | "maximalist" | "elegant" | "raw" | "polished" | "rustic" | "urban" | "natural" | "synthetic" | "warm" | "cool" | "neutral" | "bold" | "delicate" | "strong" | "soft" | "hard" | "fluid" | "rigid" | "curved" | "angular" | "rounded" | "sharp" | "blunt" | "pointed" | "smooth" | "textured" | "flat" | "dimensional" | "layered" | "simple" | "complex" | "abstract" | "literal" | "symbolic" | "direct" | "indirect" | "obvious" | "subtle" | "loud" | "quiet" | "bright" | "dark" | "light" | "heavy" | "thin" | "thick" | "wide" | "narrow" | "tall" | "short" | "expanded" | "condensed" | "extended" | "compressed" | "spacious" | "tight" | "loose" | "dense" | "sparse" | "full" | "empty" | "rich" | "poor" | "luxurious" | "basic" | "premium" | "standard" | "exclusive" | "common" | "rare" | "unique" | "ordinary" | "special" | "regular" | "irregular" | "consistent" | "inconsistent" | "stable" | "unstable" | "balanced" | "unbalanced" | "symmetrical" | "asymmetrical" | "proportional" | "disproportional" | "harmonious" | "discordant" | "melodic" | "rhythmic" | "static" | "dynamic" | "still" | "moving" | "frozen" | "flowing" | "solid" | "liquid" | "gaseous" | "crystalline" | "amorphous" | "structured" | "unstructured" | "organized" | "chaotic" | "orderly" | "random" | "planned" | "spontaneous" | "calculated" | "intuitive" | "logical" | "emotional" | "rational" | "irrational" | "scientific" | "artistic" | "mathematical" | "poetic" | "prosaic" | "lyrical" | "prosaic" | "musical" | "visual" | "tactile" | "auditory" | "olfactory" | "gustatory" | "kinesthetic" | "spatial" | "temporal" | "conceptual" | "perceptual" | "cognitive" | "affective" | "behavioral" | "physiological" | "psychological" | "social" | "cultural" | "historical" | "contemporary" | "traditional" | "modern" | "postmodern" | "premodern" | "antique" | "vintage" | "retro" | "neo" | "proto" | "meta" | "para" | "anti" | "pro" | "pre" | "post" | "inter" | "intra" | "trans" | "cis" | "ultra" | "infra" | "super" | "sub" | "hyper" | "hypo" | "macro" | "micro" | "mega" | "mini" | "maxi" | "mega" | "giga" | "tera" | "peta" | "exa" | "zetta" | "yotta" | "deca" | "hecto" | "kilo" | "milli" | "micro" | "nano" | "pico" | "femto" | "atto" | "zepto" | "yocto">("sans")
   const [fontWeight, setFontWeight] = useState<"light" | "normal" | "medium" | "bold">("normal")
   const [textCase, setTextCase] = useState<"uppercase" | "title" | "sentence">("sentence")
   const [letterSpacing, setLetterSpacing] = useState(0)
   const [lineHeight, setLineHeight] = useState(1.2)
-  const [textColor, setTextColor] = useState("#000000")
   const [textAlignment, setTextAlignment] = useState<"left" | "center" | "right">("center")
   const [textEffects, setTextEffects] = useState<string[]>([])
   
@@ -180,6 +211,8 @@ export function ProductMockupGeneratorInterface({
   
   // Generation State
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
+
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [signedImageUrls, setSignedImageUrls] = useState<string[]>([])
   const [urlsLoading, setUrlsLoading] = useState(false)
@@ -222,31 +255,50 @@ export function ProductMockupGeneratorInterface({
     if (artDirection && STYLE_MAP[artDirection]) {
       const influences = STYLE_MAP[artDirection]
       if (influences.length > 0) {
-        setVisualInfluence(influences[0].label)
-        setLightingPreset(influences[0].lightingPresets[0]?.name || "")
-        setBackgroundEnvironment(influences[0].backgroundEnvironments[0]?.name || "")
-        setMoodContext(influences[0].moodContexts[0]?.name || "")
+        // Check if current visual influence is still valid
+        const currentInfluenceValid = influences.some(influence => influence.label === visualInfluence)
+        if (visualInfluence && !currentInfluenceValid) {
+          // Reset to empty string when current selection is invalid
+          setVisualInfluence("")
+          setLightingPreset("")
+          setBackgroundEnvironment("")
+          setMoodContext("")
+        }
       }
+    } else {
+      // Reset all fields when no art direction is selected
+      setVisualInfluence("")
+      setLightingPreset("")
+      setBackgroundEnvironment("")
+      setMoodContext("")
     }
-  }, [artDirection])
+  }, [artDirection, visualInfluence])
 
   // Update lighting/background options when visual influence changes
   useEffect(() => {
     if (artDirection && visualInfluence && STYLE_MAP[artDirection]) {
       const influence = STYLE_MAP[artDirection].find(inf => inf.label === visualInfluence)
       if (influence) {
-        if (influence.lightingPresets.length > 0 && !influence.lightingPresets.find(lp => lp.name === lightingPreset)) {
-          setLightingPreset(influence.lightingPresets[0].name)
+        // Check if current lighting preset is still valid
+        if (lightingPreset && influence.lightingPresets.length > 0 && !influence.lightingPresets.find(lp => lp.name === lightingPreset)) {
+          setLightingPreset("")
         }
-        if (influence.backgroundEnvironments.length > 0 && !influence.backgroundEnvironments.find(be => be.name === backgroundEnvironment)) {
-          setBackgroundEnvironment(influence.backgroundEnvironments[0].name)
+        // Check if current background environment is still valid
+        if (backgroundEnvironment && influence.backgroundEnvironments.length > 0 && !influence.backgroundEnvironments.find(be => be.name === backgroundEnvironment)) {
+          setBackgroundEnvironment("")
         }
-        if (influence.moodContexts.length > 0 && !influence.moodContexts.find(mc => mc.name === moodContext)) {
-          setMoodContext(influence.moodContexts[0].name)
+        // Check if current mood context is still valid
+        if (moodContext && influence.moodContexts.length > 0 && !influence.moodContexts.find(mc => mc.name === moodContext)) {
+          setMoodContext("")
         }
       }
+    } else {
+      // Reset all fields when no visual influence is selected
+      setLightingPreset("")
+      setBackgroundEnvironment("")
+      setMoodContext("")
     }
-  }, [visualInfluence, artDirection])
+  }, [visualInfluence, artDirection, lightingPreset, backgroundEnvironment, moodContext])
 
   const loadAvailableAvatars = async () => {
     setLoadingAvatars(true)
@@ -300,7 +352,7 @@ export function ProductMockupGeneratorInterface({
     setLogoFile(null)
     setLogoPreview(null)
     setLogoUsagePrompt("")
-    setLogoPlacementOption("None")
+    setLogoPlacementOption([])
   }
 
   const toggleTextEffect = (effect: string) => {
@@ -333,10 +385,86 @@ export function ProductMockupGeneratorInterface({
       // Prepare FormData for file uploads
       const formData = new FormData()
       
-      // Add all form fields
+      // Collect all creative fields
+      const allFields = {
+        // Basic settings
+        title,
+        aspectRatio,
+        
+        // Visual Style
+        artDirection: artDirection || '',
+        visualInfluence: visualInfluence || '',
+        lightingPreset: lightingPreset || '',
+        backgroundEnvironment: backgroundEnvironment || '',
+        moodContext: moodContext || '',
+        compositionTemplate,
+        objectCount,
+        shadowType,
+        logoPlacement: logoPlacementOption,
+        logoDescription: logoDescription,
+        
+        // Typography
+        headline: headline || '',
+        headlineColor: headlineColorAuto ? 'auto' : headlineColor,
+        headlineColorAuto,
+        subtext: subtext || '',
+        subtextColor: subtextColorAuto ? 'auto' : subtextColor,
+        subtextColorAuto,
+        ctaText: ctaText || '',
+        ctaColor: ctaColorAuto ? 'auto' : ctaColor,
+        ctaColorAuto,
+        fontFamily,
+        fontWeight,
+        textCase,
+        letterSpacing,
+        lineHeight,
+        textAlignment,
+        textEffects,
+        
+        // Visual Effects
+        highlightStyle,
+        accentElement,
+        brilliance,
+        frostedGlass,
+        dropShadowIntensity,
+        motionAccent,
+        
+        // Layout
+        layoutMode,
+        verticalPosition,
+        horizontalOffset,
+        smartAnchor,
+        safeZones,
+        
+        // Avatars
+        useAvatars,
+        selectedAvatarId: selectedAvatarId || '',
+        useBasicAvatar,
+        basicAvatar: useBasicAvatar ? {
+          age: basicAvatarAge,
+          race: basicAvatarRace,
+          gender: basicAvatarGender,
+          description: basicAvatarDescription
+        } : null,
+        avatarRole,
+        avatarInteraction,
+        
+        // Product
+        productMultiplicity,
+        angleVarietyCount,
+        platformTarget: platformTarget || '',
+        brandColors
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
+      // Add original prompt
+      formData.append('prompt', prompt.trim())
+      
+      // Add metadata fields (needed for database/tracking)
       formData.append('title', title)
       formData.append('description', prompt.trim())
-      formData.append('prompt', prompt.trim())
       formData.append('aspectRatio', aspectRatio)
       formData.append('artDirection', artDirection || '')
       formData.append('visualInfluence', visualInfluence || '')
@@ -346,16 +474,22 @@ export function ProductMockupGeneratorInterface({
       formData.append('compositionTemplate', compositionTemplate)
       formData.append('objectCount', objectCount.toString())
       formData.append('shadowType', shadowType)
-      formData.append('logoPlacement', logoPlacementOption !== "None" ? logoPlacementOption.replace("-", " ") : "Auto")
+      formData.append('logoPlacement', JSON.stringify(logoPlacementOption))
+      formData.append('logoDescription', logoDescription)
       formData.append('headline', headline || '')
+      formData.append('headlineColor', headlineColorAuto ? 'auto' : headlineColor)
+      formData.append('headlineColorAuto', headlineColorAuto.toString())
       formData.append('subtext', subtext || '')
+      formData.append('subtextColor', subtextColorAuto ? 'auto' : subtextColor)
+      formData.append('subtextColorAuto', subtextColorAuto.toString())
       formData.append('ctaText', ctaText || '')
+      formData.append('ctaColor', ctaColorAuto ? 'auto' : ctaColor)
+      formData.append('ctaColorAuto', ctaColorAuto.toString())
       formData.append('fontFamily', fontFamily)
       formData.append('fontWeight', fontWeight)
       formData.append('textCase', textCase)
       formData.append('letterSpacing', letterSpacing.toString())
       formData.append('lineHeight', lineHeight.toString())
-      formData.append('textColor', textColor)
       formData.append('textAlignment', textAlignment)
       formData.append('textEffects', JSON.stringify(textEffects))
       formData.append('highlightStyle', highlightStyle)
@@ -422,8 +556,8 @@ export function ProductMockupGeneratorInterface({
         setGenerationResult(result)
         
         toast({
-          title: "Product Mockup Generated!",
-          description: `Successfully generated ${result.images.length} mockup variations.`,
+          title: "🎨 Product Mockups Generated!",
+          description: `Successfully generated ${result.images.length} mockup variations. Check your library to view them!`,
         })
         
         // Close the interface to return to the generator panel
@@ -437,11 +571,8 @@ export function ProductMockupGeneratorInterface({
       
     } catch (error) {
       console.error('Generation failed:', error)
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate product mockup. Please try again.",
-        variant: "destructive"
-      })
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate product mockup. Please try again."
+      setGenerationError(errorMessage)
     } finally {
       setIsGenerating(false)
     }
@@ -455,7 +586,29 @@ export function ProductMockupGeneratorInterface({
   const currentInfluence = getCurrentVisualInfluence()
 
   return (
-    <div className="bg-background border border-border rounded-lg p-2 space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover">
+    <>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <GenerationLoading 
+          model="Nano-banana"
+          onCancel={() => setIsGenerating(false)}
+        />
+      )}
+
+      {/* Error Overlay */}
+      {generationError && (
+        <GenerationError
+          error={generationError}
+          model="Nano-banana"
+          onRetry={() => {
+            setGenerationError(null)
+            handleGenerate()
+          }}
+          onClose={() => setGenerationError(null)}
+        />
+      )}
+
+      <div className="bg-background border border-border rounded-lg p-2 space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover">
       {/* Header */}
       <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2 border-b border-border">
         <div className="flex items-center gap-3">
@@ -635,6 +788,7 @@ export function ProductMockupGeneratorInterface({
         />
       </div>
 
+
       {/* Logo Upload with Dropdown */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
@@ -643,38 +797,34 @@ export function ProductMockupGeneratorInterface({
         </div>
         
         <div className="space-y-2">
-          {/* Dropdown Selection */}
-          <Select 
-            value={logoPlacementOption} 
-            onValueChange={(value) => setLogoPlacementOption(value as "None" | "Top-Right" | "Bottom-Left")}
-          >
-            <SelectTrigger className="w-full h-8 text-xs">
-              <SelectValue placeholder="Select logo placement" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="None" className="text-xs">
-                <div className="flex items-center gap-2">
-                  <span>🚫</span>
-                  None
+          {/* Logo Placement Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-foreground">Logo Positions (select multiple)</label>
+            <div className="grid grid-cols-2 gap-2">
+              {LOGO_PLACEMENT_OPTIONS.map((option) => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`logo-${option.value}`}
+                    checked={logoPlacementOption.includes(option.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setLogoPlacementOption([...logoPlacementOption, option.value])
+                      } else {
+                        setLogoPlacementOption(logoPlacementOption.filter(p => p !== option.value))
+                      }
+                    }}
+                  />
+                  <label htmlFor={`logo-${option.value}`} className="text-xs cursor-pointer">
+                    <span className="mr-1">{option.icon}</span>
+                    {option.label}
+                  </label>
                 </div>
-              </SelectItem>
-              <SelectItem value="Top-Right" className="text-xs">
-                <div className="flex items-center gap-2">
-                  <span>↗️</span>
-                  Top-Right
-                </div>
-              </SelectItem>
-              <SelectItem value="Bottom-Left" className="text-xs">
-                <div className="flex items-center gap-2">
-                  <span>↙️</span>
-                  Bottom-Left
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              ))}
+            </div>
+          </div>
 
-          {/* Conditional Logo Upload - Only show if not "None" */}
-          {logoPlacementOption !== "None" && (
+          {/* Conditional Logo Upload - Only show if positions selected */}
+          {logoPlacementOption.length > 0 && (
         <div className="space-y-2">
           {!logoFile ? (
                 <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-2 text-center hover:border-muted-foreground/50 transition-colors">
@@ -727,6 +877,20 @@ export function ProductMockupGeneratorInterface({
                 </Button>
               </div>
               )}
+
+              {/* Logo Description Field */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">Logo Description (optional)</label>
+                <Textarea
+                  placeholder="Describe your logo style (e.g., modern tech company logo with blue accent, vintage circular badge, minimalist geometric symbol)"
+                  value={logoDescription}
+                  onChange={(e) => setLogoDescription(e.target.value)}
+                  className="min-h-[50px] text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  You can upload a logo image and/or describe it. The AI will use both to create the logo appearance.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -758,6 +922,17 @@ export function ProductMockupGeneratorInterface({
                 <SelectValue placeholder="Select Art Direction" />
               </SelectTrigger>
               <SelectContent className="max-h-60">
+                <SelectItem value="none">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                      🚫
+                    </div>
+                    <div>
+                      <div className="font-medium">None</div>
+                      <div className="text-xs text-muted-foreground">No art direction</div>
+                    </div>
+                  </div>
+                </SelectItem>
                 {Object.keys(STYLE_MAP).map((direction) => {
                   // Mapping des emojis pour chaque direction d'art
                   const getEmoji = (dir: string) => {
@@ -807,6 +982,12 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Visual Influence" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  <SelectItem value="none" className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>🚫</span>
+                      <span>None</span>
+                    </div>
+                  </SelectItem>
                   {STYLE_MAP[artDirection]?.map((influence) => {
                     // Mapping des emojis pour chaque influence visuelle
                     const getInfluenceEmoji = (label: string) => {
@@ -865,6 +1046,12 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Lighting" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  <SelectItem value="none" className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>🚫</span>
+                      <span>None</span>
+                    </div>
+                  </SelectItem>
                   {currentInfluence.lightingPresets.map((preset) => {
                     // Mapping des emojis pour chaque preset d'éclairage
                     const getLightingEmoji = (name: string) => {
@@ -933,6 +1120,12 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Background" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  <SelectItem value="none" className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>🚫</span>
+                      <span>None</span>
+                    </div>
+                  </SelectItem>
                   {currentInfluence.backgroundEnvironments.map((env) => {
                     // Mapping des emojis pour chaque environnement de fond
                     const getBackgroundEmoji = (name: string) => {
@@ -1018,6 +1211,12 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Mood" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  <SelectItem value="none" className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>🚫</span>
+                      <span>None</span>
+                    </div>
+                  </SelectItem>
                   {currentInfluence.moodContexts.map((mood) => {
                     // Mapping des emojis pour chaque contexte d'humeur
                     const getMoodEmoji = (name: string) => {
@@ -1124,7 +1323,7 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Aspect Ratio" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {["1:1", "4:5", "16:9", "9:16", "2:1", "3:4", "2:3", "4:3", "3:2"].map((ratio) => {
+                  {availableAspectRatios.map((ratio) => {
                     // Mapping des emojis pour chaque ratio d'aspect
                     const getAspectRatioEmoji = (ratio: string) => {
                       switch (ratio) {
@@ -1164,6 +1363,17 @@ export function ProductMockupGeneratorInterface({
                 <SelectValue placeholder="Select Composition" />
               </SelectTrigger>
               <SelectContent className="max-h-60">
+                <SelectItem value="none">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                      🚫
+                    </div>
+                    <div>
+                      <div className="font-medium">None</div>
+                      <div className="text-xs text-muted-foreground">No composition template</div>
+                    </div>
+                  </div>
+                </SelectItem>
                 {["Centered Hero", "Rule of Thirds", "Floating Object", "Flat Lay", "Collage"].map((template) => {
                   // Mapping des emojis pour chaque template de composition
                   const getCompositionEmoji = (template: string) => {
@@ -1215,6 +1425,17 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Shadow" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                        🚫
+                      </div>
+                      <div>
+                        <div className="font-medium">None</div>
+                        <div className="text-xs text-muted-foreground">No shadow</div>
+                      </div>
+                    </div>
+                  </SelectItem>
                   {["Soft", "Hard", "Floating", "Mirror"].map((shadow) => {
                     // Mapping des emojis pour chaque type d'ombre
                     const getShadowEmoji = (shadow: string) => {
@@ -1258,26 +1479,88 @@ export function ProductMockupGeneratorInterface({
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-2">
-          {/* Text Inputs */}
+          {/* Text Inputs with Color Controls */}
           <div className="space-y-2">
-            <Input
-              value={headline}
-              onChange={(e) => setHeadline(e.target.value)}
-              placeholder="Headline (optional)"
-              className="text-xs h-8"
-            />
-            <Input
-              value={subtext}
-              onChange={(e) => setSubtext(e.target.value)}
-              placeholder="Subtext (optional)"
-              className="text-xs h-8"
-            />
-            <Input
-              value={ctaText}
-              onChange={(e) => setCtaText(e.target.value)}
-              placeholder="CTA Text (optional)"
-              className="text-xs h-8"
-            />
+            {/* Headline with Color */}
+            <div className="flex items-center gap-2">
+              <Input
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                placeholder="Headline (optional)"
+                className="text-xs h-8 flex-1"
+              />
+              <Button
+                variant={headlineColorAuto ? "default" : "outline"}
+                size="sm"
+                onClick={() => setHeadlineColorAuto(!headlineColorAuto)}
+                className="w-14 h-8 text-xs"
+                type="button"
+              >
+                Auto
+              </Button>
+              <input
+                type="color"
+                value={headlineColor}
+                onChange={(e) => setHeadlineColor(e.target.value)}
+                disabled={headlineColorAuto}
+                className="w-10 h-8 rounded border cursor-pointer disabled:opacity-50"
+                title="Headline color"
+              />
+            </div>
+            
+            {/* Subtext with Color */}
+            <div className="flex items-center gap-2">
+              <Input
+                value={subtext}
+                onChange={(e) => setSubtext(e.target.value)}
+                placeholder="Subtext (optional)"
+                className="text-xs h-8 flex-1"
+              />
+              <Button
+                variant={subtextColorAuto ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSubtextColorAuto(!subtextColorAuto)}
+                className="w-14 h-8 text-xs"
+                type="button"
+              >
+                Auto
+              </Button>
+              <input
+                type="color"
+                value={subtextColor}
+                onChange={(e) => setSubtextColor(e.target.value)}
+                disabled={subtextColorAuto}
+                className="w-10 h-8 rounded border cursor-pointer disabled:opacity-50"
+                title="Subtext color"
+              />
+            </div>
+            
+            {/* CTA with Color */}
+            <div className="flex items-center gap-2">
+              <Input
+                value={ctaText}
+                onChange={(e) => setCtaText(e.target.value)}
+                placeholder="CTA Text (optional)"
+                className="text-xs h-8 flex-1"
+              />
+              <Button
+                variant={ctaColorAuto ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCtaColorAuto(!ctaColorAuto)}
+                className="w-14 h-8 text-xs"
+                type="button"
+              >
+                Auto
+              </Button>
+              <input
+                type="color"
+                value={ctaColor}
+                onChange={(e) => setCtaColor(e.target.value)}
+                disabled={ctaColorAuto}
+                className="w-10 h-8 rounded border cursor-pointer disabled:opacity-50"
+                title="CTA color"
+              />
+            </div>
           </div>
 
           {/* Typography Controls */}
@@ -1289,6 +1572,17 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Font" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                        🚫
+                      </div>
+                      <div>
+                        <div className="font-medium">None</div>
+                        <div className="text-xs text-muted-foreground">No font family</div>
+                      </div>
+                    </div>
+                  </SelectItem>
                   {["serif", "sans", "condensed", "rounded", "monospace", "script", "display", "handwriting", "decorative", "modern", "classic", "futuristic", "elegant", "bold", "minimal", "vintage", "tech", "artistic", "playful", "professional", "luxury", "casual", "formal", "creative", "clean", "stylized", "geometric", "organic", "industrial", "romantic", "edgy", "sophisticated", "friendly", "dramatic", "subtle", "expressive", "refined", "dynamic", "serene", "energetic", "mysterious", "vibrant", "calm", "powerful", "gentle", "striking", "smooth", "rough", "precise", "flowing", "structured", "freeform", "technical", "corporate", "personal", "trendy", "timeless", "innovative", "traditional", "contemporary", "retro", "cutting-edge", "nostalgic", "avant-garde", "minimalist", "maximalist", "raw", "polished", "rustic", "urban", "natural", "synthetic", "warm", "cool", "neutral", "delicate", "strong", "soft", "hard", "fluid", "rigid", "curved", "angular", "sharp", "blunt", "pointed", "textured", "flat", "dimensional", "layered", "simple", "complex", "abstract", "literal", "symbolic", "direct", "indirect", "obvious", "loud", "quiet", "bright", "dark", "light", "heavy", "thin", "thick", "wide", "narrow", "tall", "short", "expanded", "extended", "compressed", "spacious", "tight", "loose", "dense", "sparse", "full", "empty", "rich", "poor", "luxurious", "basic", "premium", "standard", "exclusive", "common", "rare", "unique", "ordinary", "special", "regular", "irregular", "consistent", "inconsistent", "stable", "unstable", "balanced", "unbalanced", "symmetrical", "asymmetrical", "proportional", "disproportional", "harmonious", "discordant", "melodic", "rhythmic", "static", "still", "moving", "frozen", "solid", "liquid", "gaseous", "crystalline", "amorphous", "unstructured", "organized", "chaotic", "orderly", "random", "planned", "spontaneous", "calculated", "intuitive", "logical", "emotional", "rational", "irrational", "scientific", "mathematical", "poetic", "prosaic", "lyrical", "musical", "visual", "tactile", "auditory", "olfactory", "gustatory", "kinesthetic", "spatial", "temporal", "conceptual", "perceptual", "cognitive", "affective", "behavioral", "physiological", "psychological", "social", "cultural", "historical", "postmodern", "premodern", "antique", "neo", "proto", "meta", "para", "anti", "pro", "pre", "post", "inter", "intra", "trans", "cis", "ultra", "infra", "super", "sub", "hyper", "hypo", "macro", "micro", "mega", "mini", "maxi", "giga", "tera", "peta", "exa", "zetta", "yotta", "deca", "hecto", "kilo", "milli", "nano", "pico", "femto", "atto", "zepto", "yocto"].map((font) => {
                     // Mapping des emojis pour chaque famille de police
                     const getFontEmoji = (font: string) => {
@@ -1553,6 +1847,17 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Weight" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                        🚫
+                      </div>
+                      <div>
+                        <div className="font-medium">None</div>
+                        <div className="text-xs text-muted-foreground">No font weight</div>
+                      </div>
+                    </div>
+                  </SelectItem>
                   {["light", "normal", "medium", "bold"].map((weight) => {
                     // Mapping des emojis pour chaque poids de police
                     const getWeightEmoji = (weight: string) => {
@@ -1638,6 +1943,17 @@ export function ProductMockupGeneratorInterface({
                     <SelectValue placeholder="Select Text Case" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                          🚫
+                        </div>
+                        <div>
+                          <div className="font-medium">None</div>
+                          <div className="text-xs text-muted-foreground">No text case</div>
+                        </div>
+                      </div>
+                    </SelectItem>
                     {["sentence", "title", "uppercase"].map((caseType) => {
                       // Mapping des emojis pour chaque cas de texte
                       const getTextCaseEmoji = (caseType: string) => {
@@ -1838,6 +2154,17 @@ export function ProductMockupGeneratorInterface({
                   <SelectValue placeholder="Select Layout Mode" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                        🚫
+                      </div>
+                      <div>
+                        <div className="font-medium">None</div>
+                        <div className="text-xs text-muted-foreground">No layout mode</div>
+                      </div>
+                    </div>
+                  </SelectItem>
                   {["centered", "left", "right", "split"].map((mode) => {
                     // Mapping des emojis pour chaque mode de mise en page
                     const getLayoutModeEmoji = (mode: string) => {
@@ -2346,5 +2673,9 @@ export function ProductMockupGeneratorInterface({
         )}
       </Button>
     </div>
+
+    {/* Previous Generations */}
+    <PreviousGenerations contentType="product_mockups" userId={user?.id || ''} className="mt-8" />
+    </>
   )
 }

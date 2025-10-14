@@ -43,7 +43,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface TalkingAvatarsGeneratorInterfaceProps {
   onClose: () => void
@@ -70,6 +73,7 @@ export function TalkingAvatarsGeneratorInterface({
   selectedArtifact 
 }: TalkingAvatarsGeneratorInterfaceProps) {
   const { toast } = useToast()
+  const { user } = useAuth()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const audioInputRef = useRef<HTMLInputElement>(null)
   
@@ -327,6 +331,29 @@ export function TalkingAvatarsGeneratorInterface({
 
     setIsGenerating(true)
     try {
+      // Collect all creative fields
+      const allFields = {
+        title: title.trim() || "Untitled Talking Avatar",
+        use_custom_image: useCustomImage,
+        selected_avatar_id: selectedAvatarId || null,
+        use_custom_audio: useCustomAudio,
+        audio_duration: audioDuration || null,
+        selected_voiceover_id: selectedVoiceoverId || null,
+        aspect_ratio: aspectRatio,
+        resolution: resolution,
+        fps: fps,
+        max_duration: maxDuration,
+        facial_expressions: facialExpressions,
+        gestures: gestures,
+        eye_contact: eyeContact,
+        head_movement: headMovement,
+        projectTitle,
+        selectedArtifact
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
       // Prepare data for API
       const generationData = {
         title: title.trim() || "Untitled Talking Avatar",
@@ -981,6 +1008,9 @@ export function TalkingAvatarsGeneratorInterface({
           )}
         </Button>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="talking_avatars" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

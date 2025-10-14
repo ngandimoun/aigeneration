@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -45,7 +45,7 @@ const createProductMotionSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -170,18 +170,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Add to library_items
+    // Add to library_items with correct schema
     const { error: libraryError } = await supabase
       .from('library_items')
       .insert([
         {
           user_id: user.id,
-          item_id: data[0].id,
-          item_type: 'product_motion',
-          title: validatedData.product_name || `${validatedData.product_category} Motion`,
-          description: validatedData.prompt,
-          image_url: null, // No image for product motions
-          created_at: new Date().toISOString(),
+          content_type: 'product_motions',  // Changed from item_type
+          content_id: data[0].id,           // Changed from item_id
+          // Removed: title, description, image_url, created_at (not in schema)
         },
       ]);
 
@@ -205,7 +202,7 @@ export async function POST(request: NextRequest) {
 
 // GET endpoint to fetch product_motions by user
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
@@ -228,7 +225,7 @@ export async function GET(request: NextRequest) {
 
 // PUT endpoint to update a product_motion
 export async function PUT(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
@@ -262,7 +259,7 @@ export async function PUT(request: NextRequest) {
 
 // DELETE endpoint to delete a product_motion
 export async function DELETE(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {

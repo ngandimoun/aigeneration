@@ -25,12 +25,21 @@ import {
   ChevronUp
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth/auth-provider"
+import { toast } from "sonner"
+import { GenerationLoading } from "@/components/ui/generation-loading"
+import { GenerationError } from "@/components/ui/generation-error"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
+import type { FalModel } from '@/lib/utils/fal-generation'
 
 interface WorldKit {
   id: string
   name: string
   prompt: string
+  model: string
   worldPurpose: string
   referenceImages: File[]
   seedVariability: number
@@ -237,14 +246,16 @@ const LOGO_PLACEMENT_OPTIONS = [
   "↘️ Bottom-Right"
 ]
 
-const ASPECT_RATIOS = [
-  "⬜ 1:1 (Square)",
-  "📺 4:3 (Standard)",
-  "🖥️ 16:9 (Widescreen)",
-  "📷 3:2 (Photo)",
-  "📱 21:9 (Ultrawide)",
-  "📱 9:16 (Portrait)",
-  "📸 2:3 (Portrait Photo)"
+const ALL_ASPECT_RATIOS = [
+  { ratio: "1:1", label: "⬜ 1:1 (Square)" },
+  { ratio: "4:3", label: "📺 4:3 (Standard)" },
+  { ratio: "3:4", label: "📱 3:4 (Portrait)" },
+  { ratio: "16:9", label: "🖥️ 16:9 (Widescreen)" },
+  { ratio: "9:16", label: "📱 9:16 (Portrait)" },
+  { ratio: "21:9", label: "📱 21:9 (Ultrawide)" },
+  { ratio: "2:3", label: "📸 2:3 (Portrait Photo)" },
+  { ratio: "3:2", label: "📷 3:2 (Photo)" },
+  { ratio: "4:5", label: "📱 4:5 (Instagram)" }
 ]
 
 const PRESET_COLORS = [
@@ -267,6 +278,7 @@ export function ConceptWorldsGeneratorInterface({
   onClose,
   projectTitle
 }: ConceptWorldsGeneratorInterfaceProps) {
+  const { user } = useAuth()
   const [worldKit, setWorldKit] = useState<Partial<WorldKit>>({
     seedVariability: 50,
     textureDetail: 50,
@@ -276,10 +288,13 @@ export function ConceptWorldsGeneratorInterface({
     spatialConsistencyLock: false,
     brandSync: false,
     symbolicMotifs: [],
-    referenceImages: []
+    referenceImages: [],
+    model: "Nano-banana",
+    aspectRatio: "1:1"
   })
   
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
   const [smartMessage, setSmartMessage] = useState("")
   const { toast } = useToast()
 
@@ -288,6 +303,12 @@ export function ConceptWorldsGeneratorInterface({
   const isInterior = worldKit.environmentType === "Interior"
   const isSurreal = worldKit.mood === "surreal"
   const isBrandSynced = worldKit.brandSync
+
+  // Dynamic aspect ratio filtering based on selected model
+  const supportedRatios = getSupportedAspectRatios(worldKit.model as FalModel || 'Nano-banana')
+  const availableAspectRatios = ALL_ASPECT_RATIOS.filter(ar => 
+    supportedRatios.includes(ar.ratio)
+  )
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -318,6 +339,16 @@ export function ConceptWorldsGeneratorInterface({
         : [...(prev.symbolicMotifs || []), motif]
     }))
   }
+
+  // Reset aspect ratio when model changes to unsupported ratio
+  useEffect(() => {
+    if (worldKit.model && worldKit.aspectRatio) {
+      const supported = getSupportedAspectRatios(worldKit.model as FalModel)
+      if (!supported.includes(worldKit.aspectRatio)) {
+        setWorldKit(prev => ({ ...prev, aspectRatio: "1:1" }))
+      }
+    }
+  }, [worldKit.model])
 
   // Smart behavior logic
   useEffect(() => {
@@ -370,41 +401,66 @@ export function ConceptWorldsGeneratorInterface({
       // Prepare FormData for file uploads
       const formData = new FormData()
       
-      // Add all form fields
-      formData.append('name', worldKit.name)
+      // Collect all creative fields (exclude metadata)
+      const allFields = {
+        worldPurpose: worldKit.worldPurpose || '',
+        logoPlacement: worldKit.logoPlacement || '',
+        customColor: worldKit.customColor || '#3b82f6',
+        seedVariability: worldKit.seedVariability || 50,
+        artDirection: worldKit.artDirection || '',
+        visualInfluence: worldKit.visualInfluence || '',
+        colorSystem: worldKit.colorSystem || '',
+        lighting: worldKit.lighting || '',
+        materialLanguage: worldKit.materialLanguage || '',
+        textureDetail: worldKit.textureDetail || 50,
+        environmentType: worldKit.environmentType || '',
+        locationArchetype: worldKit.locationArchetype || '',
+        cameraFraming: worldKit.cameraFraming || '',
+        atmosphericMotion: worldKit.atmosphericMotion || '',
+        depthLevel: worldKit.depthLevel || 50,
+        compositionScale: worldKit.compositionScale || 50,
+        spatialConsistencyLock: worldKit.spatialConsistencyLock || false,
+        mood: worldKit.mood || '',
+        culturalInfluence: worldKit.culturalInfluence || '',
+        timeOfDay: worldKit.timeOfDay || '',
+        emotionalTone: worldKit.emotionalTone || '',
+        symbolicMotifs: worldKit.symbolicMotifs || [],
+        storyHook: worldKit.storyHook || '',
+        brandSync: worldKit.brandSync || false,
+        brandPaletteMode: worldKit.brandPaletteMode || '',
+        toneMatch: worldKit.toneMatch || 50,
+        typographyInWorld: worldKit.typographyInWorld || ''
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
+      // Add original prompt
       formData.append('prompt', worldKit.prompt)
-      formData.append('worldPurpose', worldKit.worldPurpose || '')
-      formData.append('logoPlacement', worldKit.logoPlacement || '')
-      formData.append('customColor', worldKit.customColor || '#3b82f6')
+      
+      // Add metadata fields (needed for database/tracking)
+      formData.append('name', worldKit.name)
+      formData.append('model', worldKit.model || 'Nano-banana')
       formData.append('aspectRatio', worldKit.aspectRatio || '1:1')
-      formData.append('seedVariability', (worldKit.seedVariability || 50).toString())
-      formData.append('artDirection', worldKit.artDirection || '')
-      formData.append('visualInfluence', worldKit.visualInfluence || '')
-      formData.append('colorSystem', worldKit.colorSystem || '')
-      formData.append('lighting', worldKit.lighting || '')
-      formData.append('materialLanguage', worldKit.materialLanguage || '')
-      formData.append('textureDetail', (worldKit.textureDetail || 50).toString())
-      formData.append('environmentType', worldKit.environmentType || '')
-      formData.append('locationArchetype', worldKit.locationArchetype || '')
-      formData.append('cameraFraming', worldKit.cameraFraming || '')
-      formData.append('atmosphericMotion', worldKit.atmosphericMotion || '')
-      formData.append('depthLevel', (worldKit.depthLevel || 50).toString())
-      formData.append('compositionScale', (worldKit.compositionScale || 50).toString())
-      formData.append('spatialConsistencyLock', (worldKit.spatialConsistencyLock || false).toString())
-      formData.append('mood', worldKit.mood || '')
-      formData.append('culturalInfluence', worldKit.culturalInfluence || '')
-      formData.append('timeOfDay', worldKit.timeOfDay || '')
-      formData.append('emotionalTone', worldKit.emotionalTone || '')
-      formData.append('symbolicMotifs', JSON.stringify(worldKit.symbolicMotifs || []))
-      formData.append('storyHook', worldKit.storyHook || '')
-      formData.append('brandSync', (worldKit.brandSync || false).toString())
-      formData.append('brandPaletteMode', worldKit.brandPaletteMode || '')
-      formData.append('toneMatch', (worldKit.toneMatch || 50).toString())
-      formData.append('typographyInWorld', worldKit.typographyInWorld || '')
       formData.append('metadata', JSON.stringify({
         projectTitle,
         timestamp: new Date().toISOString()
       }))
+      
+      // Only add fields the user actually filled
+      for (const [key, value] of Object.entries(filledFields)) {
+        if (typeof value === 'boolean') {
+          formData.append(key, value.toString())
+        } else if (typeof value === 'number') {
+          formData.append(key, value.toString())
+        } else if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value))
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value))
+        } else {
+          formData.append(key, String(value))
+        }
+      }
       
       // Add reference images
       worldKit.referenceImages?.forEach((file, index) => {
@@ -434,8 +490,8 @@ export function ConceptWorldsGeneratorInterface({
       
       if (result.success) {
         toast({
-          title: "Concept World Generated!",
-          description: `"${worldKit.name}" has been created and saved to your collection.`,
+          title: "🌍 Concept World Generated!",
+          description: `"${worldKit.name}" has been created and saved to your collection. Check your library to view it!`,
         })
         
         // Close the interface to return to the generator panel
@@ -449,11 +505,8 @@ export function ConceptWorldsGeneratorInterface({
       
     } catch (error) {
       console.error('Generation failed:', error)
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate concept world. Please try again.",
-        variant: "destructive"
-      })
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate concept world. Please try again."
+      setGenerationError(errorMessage)
     } finally {
       setIsGenerating(false)
     }
@@ -469,7 +522,29 @@ export function ConceptWorldsGeneratorInterface({
   }
 
   return (
-    <div className="bg-background border border-border rounded-md h-[80vh] flex flex-col">
+    <>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <GenerationLoading 
+          model={worldKit.model as "Nano-banana" | "gpt-image-1" | "seedream-v4"}
+          onCancel={() => setIsGenerating(false)}
+        />
+      )}
+
+      {/* Error Overlay */}
+      {generationError && (
+        <GenerationError
+          error={generationError}
+          model={worldKit.model as "Nano-banana" | "gpt-image-1" | "seedream-v4"}
+          onRetry={() => {
+            setGenerationError(null)
+            generateWorld()
+          }}
+          onClose={() => setGenerationError(null)}
+        />
+      )}
+
+      <div className="bg-background border border-border rounded-md h-[80vh] flex flex-col">
       {/* Header - Fixed */}
       <div className="flex items-center justify-between p-3 border-b border-border">
         <h3 className="text-sm font-semibold bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-500 bg-clip-text text-transparent truncate pr-2">
@@ -529,6 +604,38 @@ export function ConceptWorldsGeneratorInterface({
                   className="text-xs resize-none"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1">AI Model</label>
+                <Select
+                  value={worldKit.model || "Nano-banana"}
+                  onValueChange={(value) => setWorldKit(prev => ({ ...prev, model: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select AI model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nano-banana">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">🍌</span>
+                        <span className="text-xs">Nano-banana</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="gpt-image-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">🤖</span>
+                        <span className="text-xs">Gpt-image-1</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="seedream-v4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">🌱</span>
+                        <span className="text-xs">Seedream-v4</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -707,9 +814,9 @@ export function ConceptWorldsGeneratorInterface({
                     <SelectValue placeholder="Select aspect ratio" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ASPECT_RATIOS.map((ratio) => (
-                      <SelectItem key={ratio} value={ratio.replace(/^[^\s]+\s/, '')}>
-                        {ratio}
+                    {availableAspectRatios.map((ar) => (
+                      <SelectItem key={ar.ratio} value={ar.ratio}>
+                        {ar.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1283,5 +1390,8 @@ export function ConceptWorldsGeneratorInterface({
               </div>
             </div>
     </div>
+    {/* Previous Generations */}
+    <PreviousGenerations contentType="concept_worlds" userId={user?.id || ''} className="mt-8" />
+    </>
   )
 }

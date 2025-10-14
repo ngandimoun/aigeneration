@@ -6,7 +6,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
+import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
 import { 
   X, 
   Sparkles, 
@@ -54,6 +57,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { toast } from "sonner"
+import { useAuth } from "@/components/auth/auth-provider"
+import { GenerationLoading } from "@/components/ui/generation-loading"
+import { GenerationError } from "@/components/ui/generation-error"
+import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface AvatarPersonaGeneratorInterfaceProps {
   onClose: () => void
@@ -437,6 +444,108 @@ const VISUAL_INFLUENCE_MAP = {
         { name: "Retro City", mood: "90s urban landscape, muted colors" },
         { name: "Old School", mood: "Classic classroom, vintage feel" },
         { name: "Nostalgic Park", mood: "Soft focus, dreamy atmosphere" }
+      ]
+    },
+    {
+      label: "Naruto Style",
+      desc: "Bold action lines, energetic poses, ninja aesthetic",
+      thumb: "naruto_style.jpg",
+      lightingPresets: [
+        { name: "Action Lines", mood: "Dynamic speed lines, energy effects" },
+        { name: "Ninja Shadow", mood: "Dramatic contrast, stealth lighting" },
+        { name: "Chakra Glow", mood: "Inner energy light, mystical aura" },
+        { name: "Training Ground", mood: "Natural outdoor lighting, determination" }
+      ],
+      backgroundEnvironments: [
+        { name: "Hidden Village", mood: "Traditional Japanese architecture, ninja setting" },
+        { name: "Training Ground", mood: "Forest clearing, wooden posts" },
+        { name: "Battle Arena", mood: "Rocky terrain, dramatic sky" },
+        { name: "Ninja Academy", mood: "School setting, youthful energy" }
+      ]
+    },
+    {
+      label: "Bleach Style",
+      desc: "Sharp clean lines, dramatic contrast, samurai elements",
+      thumb: "bleach_style.jpg",
+      lightingPresets: [
+        { name: "Soul Reaper Glow", mood: "Mystical white light, spiritual energy" },
+        { name: "Hollow Shadow", mood: "Dark dramatic lighting, menacing presence" },
+        { name: "Zanpakuto Flash", mood: "Sharp blade light, cutting energy" },
+        { name: "Spiritual Pressure", mood: "Overwhelming aura, power visualization" }
+      ],
+      backgroundEnvironments: [
+        { name: "Soul Society", mood: "Traditional Japanese architecture, spiritual realm" },
+        { name: "Hueco Mundo", mood: "Desert wasteland, hollow realm" },
+        { name: "Karakura Town", mood: "Modern city, everyday setting" },
+        { name: "Sekaimon Gate", mood: "Mystical portal, dimensional travel" }
+      ]
+    },
+    {
+      label: "One Piece Style",
+      desc: "Exaggerated proportions, vibrant colors, adventure feel",
+      thumb: "onepiece_style.jpg",
+      lightingPresets: [
+        { name: "Adventure Sun", mood: "Bright tropical lighting, freedom" },
+        { name: "Pirate Gold", mood: "Treasure glow, wealth and adventure" },
+        { name: "Devil Fruit Power", mood: "Supernatural energy, unique abilities" },
+        { name: "Grand Line", mood: "Mysterious sea lighting, unknown waters" }
+      ],
+      backgroundEnvironments: [
+        { name: "Pirate Ship", mood: "Wooden deck, sailing adventure" },
+        { name: "Tropical Island", mood: "Palm trees, beach paradise" },
+        { name: "Marine Base", mood: "Military fortress, law enforcement" },
+        { name: "Skypiea", mood: "Floating islands, cloud sea" }
+      ]
+    },
+    {
+      label: "Attack on Titan Style",
+      desc: "Gritty realism, detailed shading, military aesthetic",
+      thumb: "aot_style.jpg",
+      lightingPresets: [
+        { name: "Military Barracks", mood: "Harsh institutional lighting" },
+        { name: "Titan Shadow", mood: "Massive looming darkness, terror" },
+        { name: "3D Maneuver", mood: "Dynamic action, freedom of movement" },
+        { name: "Wall Maria", mood: "Imposing fortress, protection" }
+      ],
+      backgroundEnvironments: [
+        { name: "Wall Rose", mood: "Massive stone walls, human territory" },
+        { name: "Training Ground", mood: "Military facility, preparation" },
+        { name: "Titan Forest", mood: "Dense woodland, danger lurking" },
+        { name: "Underground City", mood: "Hidden refuge, survival" }
+      ]
+    },
+    {
+      label: "My Hero Academia Style",
+      desc: "Modern superhero aesthetic, dynamic poses",
+      thumb: "mha_style.jpg",
+      lightingPresets: [
+        { name: "Quirk Activation", mood: "Superpower energy, unique abilities" },
+        { name: "Hero Training", mood: "Gymnasium lighting, determination" },
+        { name: "Villain Encounter", mood: "Dramatic confrontation, justice vs evil" },
+        { name: "Plus Ultra", mood: "Ultimate power, beyond limits" }
+      ],
+      backgroundEnvironments: [
+        { name: "UA High School", mood: "Modern hero academy, training facility" },
+        { name: "Hero Agency", mood: "Professional workplace, hero business" },
+        { name: "City Streets", mood: "Urban setting, civilian protection" },
+        { name: "Training Ground", mood: "Controlled environment, skill development" }
+      ]
+    },
+    {
+      label: "Demon Slayer Style",
+      desc: "Detailed patterns, fluid motion effects, traditional elements",
+      thumb: "demonslayer_style.jpg",
+      lightingPresets: [
+        { name: "Breathing Technique", mood: "Flowing energy, sword mastery" },
+        { name: "Demon Blood Art", mood: "Supernatural power, dark energy" },
+        { name: "Nichirin Blade", mood: "Sacred weapon glow, demon slaying" },
+        { name: "Traditional Japan", mood: "Historical lighting, cultural heritage" }
+      ],
+      backgroundEnvironments: [
+        { name: "Taisho Era", mood: "Early 20th century Japan, historical setting" },
+        { name: "Demon Slayer Corps", mood: "Training headquarters, organization" },
+        { name: "Mountain Path", mood: "Natural landscape, journey" },
+        { name: "Traditional House", mood: "Japanese architecture, family home" }
       ]
     }
   ],
@@ -1008,9 +1117,15 @@ const ETHNICITY_OPTIONS = [
 
 // Age range options
 const AGE_RANGES = [
-  { value: "Teen", label: "Teen (13-19)", icon: "👦" },
-  { value: "Adult", label: "Adult (20-65)", icon: "👨" },
-  { value: "Elder", label: "Elder (65+)", icon: "👴" },
+  { value: "Teen", label: "Teen (13-15)", icon: "👦" },
+  { value: "Young Adult", label: "Young Adult (16-19)", icon: "🧑" },
+  { value: "Early Twenties", label: "Early Twenties (20-25)", icon: "👨" },
+  { value: "Late Twenties", label: "Late Twenties (26-29)", icon: "👨" },
+  { value: "Thirties", label: "Thirties (30-39)", icon: "👨" },
+  { value: "Forties", label: "Forties (40-49)", icon: "👨" },
+  { value: "Fifties", label: "Fifties (50-59)", icon: "👨" },
+  { value: "Sixties", label: "Sixties (60-69)", icon: "👨" },
+  { value: "Elder", label: "Elder (70+)", icon: "👴" },
   { value: "Ageless", label: "Ageless", icon: "✨" }
 ]
 
@@ -1050,7 +1165,13 @@ const HAIR_STYLES = {
     { value: "Pixie Cut", label: "Pixie Cut", icon: "✂️" },
     { value: "Ponytail", label: "Ponytail", icon: "🎀" },
     { value: "Bun", label: "Bun", icon: "🔘" },
-    { value: "Braids", label: "Braids", icon: "🪢" }
+    { value: "Braids", label: "Braids", icon: "🪢" },
+    { value: "Shoulder Length", label: "Shoulder Length", icon: "📏" },
+    { value: "Curly", label: "Curly", icon: "🌀" },
+    { value: "Afro", label: "Afro", icon: "🌻" },
+    { value: "Dreadlocks", label: "Dreadlocks", icon: "🪢" },
+    { value: "Fade/Undercut", label: "Fade/Undercut", icon: "✂️" },
+    { value: "Slicked Back", label: "Slicked Back", icon: "💼" }
   ],
   "Anime": [
     { value: "Spiky", label: "Spiky", icon: "⚡" },
@@ -1058,12 +1179,68 @@ const HAIR_STYLES = {
     { value: "Twin Tails", label: "Twin Tails", icon: "🎎" },
     { value: "Messy", label: "Messy", icon: "🌀" },
     { value: "Gravity Defying", label: "Gravity Defying", icon: "🚀" },
-    { value: "Hime Cut", label: "Hime Cut", icon: "👸" }
+    { value: "Hime Cut", label: "Hime Cut", icon: "👸" },
+    { value: "Side Ponytail", label: "Side Ponytail", icon: "🎀" },
+    { value: "Drill Curls", label: "Drill Curls", icon: "🌀" },
+    { value: "Ahoge", label: "Ahoge (Antenna Hair)", icon: "📡" },
+    { value: "Undercut", label: "Undercut", icon: "✂️" },
+    { value: "Long with Bangs", label: "Long with Bangs", icon: "💫" }
   ],
   "Stylized 3D": [
     { value: "Rounded", label: "Rounded", icon: "⭕" },
     { value: "Geometric", label: "Geometric", icon: "🔷" },
     { value: "Flowing", label: "Flowing", icon: "🌊" },
+    { value: "Textured", label: "Textured", icon: "🎨" },
+    { value: "Wavy", label: "Wavy", icon: "🌊" },
+    { value: "Mohawk", label: "Mohawk", icon: "⚡" },
+    { value: "Braid Crown", label: "Braid Crown", icon: "👑" }
+  ],
+  "Realistic": [
+    { value: "Short Bob", label: "Short Bob", icon: "📌" },
+    { value: "Long Waves", label: "Long Waves", icon: "🌊" },
+    { value: "Pixie Cut", label: "Pixie Cut", icon: "✂️" },
+    { value: "Ponytail", label: "Ponytail", icon: "🎀" },
+    { value: "Bun", label: "Bun", icon: "🔘" },
+    { value: "Braids", label: "Braids", icon: "🪢" },
+    { value: "Shoulder Length", label: "Shoulder Length", icon: "📏" },
+    { value: "Curly", label: "Curly", icon: "🌀" },
+    { value: "Slicked Back", label: "Slicked Back", icon: "💼" }
+  ],
+  "Cartoon / 2D Stylized": [
+    { value: "Spiky", label: "Spiky", icon: "⚡" },
+    { value: "Long Straight", label: "Long Straight", icon: "💫" },
+    { value: "Twin Tails", label: "Twin Tails", icon: "🎎" },
+    { value: "Messy", label: "Messy", icon: "🌀" },
+    { value: "Ponytail", label: "Ponytail", icon: "🎀" },
+    { value: "Bun", label: "Bun", icon: "🔘" },
+    { value: "Curly", label: "Curly", icon: "🌀" },
+    { value: "Bangs", label: "Bangs", icon: "💫" }
+  ],
+  "Painterly": [
+    { value: "Long Waves", label: "Long Waves", icon: "🌊" },
+    { value: "Ponytail", label: "Ponytail", icon: "🎀" },
+    { value: "Bun", label: "Bun", icon: "🔘" },
+    { value: "Braids", label: "Braids", icon: "🪢" },
+    { value: "Curly", label: "Curly", icon: "🌀" },
+    { value: "Loose", label: "Loose", icon: "🌊" }
+  ],
+  "Line Art / Sketch": [
+    { value: "Simple", label: "Simple", icon: "✏️" },
+    { value: "Messy", label: "Messy", icon: "🌀" },
+    { value: "Spiky", label: "Spiky", icon: "⚡" },
+    { value: "Long", label: "Long", icon: "💫" },
+    { value: "Short", label: "Short", icon: "📌" }
+  ],
+  "Pixel / Retro": [
+    { value: "Blocky", label: "Blocky", icon: "🧱" },
+    { value: "Spiky", label: "Spiky", icon: "⚡" },
+    { value: "Simple", label: "Simple", icon: "✏️" },
+    { value: "Ponytail", label: "Ponytail", icon: "🎀" }
+  ],
+  "Clay / Toy Style": [
+    { value: "Rounded", label: "Rounded", icon: "⭕" },
+    { value: "Spiky", label: "Spiky", icon: "⚡" },
+    { value: "Simple", label: "Simple", icon: "✏️" },
     { value: "Textured", label: "Textured", icon: "🎨" }
   ]
 }
@@ -1112,7 +1289,15 @@ const OUTFIT_CATEGORIES = {
   "Armor": { icon: "🛡️", desc: "Protective, fantasy/sci-fi gear" },
   "Fantasy": { icon: "🧙", desc: "Magical, medieval, or mystical clothing" },
   "Uniform": { icon: "👮", desc: "Official, service-oriented attire" },
-  "Minimalist": { icon: "⚪", desc: "Simple, clean, understated style" }
+  "Minimalist": { icon: "⚪", desc: "Simple, clean, understated style" },
+  "Athletic/Sportswear": { icon: "🏃", desc: "Sports and athletic clothing" },
+  "Casual Wear": { icon: "👖", desc: "Relaxed, everyday clothing" },
+  "Formal Evening": { icon: "🎩", desc: "Elegant evening and formal wear" },
+  "Cyberpunk/Tech": { icon: "🤖", desc: "Futuristic, high-tech aesthetic" },
+  "Historical/Period": { icon: "🏛️", desc: "Historical and period clothing" },
+  "Military": { icon: "🎖️", desc: "Military and tactical gear" },
+  "Medical/Lab": { icon: "🧪", desc: "Medical and laboratory attire" },
+  "Bohemian/Artistic": { icon: "🎨", desc: "Artistic, free-spirited style" }
 }
 
 // Accessories options
@@ -1123,18 +1308,35 @@ const ACCESSORIES = [
   { value: "Scarf", label: "Scarf", icon: "🧣" },
   { value: "Hat", label: "Hat", icon: "🎩" },
   { value: "Jewelry", label: "Jewelry", icon: "💍" },
+  { value: "Watch", label: "Watch", icon: "⌚" },
+  { value: "Necklace", label: "Necklace", icon: "📿" },
+  { value: "Bracelet", label: "Bracelet", icon: "📿" },
+  { value: "Headband", label: "Headband", icon: "🎀" },
+  { value: "Face Mask", label: "Face Mask", icon: "😷" },
+  { value: "Bandana", label: "Bandana", icon: "🧕" },
+  { value: "Goggles", label: "Goggles", icon: "🥽" },
+  { value: "Piercings", label: "Piercings", icon: "💫" },
+  { value: "Backpack", label: "Backpack", icon: "🎒" },
+  { value: "Belt", label: "Belt", icon: "🪢" },
+  { value: "Gloves", label: "Gloves", icon: "🧤" },
   { value: "None", label: "None", icon: "🚫" }
 ]
 
-// Logo Placement options
+// Logo Placement options (multi-select)
 const LOGO_PLACEMENT_OPTIONS = [
-  { value: "None", label: "None", icon: "🚫", desc: "No logo overlay" },
-  { value: "Top-Right", label: "Top-Right", icon: "↗️", desc: "Logo in top-right corner" },
-  { value: "Bottom-Left", label: "Bottom-Left", icon: "↙️", desc: "Logo in bottom-left corner" }
+  { value: "Top-Right", label: "Top-Right Corner", icon: "↗️", desc: "Logo overlay in top-right" },
+  { value: "Bottom-Left", label: "Bottom-Left Corner", icon: "↙️", desc: "Logo overlay in bottom-left" },
+  { value: "Bottom-Right", label: "Bottom-Right Corner", icon: "↘️", desc: "Logo overlay in bottom-right" },
+  { value: "Top-Left", label: "Top-Left Corner", icon: "↖️", desc: "Logo overlay in top-left" },
+  { value: "On-Clothing", label: "On Clothing", icon: "👕", desc: "Logo on shirt/jacket" },
+  { value: "On-Hat", label: "On Hat/Cap", icon: "🧢", desc: "Logo on headwear" },
+  { value: "On-Accessory", label: "On Accessory", icon: "👜", desc: "Logo on bag/item" },
+  { value: "Background-Wall", label: "Background", icon: "🖼️", desc: "Logo on wall/background" },
+  { value: "Center-Badge", label: "Center Badge", icon: "🏷️", desc: "Logo as chest badge/pin" }
 ]
 
 // Avatar/Persona specific aspect ratios
-const AVATAR_ASPECT_RATIOS = [
+const ALL_AVATAR_ASPECT_RATIOS = [
   { 
     value: "1:1", 
     label: "Square (1:1)", 
@@ -1222,11 +1424,20 @@ const AspectRatioIcon = ({ ratio }: { ratio: string }) => {
 }
 
 export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: AvatarPersonaGeneratorInterfaceProps) {
+  const { user } = useAuth()
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
+  const model = "Nano-banana" // Hardcoded for avatar generation
   const [aiPromptEnabled, setAiPromptEnabled] = useState(true)
   const [aspectRatio, setAspectRatio] = useState("1:1")
   const [isGenerating, setIsGenerating] = useState(false)
+
+  // Aspect ratio filtering for Nano-banana model only
+  const supportedRatios = getSupportedAspectRatios('Nano-banana')
+  const availableAspectRatios = ALL_AVATAR_ASPECT_RATIOS.filter(ar => 
+    supportedRatios.includes(ar.value)
+  )
+  const [generationError, setGenerationError] = useState<string | null>(null)
   
   // Visual Style Stack (existing five-tier system)
   const [artDirection, setArtDirection] = useState<string>("")
@@ -1258,7 +1469,8 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
   
   // Logo Placement
-  const [logoPlacement, setLogoPlacement] = useState<string>("None")
+  const [logoPlacement, setLogoPlacement] = useState<string[]>([])
+  const [logoDescription, setLogoDescription] = useState<string>("")
   const [logoImage, setLogoImage] = useState<File | null>(null)
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>("")
   
@@ -1277,15 +1489,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       // Check if current visual influence is still valid
       const currentInfluenceValid = influences.some(influence => influence.label === visualInfluence)
       if (visualInfluence && !currentInfluenceValid) {
-        // Reset to first available influence and show toast
-        setVisualInfluence(influences[0].label)
+        // Reset to empty string and show toast
+        setVisualInfluence("")
         setLightingPreset("") // Reset lighting preset when visual influence changes
         setBackgroundEnvironment("") // Reset background environment when visual influence changes
         setMoodContext("") // Reset mood context when visual influence changes
-        toast.info(`That style doesn't fit ${artDirection} — switched to ${influences[0].label} instead.`)
-      } else if (!visualInfluence) {
-        // Set default to first influence if none selected
-        setVisualInfluence(influences[0].label)
+        toast.info(`That style doesn't fit ${artDirection} — please select a new visual influence.`)
       }
     } else {
       setAvailableInfluences([])
@@ -1308,12 +1517,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           // Check if current lighting preset is still valid
           const currentPresetValid = selectedInfluence.lightingPresets.some(preset => preset.name === lightingPreset)
           if (lightingPreset && !currentPresetValid) {
-            // Reset to first available preset and show toast
-            setLightingPreset(selectedInfluence.lightingPresets[0].name)
-            toast.info(`That lighting doesn't fit ${visualInfluence} — switched to ${selectedInfluence.lightingPresets[0].name} instead.`)
-          } else if (!lightingPreset) {
-            // Set default to first preset if none selected
-            setLightingPreset(selectedInfluence.lightingPresets[0].name)
+            // Reset to empty string and show toast
+            setLightingPreset("")
+            toast.info(`That lighting doesn't fit ${visualInfluence} — please select a new lighting preset.`)
           }
         } else {
           setAvailableLightingPresets([])
@@ -1327,12 +1533,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           // Check if current background environment is still valid
           const currentEnvValid = selectedInfluence.backgroundEnvironments.some(env => env.name === backgroundEnvironment)
           if (backgroundEnvironment && !currentEnvValid) {
-            // Reset to first available environment and show toast
-            setBackgroundEnvironment(selectedInfluence.backgroundEnvironments[0].name)
-            toast.info(`That background doesn't fit ${visualInfluence} — switched to ${selectedInfluence.backgroundEnvironments[0].name} instead.`)
-          } else if (!backgroundEnvironment) {
-            // Set default to first environment if none selected
-            setBackgroundEnvironment(selectedInfluence.backgroundEnvironments[0].name)
+            // Reset to empty string and show toast
+            setBackgroundEnvironment("")
+            toast.info(`That background doesn't fit ${visualInfluence} — please select a new background environment.`)
           }
         } else {
           setAvailableBackgroundEnvironments([])
@@ -1346,12 +1549,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           // Check if current mood context is still valid
           const currentMoodValid = selectedInfluence.moodContexts.some(mood => mood.name === moodContext)
           if (moodContext && !currentMoodValid) {
-            // Reset to first available mood and show toast
-            setMoodContext(selectedInfluence.moodContexts[0].name)
-            toast.info(`That mood doesn't fit ${visualInfluence} — switched to ${selectedInfluence.moodContexts[0].name} instead.`)
-          } else if (!moodContext) {
-            // Set default to first mood if none selected
-            setMoodContext(selectedInfluence.moodContexts[0].name)
+            // Reset to empty string and show toast
+            setMoodContext("")
+            toast.info(`That mood doesn't fit ${visualInfluence} — please select a new mood context.`)
           }
         } else {
           setAvailableMoodContexts([])
@@ -1479,7 +1679,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         moodContext,
         
         // Identity & Role
-        // ethnicity removed - not in backend schema
+        ethnicity,
         roleArchetype,
         ageRange,
         genderExpression,
@@ -1519,9 +1719,49 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       // Prepare FormData for file uploads
       const formData = new FormData()
       
-      // Add all form fields
-      formData.append('personaName', name)
+      // Collect all creative fields
+      const allFields = {
+        // Basic settings
+        personaName: name,
+        model,
+        aspectRatio,
+        aiPromptEnabled,
+        
+        // Visual Style Stack
+        artDirection: artDirection || '',
+        visualInfluence: visualInfluence || '',
+        lightingPreset: lightingPreset || '',
+        backgroundEnvironment: backgroundEnvironment || '',
+        moodContext: moodContext || '',
+        
+        // Identity & Role
+        roleArchetype: roleArchetype || '',
+        ageRange: ageRange || '',
+        genderExpression: genderExpression || '',
+        emotionBias: emotionBias[0],
+        
+        // Physical Traits & Outfits
+        bodyType: bodyType || '',
+        skinTone: skinTone || '',
+        hairStyle: hairStyle || '',
+        hairColor: hairColor || '',
+        eyeColor: eyeColor || '',
+        eyeShape: eyeShape || '',
+        outfitCategory: outfitCategory || '',
+        outfitPalette: outfitPalette || '',
+        accessories,
+        logoPlacement
+      }
+
+      // Filter to only filled fields
+      const filledFields = filterFilledFields(allFields)
+
+      // Add original prompt
       formData.append('prompt', prompt)
+      
+      // Add metadata fields (needed for database/tracking)
+      formData.append('personaName', name)
+      formData.append('model', model)
       formData.append('aspectRatio', aspectRatio)
       formData.append('aiPromptEnabled', aiPromptEnabled.toString())
       formData.append('artDirection', artDirection || '')
@@ -1532,6 +1772,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       formData.append('roleArchetype', roleArchetype || '')
       formData.append('ageRange', ageRange || '')
       formData.append('genderExpression', genderExpression || '')
+      formData.append('ethnicity', ethnicity || '')
       formData.append('emotionBias', emotionBias[0].toString())
       formData.append('bodyType', bodyType || '')
       formData.append('skinTone', skinTone || '')
@@ -1542,7 +1783,8 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       formData.append('outfitCategory', outfitCategory || '')
       formData.append('outfitPalette', outfitPalette || '')
       formData.append('accessories', JSON.stringify(accessories))
-      formData.append('logoPlacement', logoPlacement)
+      formData.append('logoPlacement', JSON.stringify(logoPlacement))
+      formData.append('logoDescription', logoDescription)
       
       // Add reference images
       referenceImages.forEach((file, index) => {
@@ -1576,7 +1818,8 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       
     } catch (error) {
       console.error('Error generating avatar/persona:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate avatar/persona')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate avatar/persona'
+      setGenerationError(errorMessage)
     } finally {
       setIsGenerating(false)
     }
@@ -1584,6 +1827,27 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
 
   return (
     <TooltipProvider>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <GenerationLoading 
+          model="Nano-banana"
+          onCancel={() => setIsGenerating(false)}
+        />
+      )}
+
+      {/* Error Overlay */}
+      {generationError && (
+        <GenerationError
+          error={generationError}
+          model="Nano-banana"
+          onRetry={() => {
+            setGenerationError(null)
+            handleGenerate()
+          }}
+          onClose={() => setGenerationError(null)}
+        />
+      )}
+
       <div className="bg-background border border-border rounded-lg p-2 space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover w-full max-w-full">
         {/* Header */}
         <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-2 border-b border-border">
@@ -1628,6 +1892,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           />
         </div>
 
+
         {/* Identity & Role Section */}
         <div className="space-y-2 border-t border-border pt-2">
           <div className="flex items-center gap-2">
@@ -1644,6 +1909,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select ethnicity..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {ETHNICITY_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
@@ -1664,6 +1935,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select role..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {Object.entries(ROLE_ARCHETYPE_MAP).map(([key, role]) => (
                     <SelectItem key={key} value={key}>
                       <div className="flex items-center gap-2">
@@ -1689,6 +1966,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select age..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {AGE_RANGES.map((age) => (
                     <SelectItem key={age.value} value={age.value}>
                       <div className="flex items-center gap-2">
@@ -1709,6 +1992,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select gender..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {GENDER_EXPRESSIONS.map((gender) => (
                     <SelectItem key={gender.value} value={gender.value}>
                       <div className="flex items-center gap-2">
@@ -1852,6 +2141,17 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
               <SelectValue placeholder={artDirection ? "Select visual influence..." : "Select art direction first"} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                    🚫
+                  </div>
+                  <div>
+                    <div className="font-medium">None</div>
+                    <div className="text-xs text-muted-foreground">No visual influence</div>
+                  </div>
+                </div>
+              </SelectItem>
               {availableInfluences.map((influence) => (
                 <SelectItem key={influence.label} value={influence.label}>
                   <div className="flex items-center gap-3">
@@ -1891,6 +2191,17 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
               <SelectValue placeholder={visualInfluence ? "Select lighting preset..." : "Select visual influence first"} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-200 to-orange-300 rounded border flex items-center justify-center text-xs">
+                    🚫
+                  </div>
+                  <div>
+                    <div className="font-medium">None</div>
+                    <div className="text-xs text-muted-foreground">No lighting preset</div>
+                  </div>
+                </div>
+              </SelectItem>
               {availableLightingPresets.map((preset) => (
                 <SelectItem key={preset.name} value={preset.name}>
                   <div className="flex items-center gap-3">
@@ -1930,6 +2241,17 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
               <SelectValue placeholder={visualInfluence ? "Select background environment..." : "Select visual influence first"} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-200 to-blue-300 rounded border flex items-center justify-center text-xs">
+                    🚫
+                  </div>
+                  <div>
+                    <div className="font-medium">None</div>
+                    <div className="text-xs text-muted-foreground">No background environment</div>
+                  </div>
+                </div>
+              </SelectItem>
               {availableBackgroundEnvironments.map((environment) => (
                 <SelectItem key={environment.name} value={environment.name}>
                   <div className="flex items-center gap-3">
@@ -1969,6 +2291,17 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
               <SelectValue placeholder={visualInfluence ? "Select mood context..." : "Select visual influence first"} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-200 to-pink-300 rounded border flex items-center justify-center text-xs">
+                    🚫
+                  </div>
+                  <div>
+                    <div className="font-medium">None</div>
+                    <div className="text-xs text-muted-foreground">No mood context</div>
+                  </div>
+                </div>
+              </SelectItem>
               {availableMoodContexts.map((mood) => (
                 <SelectItem key={mood.name} value={mood.name}>
                   <div className="flex items-center gap-3">
@@ -2003,6 +2336,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select body type..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {BODY_TYPES.map((body) => (
                     <SelectItem key={body.value} value={body.value}>
                       <div className="flex items-center gap-2">
@@ -2023,6 +2362,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select skin tone..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {SKIN_TONES.map((tone) => (
                     <SelectItem key={tone.value} value={tone.value}>
                       <div className="flex items-center gap-2">
@@ -2048,6 +2393,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select hair style..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {artDirection && HAIR_STYLES[artDirection as keyof typeof HAIR_STYLES] ? 
                     HAIR_STYLES[artDirection as keyof typeof HAIR_STYLES].map((style) => (
                       <SelectItem key={style.value} value={style.value}>
@@ -2078,6 +2429,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select hair color..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {HAIR_COLORS.map((color) => (
                     <SelectItem key={color.value} value={color.value}>
                       <div className="flex items-center gap-2">
@@ -2103,6 +2460,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select eye color..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {EYE_COLORS.map((color) => (
                     <SelectItem key={color.value} value={color.value}>
                       <div className="flex items-center gap-2">
@@ -2126,6 +2489,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select eye shape..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {EYE_SHAPES.map((shape) => (
                     <SelectItem key={shape.value} value={shape.value}>
                       <div className="flex items-center gap-2">
@@ -2148,6 +2517,12 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select outfit..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
                   {Object.entries(OUTFIT_CATEGORIES).map(([key, outfit]) => (
                     <SelectItem key={key} value={key}>
                       <div className="flex items-center gap-2">
@@ -2278,27 +2653,33 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           </p>
 
           {/* Logo Placement Selection */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">Logo Position</label>
-            <Select value={logoPlacement} onValueChange={setLogoPlacement}>
-              <SelectTrigger className="h-8 text-sm w-full min-w-[60px]">
-                <SelectValue placeholder="Select logo placement..." />
-              </SelectTrigger>
-              <SelectContent>
-                {LOGO_PLACEMENT_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{option.icon}</span>
-                      <span className="text-sm">{option.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-foreground">Logo Positions (select multiple)</label>
+            <div className="grid grid-cols-2 gap-2">
+              {LOGO_PLACEMENT_OPTIONS.map((option) => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`logo-${option.value}`}
+                    checked={logoPlacement.includes(option.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setLogoPlacement([...logoPlacement, option.value])
+                      } else {
+                        setLogoPlacement(logoPlacement.filter(p => p !== option.value))
+                      }
+                    }}
+                  />
+                  <label htmlFor={`logo-${option.value}`} className="text-sm cursor-pointer">
+                    <span className="mr-1">{option.icon}</span>
+                    {option.label}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Conditional Logo Upload */}
-          {(logoPlacement === "Top-Right" || logoPlacement === "Bottom-Left") && (
+          {logoPlacement.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Logo Image</label>
               
@@ -2342,6 +2723,20 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   </div>
                 </div>
               )}
+
+              {/* Logo Description Field */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-foreground">Logo Description (optional)</label>
+                <Textarea
+                  placeholder="Describe your logo style (e.g., modern tech company logo with blue accent, vintage circular badge, minimalist geometric symbol)"
+                  value={logoDescription}
+                  onChange={(e) => setLogoDescription(e.target.value)}
+                  className="min-h-[60px] text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  You can upload a logo image and/or describe it. The AI will use both to create the logo appearance.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -2375,7 +2770,7 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <SelectValue placeholder="Select aspect ratio..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {AVATAR_ASPECT_RATIOS.map((ratio) => (
+                  {availableAspectRatios.map((ratio) => (
                     <SelectItem key={ratio.value} value={ratio.value}>
                       <div className="flex items-center gap-2">
                         <span className="text-sm">{ratio.icon}</span>
@@ -2410,6 +2805,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
           </Button>
         </div>
       </div>
+
+      {/* Previous Generations */}
+      <PreviousGenerations contentType="avatars_personas" userId={user?.id || ''} className="mt-8" />
     </TooltipProvider>
   )
 }

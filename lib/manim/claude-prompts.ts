@@ -42,17 +42,28 @@ export function getVoiceoverSystemPrompt(options: ManimGenerationOptions): strin
   return `You are a Manim animation engineer.
 Generate a complete Python script using Manim CE 0.18+ and manim-voiceover with OpenAI.
 
-Requirements:
+CRITICAL REQUIREMENTS - MUST BE FOLLOWED EXACTLY:
 - Title: "${options.title}"
 - Subclass VoiceoverScene
 - Import: from manim_voiceover.services.openai import OpenAIService
 - Set service: self.set_speech_service(OpenAIService(voice="${voiceName}", model="gpt-4o-mini-tts", transcription_model=None))
 - CRITICAL: Always set transcription_model=None to avoid package dependency issues
 - Wrap narration: with self.voiceover(text="...") as tracker: self.play(..., run_time=tracker.duration)
-- Duration: ${options.duration}s, Aspect: ${options.aspectRatio}, Resolution: ${options.resolution}
-- Style: ${options.style}
-- Use dark background if style is "dark" or "cinematic" (set self.camera.background_color = DARK_GREY)
-- Keep animations smooth and educational
+
+MANDATORY PARAMETERS - NO EXCEPTIONS:
+- VOICE: MUST use voice="${voiceName}" in OpenAIService - this is CRITICAL and will be validated
+- DURATION: Total animation time MUST be approximately ${options.duration} seconds (±20% acceptable)
+- ASPECT RATIO: MUST configure for ${options.aspectRatio} format
+- RESOLUTION: MUST be optimized for ${options.resolution} output
+- STYLE: MUST follow ${options.style} visual style guidelines
+
+STYLE ENFORCEMENT:
+- If style is "dark" or "cinematic": MUST use dark background (self.camera.background_color = DARK_GREY)
+- If style is "clean": MUST use white/light background with minimal colors
+- If style is "academic": MUST use professional, clear typography and structured layout
+- If style is "auto": Choose appropriate style based on content
+
+Keep animations smooth and educational
 
 MANIM 0.18.1 CAPABILITIES - Use the full power of Manim:
 - SHAPES: Circle(), Square(), Line(), Arrow(), Rectangle(), Dot(), MathTex(), Triangle(), Ellipse(), Polygon(), NumberPlane(), Axes(), ThreeDAxes()
@@ -71,6 +82,18 @@ MANIM 0.18.1 CAPABILITIES - Use the full power of Manim:
 - NEVER use: self.camera.frame - Manim 0.18.1 doesn't have camera.frame attribute
 - USE Group() instead of VGroup() when mixing Text/MathTex with shapes - VGroup only accepts VMobjects
 - Use self.wait() between animations for proper timing
+
+CRITICAL ANIMATION PATTERNS - NEVER VIOLATE THESE:
+- ❌ NEVER: self.play(Create(Group(obj1, obj2, obj3))) - This causes NotImplementedError
+- ❌ NEVER: self.play(Write(Group(text1, text2))) - This causes NotImplementedError  
+- ❌ NEVER: self.play(Create(VGroup(obj1, obj2))) - This causes NotImplementedError
+- ✅ ALWAYS: self.play(LaggedStart(*[Create(obj) for obj in [obj1, obj2, obj3]], lag_ratio=0.1))
+- ✅ ALWAYS: self.play(*[Write(text) for text in [text1, text2]])
+- ✅ OR: Create/Write objects individually: self.play(Create(obj1), Create(obj2))
+- Group() and VGroup() are for POSITIONING and MANAGEMENT only, NOT for passing to animations
+- Create(), Write(), FadeIn(), FadeOut() work on INDIVIDUAL objects
+- To animate multiple objects together, use LaggedStart() or AnimationGroup()
+- Example: self.play(LaggedStart(*[Create(line) for line in lines], lag_ratio=0.2))
 
 CRITICAL ANIMATION PRINCIPLES:
 
@@ -208,13 +231,23 @@ export function getStandardSystemPrompt(options: ManimGenerationOptions): string
   return `You are a Manim animation engineer.
 Generate a complete Python script using Manim CE 0.18+ (no external libs).
 
-Requirements:
+CRITICAL REQUIREMENTS - MUST BE FOLLOWED EXACTLY:
 - Title: "${options.title}"
 - Use Scene or ThreeDScene
-- Duration: ${options.duration}s, Aspect: ${options.aspectRatio}, Resolution: ${options.resolution}
-- Style: ${options.style}
-- Use dark background if style is "dark" or "cinematic" (set self.camera.background_color = DARK_GREY)
-- Keep animations smooth and educational
+
+MANDATORY PARAMETERS - NO EXCEPTIONS:
+- DURATION: Total animation time MUST be approximately ${options.duration} seconds (±20% acceptable)
+- ASPECT RATIO: MUST configure for ${options.aspectRatio} format
+- RESOLUTION: MUST be optimized for ${options.resolution} output
+- STYLE: MUST follow ${options.style} visual style guidelines
+
+STYLE ENFORCEMENT:
+- If style is "dark" or "cinematic": MUST use dark background (self.camera.background_color = DARK_GREY)
+- If style is "clean": MUST use white/light background with minimal colors
+- If style is "academic": MUST use professional, clear typography and structured layout
+- If style is "auto": Choose appropriate style based on content
+
+Keep animations smooth and educational
 
 MANIM 0.18.1 CAPABILITIES - Use the full power of Manim:
 - SHAPES: Circle(), Square(), Line(), Arrow(), Rectangle(), Dot(), MathTex(), Triangle(), Ellipse(), Polygon(), NumberPlane(), Axes(), ThreeDAxes()
@@ -233,6 +266,18 @@ MANIM 0.18.1 CAPABILITIES - Use the full power of Manim:
 - NEVER use: self.camera.frame - Manim 0.18.1 doesn't have camera.frame attribute
 - USE Group() instead of VGroup() when mixing Text/MathTex with shapes - VGroup only accepts VMobjects
 - Use self.wait() between animations for proper timing
+
+CRITICAL ANIMATION PATTERNS - NEVER VIOLATE THESE:
+- ❌ NEVER: self.play(Create(Group(obj1, obj2, obj3))) - This causes NotImplementedError
+- ❌ NEVER: self.play(Write(Group(text1, text2))) - This causes NotImplementedError  
+- ❌ NEVER: self.play(Create(VGroup(obj1, obj2))) - This causes NotImplementedError
+- ✅ ALWAYS: self.play(LaggedStart(*[Create(obj) for obj in [obj1, obj2, obj3]], lag_ratio=0.1))
+- ✅ ALWAYS: self.play(*[Write(text) for text in [text1, text2]])
+- ✅ OR: Create/Write objects individually: self.play(Create(obj1), Create(obj2))
+- Group() and VGroup() are for POSITIONING and MANAGEMENT only, NOT for passing to animations
+- Create(), Write(), FadeIn(), FadeOut() work on INDIVIDUAL objects
+- To animate multiple objects together, use LaggedStart() or AnimationGroup()
+- Example: self.play(LaggedStart(*[Create(line) for line in lines], lag_ratio=0.2))
 
 CRITICAL ANIMATION PRINCIPLES:
 
@@ -369,23 +414,28 @@ CRITICAL: Return ONLY the raw Python code. Do NOT wrap it in markdown code block
 export function buildUserPrompt(options: ManimGenerationOptions): string {
   const { prompt, duration, aspectRatio, resolution, style } = options;
   
-  let technicalHints = `\n\nTechnical requirements:
-- Duration: ${duration} seconds
-- Aspect ratio: ${aspectRatio}
-- Resolution: ${resolution}
-- Visual style: ${style}`;
+  let technicalHints = `\n\nMANDATORY TECHNICAL REQUIREMENTS - MUST BE ENFORCED:
+- DURATION: ${duration} seconds (calculate total animation time to match this)
+- ASPECT RATIO: ${aspectRatio} (configure camera/frame accordingly)
+- RESOLUTION: ${resolution} (optimize for this output quality)
+- VISUAL STYLE: ${style} (follow style guidelines strictly)`;
 
   if (style === 'dark' || style === 'cinematic') {
-    technicalHints += '\n- Use dark background for better visual impact';
+    technicalHints += '\n- CRITICAL: Use dark background (self.camera.background_color = DARK_GREY)';
   }
 
   if (style === 'academic') {
-    technicalHints += '\n- Use clean, minimal design with clear labels';
+    technicalHints += '\n- CRITICAL: Use clean, minimal design with clear labels and professional typography';
   }
 
   if (style === 'clean') {
-    technicalHints += '\n- Use simple shapes and clear typography';
+    technicalHints += '\n- CRITICAL: Use simple shapes, clear typography, and minimal color palette';
   }
+
+  technicalHints += `\n\nDURATION CALCULATION:
+- Plan your animation to total approximately ${duration} seconds
+- Include proper self.wait() times between sections
+- Consider: Introduction (2-3s) + Main content (${Math.max(4, duration-6)}s) + Conclusion (2-3s)`;
 
   return prompt + technicalHints;
 }
