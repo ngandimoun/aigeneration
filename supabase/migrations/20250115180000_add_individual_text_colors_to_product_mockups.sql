@@ -35,3 +35,4 @@ COMMENT ON COLUMN product_mockups.subtext_color_auto IS 'If true, AI automatical
 COMMENT ON COLUMN product_mockups.cta_color IS 'Color for CTA (Call-to-Action) text in product mockup. Default: brand primary blue (#3B82F6)';
 COMMENT ON COLUMN product_mockups.cta_color_auto IS 'If true, AI automatically selects optimal CTA color based on design context';
 
+

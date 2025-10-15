@@ -53,13 +53,15 @@ import {
   Settings,
   Info,
 } from "lucide-react"
-import { STYLE_MAP, CHART_PURPOSE_MAP, MOOD_CONTEXTS, LIGHTING_PRESETS } from "@/lib/styles/chart-style-map"
+import { STYLE_MAP, CHART_PURPOSE_MAP, MOOD_CONTEXTS, LIGHTING_PRESETS, COLOR_PALETTES, EXPORT_PRESETS } from "@/lib/styles/chart-style-map"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
 import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
 import type { FalModel } from '@/lib/utils/fal-generation'
 import { PreviousGenerations } from "@/components/ui/previous-generations"
+import { GenerationLoading } from "@/components/ui/generation-loading"
+import { GenerationError } from "@/components/ui/generation-error"
 
 // Logo Placement options (multi-select)
 const LOGO_PLACEMENT_OPTIONS = [
@@ -82,8 +84,8 @@ interface ChartsInfographicsGeneratorInterfaceProps {
 interface ChartState {
   data: {
     title: string
-    source: "csv" | "text" | "manual"
-    csvFile: File | null
+    source: "file" | "text" | "manual"
+    dataFile: File | null
     textData: string
     autoDetected: boolean
     aggregationType: string
@@ -118,6 +120,7 @@ interface ChartState {
     logoUpload: File | null
     logoPlacement: string[]
     logoDescription: string
+    colorPalette: string
   }
   annotations: {
     dataLabels: boolean
@@ -134,6 +137,7 @@ interface ChartState {
     aspectRatio: string
     marginDensity: number
     safeZoneOverlay: boolean
+    exportPreset: string
   }
   narrative: {
     headline: string
@@ -147,7 +151,7 @@ const initialChartState: ChartState = {
   data: {
     title: "",
     source: "text",
-    csvFile: null,
+    dataFile: null,
     textData: "",
     autoDetected: false,
     aggregationType: "sum",
@@ -181,7 +185,8 @@ const initialChartState: ChartState = {
     fontFamily: "Inter",
     logoUpload: null,
     logoPlacement: [],
-    logoDescription: ""
+    logoDescription: "",
+    colorPalette: "auto"
   },
   annotations: {
     dataLabels: false,
@@ -197,7 +202,8 @@ const initialChartState: ChartState = {
     layoutTemplate: "auto",
     aspectRatio: "16:9",
     marginDensity: 50,
-    safeZoneOverlay: false
+    safeZoneOverlay: false,
+    exportPreset: "custom"
   },
   narrative: {
     headline: "",
@@ -214,7 +220,9 @@ export function ChartsInfographicsGeneratorInterface({
   const { user } = useAuth()
   const [chartState, setChartState] = useState<ChartState>(initialChartState)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationPhase, setGenerationPhase] = useState<'analyzing' | 'enhancing' | null>(null)
   const [previewMode, setPreviewMode] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   // Dynamic aspect ratio filtering based on selected model (default to Nano-banana)
   const model = 'Nano-banana' as FalModel
@@ -228,6 +236,14 @@ export function ChartsInfographicsGeneratorInterface({
 
   // Smart visibility helpers
   const is3DStyle = () => chartState.style.artDirection === "3D Data Art"
+  
+  // Detect if should generate multiple variants
+  const shouldGenerateMultiple = () => {
+    return !chartState.purpose.chartType || // No specific chart type
+           chartState.data.textData.includes("multiple") ||
+           chartState.data.textData.includes("various") ||
+           chartState.data.textData.includes("different styles")
+  }
   const isPieChart = () => chartState.purpose.chartType === "Pie" || chartState.purpose.chartType === "Donut"
   const isPlayfulMood = () => chartState.mood.moodContext === "Playful"
   const isBrandSynced = () => chartState.branding.brandSync
@@ -253,21 +269,34 @@ export function ChartsInfographicsGeneratorInterface({
     }))
   }
 
-  // Handle CSV file upload
-  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle data file upload
+  const handleDataFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      updateChartState("data", { csvFile: file, source: "csv" })
+      updateChartState("data", { dataFile: file, source: "file" })
     }
   }
 
-  // Handle CSV file removal
-  const handleCSVRemove = () => {
-    updateChartState("data", { csvFile: null, source: "text" })
+  // Handle data file removal
+  const handleDataFileRemove = () => {
+    updateChartState("data", { dataFile: null, source: "text" })
     // Reset the file input
-    const fileInput = document.getElementById('csv-upload') as HTMLInputElement
+    const fileInput = document.getElementById('data-file-upload') as HTMLInputElement
     if (fileInput) {
       fileInput.value = ''
+    }
+  }
+
+  // Handle export preset change and auto-set aspect ratio
+  const handleExportPresetChange = (preset: string) => {
+    if (preset && EXPORT_PRESETS[preset as keyof typeof EXPORT_PRESETS]) {
+      const presetConfig = EXPORT_PRESETS[preset as keyof typeof EXPORT_PRESETS]
+      updateChartState("layout", { 
+        exportPreset: preset,
+        aspectRatio: presetConfig.aspectRatio
+      })
+    } else {
+      updateChartState("layout", { exportPreset: preset })
     }
   }
 
@@ -293,6 +322,7 @@ export function ChartsInfographicsGeneratorInterface({
   // Generate chart
   const handleGenerate = async () => {
     setIsGenerating(true)
+    setGenerationPhase('analyzing')
     
     try {
       // Prepare FormData for file uploads
@@ -409,14 +439,17 @@ export function ChartsInfographicsGeneratorInterface({
       formData.append('caption', chartState.narrative.caption || '')
       formData.append('tone', chartState.narrative.tone)
       formData.append('platform', chartState.narrative.platform)
+      formData.append('colorPalette', chartState.branding.colorPalette)
+      formData.append('exportPreset', chartState.layout.exportPreset)
+      formData.append('generateVariants', shouldGenerateMultiple().toString())
       formData.append('metadata', JSON.stringify({
         projectTitle,
         timestamp: new Date().toISOString()
       }))
       
-      // Add CSV file if present
-      if (chartState.data.csvFile) {
-        formData.append('csvFile', chartState.data.csvFile)
+      // Add data file if present
+      if (chartState.data.dataFile) {
+        formData.append('dataFile', chartState.data.dataFile)
       }
       
       // Add logo file if present
@@ -425,6 +458,11 @@ export function ChartsInfographicsGeneratorInterface({
       }
 
       console.log('Generating chart with FormData')
+
+      // Simulate phase progression (since API handles both phases internally)
+      setTimeout(() => {
+        setGenerationPhase('enhancing')
+      }, 2000) // Switch to enhancing phase after 2 seconds
 
       // Call the API
       const response = await fetch('/api/charts-infographics', {
@@ -444,14 +482,38 @@ export function ChartsInfographicsGeneratorInterface({
       
     } catch (error) {
       console.error('Error generating chart:', error)
-      // TODO: Show error toast
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate chart. Please try again."
+      setGenerationError(errorMessage)
     } finally {
       setIsGenerating(false)
+      setGenerationPhase(null)
     }
   }
 
   return (
-    <div className="bg-background border border-border rounded-lg p-3 space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover">
+    <>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <GenerationLoading 
+          model="gpt-image-1"
+          onCancel={() => setIsGenerating(false)}
+        />
+      )}
+
+      {/* Error Overlay */}
+      {generationError && (
+        <GenerationError
+          error={generationError}
+          model="gpt-image-1"
+          onRetry={() => {
+            setGenerationError(null)
+            handleGenerate()
+          }}
+          onClose={() => setGenerationError(null)}
+        />
+      )}
+
+      <div className="bg-background border border-border rounded-lg p-3 space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hover">
       {/* Header */}
       <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-5 p-2 border-b border-border">
         <div className="flex items-center gap-3">
@@ -504,11 +566,11 @@ export function ChartsInfographicsGeneratorInterface({
                 />
               </div>
 
-              {/* CSV Upload Section */}
+              {/* Data File Upload Section */}
               <div className="space-y-2">
-                <Label className="text-xs">📁 CSV File Upload</Label>
+                <Label className="text-xs">📁 Data File Upload</Label>
                 
-                {!chartState.data.csvFile ? (
+                {!chartState.data.dataFile ? (
                   <div className="relative border-2 border-dashed border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
                     <div className="flex flex-col items-center gap-2">
                       <Upload className="h-6 w-6 text-muted-foreground" />
@@ -517,15 +579,15 @@ export function ChartsInfographicsGeneratorInterface({
                           Click to upload or drag and drop
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          CSV files up to 10MB
+                          CSV, Excel, JSON, PDF, TXT, XML and more (up to 10MB)
                         </p>
                       </div>
                     </div>
                     <Input
-                      id="csv-upload"
+                      id="data-file-upload"
                       type="file"
-                      accept=".csv"
-                      onChange={handleCSVUpload}
+                      accept=".csv,.xlsx,.xls,.json,.txt,.pdf,.docx,.doc,.xml,.html,.md"
+                      onChange={handleDataFileUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
@@ -534,14 +596,14 @@ export function ChartsInfographicsGeneratorInterface({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                          <Table className="h-4 w-4 text-primary" />
+                          <FileText className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-foreground truncate">
-                            {chartState.data.csvFile.name}
+                            {chartState.data.dataFile.name}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
-                            {(chartState.data.csvFile.size / 1024 / 1024).toFixed(2)} MB
+                            {(chartState.data.dataFile.size / 1024 / 1024).toFixed(2)} MB • {chartState.data.dataFile.name.split('.').pop()?.toUpperCase()}
                           </p>
                         </div>
                       </div>
@@ -549,7 +611,7 @@ export function ChartsInfographicsGeneratorInterface({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={handleCSVRemove}
+                          onClick={handleDataFileRemove}
                           className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                         >
                           <X className="h-3 w-3" />
@@ -584,6 +646,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="auto">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🤖</span>
+                          <span className="text-sm">Auto</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="sum">➕ Sum</SelectItem>
                       <SelectItem value="average">📊 Average</SelectItem>
                       <SelectItem value="count">🔢 Count</SelectItem>
@@ -625,6 +693,12 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectValue placeholder="What do you want to show?" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="auto">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🤖</span>
+                        <span className="text-sm">Auto</span>
+                      </div>
+                    </SelectItem>
                     {Object.keys(CHART_PURPOSE_MAP).map((purpose) => {
                       const emojiMap: { [key: string]: string } = {
                         "Comparison": "⚖️",
@@ -674,6 +748,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="vertical">📊 Vertical</SelectItem>
                       <SelectItem value="horizontal">📈 Horizontal</SelectItem>
                       <SelectItem value="radial">⭕ Radial</SelectItem>
@@ -712,15 +792,22 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectValue placeholder="Choose your creative direction" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🚫</span>
+                        <span className="text-sm">None</span>
+                      </div>
+                    </SelectItem>
                     {Object.keys(STYLE_MAP).map((direction) => {
                       const emojiMap: { [key: string]: string } = {
-                        "Minimal Analytical": "📊",
-                        "Editorial Infographic": "📰",
-                        "Playful / UGC": "🎨",
-                        "3D Data Art": "🎯",
-                        "Hand-drawn Sketch": "✏️",
-                        "Futuristic Tech Data": "🚀",
-                        "Illustrated Concept": "🎭"
+                        "Magazine Editorial": "📰",
+                        "Social Media Ready": "📱",
+                        "Presentation Pro": "📊",
+                        "Infographic Pop": "🎨",
+                        "Minimalist Modern": "✨",
+                        "Retro Vintage": "🕺",
+                        "Neon Cyberpunk": "🌃",
+                        "Hand-Drawn Sketch": "✏️"
                       }
                       return (
                         <SelectItem key={direction} value={direction}>
@@ -792,7 +879,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue placeholder="Select texture" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">❌ None</SelectItem>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="paper">📄 Paper</SelectItem>
                       <SelectItem value="fabric">🧵 Fabric</SelectItem>
                       <SelectItem value="metal">🔩 Metal</SelectItem>
@@ -832,6 +924,12 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectValue placeholder="Select mood context" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🚫</span>
+                        <span className="text-sm">None</span>
+                      </div>
+                    </SelectItem>
                     {MOOD_CONTEXTS.map((mood) => (
                       <SelectItem key={mood.name} value={mood.name}>
                         {mood.emoji} {mood.name}
@@ -877,23 +975,6 @@ export function ChartsInfographicsGeneratorInterface({
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label className="text-xs">Motion Accent (for export)</Label>
-                <Select 
-                  value={chartState.mood.motionAccent} 
-                  onValueChange={(value) => updateChartState("mood", { motionAccent: value })}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">❌ None</SelectItem>
-                    <SelectItem value="fade-in">✨ Fade In</SelectItem>
-                    <SelectItem value="bar-grow">📊 Bar Grow</SelectItem>
-                    <SelectItem value="glow-sweep">💫 Glow Sweep</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </AccordionContent>
           </AccordionItem>
 
@@ -915,6 +996,42 @@ export function ChartsInfographicsGeneratorInterface({
                 <Label htmlFor="brand-sync" className="text-xs">Brand Sync</Label>
               </div>
 
+              <div className="space-y-2">
+                <Label className="text-xs">🌈 Color Palette</Label>
+                <Select 
+                  value={chartState.branding.colorPalette} 
+                  onValueChange={(value) => updateChartState("branding", { colorPalette: value })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Choose color palette" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🚫</span>
+                        <span className="text-sm">Auto</span>
+                      </div>
+                    </SelectItem>
+                    {Object.entries(COLOR_PALETTES).map(([name, palette]) => (
+                      <SelectItem key={name} value={name}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {palette.colors.slice(0, 4).map((color, idx) => (
+                              <div 
+                                key={idx} 
+                                className="w-3 h-3 rounded-full border border-gray-300" 
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm">{name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-xs">Palette Mode</Label>
@@ -927,6 +1044,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="auto">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🤖</span>
+                          <span className="text-sm">Auto</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="categorical">🎨 Categorical</SelectItem>
                       <SelectItem value="sequential">📊 Sequential</SelectItem>
                       <SelectItem value="diverging">🔄 Diverging</SelectItem>
@@ -944,6 +1067,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="light">☀️ Light</SelectItem>
                       <SelectItem value="dark">🌙 Dark</SelectItem>
                       <SelectItem value="transparent">👻 Transparent</SelectItem>
@@ -964,6 +1093,12 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🚫</span>
+                        <span className="text-sm">None</span>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="Inter">🔤 Inter</SelectItem>
                     <SelectItem value="Roboto">🤖 Roboto</SelectItem>
                     <SelectItem value="Helvetica">📝 Helvetica</SelectItem>
@@ -1121,6 +1256,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="auto">🤖 Auto</SelectItem>
                       <SelectItem value="top">⬆️ Top</SelectItem>
                       <SelectItem value="bottom">⬇️ Bottom</SelectItem>
@@ -1142,6 +1283,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="auto">🤖 Auto</SelectItem>
                       <SelectItem value="inline">📝 Inline</SelectItem>
                       <SelectItem value="side">↔️ Side</SelectItem>
@@ -1160,7 +1307,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">❌ None</SelectItem>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="light">💡 Light</SelectItem>
                       <SelectItem value="strong">💪 Strong</SelectItem>
                     </SelectContent>
@@ -1202,12 +1354,48 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🚫</span>
+                        <span className="text-sm">None</span>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="auto">🤖 Auto</SelectItem>
                     <SelectItem value="hero">🦸 Hero</SelectItem>
                     <SelectItem value="dashboard">📊 Dashboard</SelectItem>
                     <SelectItem value="story">📖 Story</SelectItem>
                     <SelectItem value="metric-cards">📈 Metric Cards</SelectItem>
                     <SelectItem value="timeline">⏰ Timeline</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">📱 Export Preset</Label>
+                <Select 
+                  value={chartState.layout.exportPreset} 
+                  onValueChange={handleExportPresetChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Choose export format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🚫</span>
+                        <span className="text-sm">Custom</span>
+                      </div>
+                    </SelectItem>
+                    {Object.entries(EXPORT_PRESETS).map(([name, preset]) => (
+                      <SelectItem key={name} value={name}>
+                        <div>
+                          <div className="font-medium text-xs">{name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {preset.width}×{preset.height} • {preset.description}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1299,6 +1487,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="formal">🎩 Formal</SelectItem>
                       <SelectItem value="friendly">😊 Friendly</SelectItem>
                       <SelectItem value="fun">🎉 Fun</SelectItem>
@@ -1318,6 +1512,12 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🚫</span>
+                          <span className="text-sm">None</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="instagram">📸 Instagram</SelectItem>
                       <SelectItem value="story">📱 Story</SelectItem>
                       <SelectItem value="linkedin">💼 LinkedIn</SelectItem>
@@ -1334,7 +1534,7 @@ export function ChartsInfographicsGeneratorInterface({
       {/* Action Buttons */}
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <div className="text-xs text-muted-foreground">
-          {chartState.data.source === "csv" && chartState.data.csvFile && "CSV uploaded • "}
+          {chartState.data.source === "file" && chartState.data.dataFile && `${chartState.data.dataFile.name.split('.').pop()?.toUpperCase()} uploaded • `}
           {chartState.purpose.purpose && `${chartState.purpose.purpose} • `}
           {chartState.style.artDirection && `${chartState.style.artDirection} • `}
           {chartState.mood.moodContext && `${chartState.mood.moodContext}`}
@@ -1352,7 +1552,9 @@ export function ChartsInfographicsGeneratorInterface({
             {isGenerating ? (
               <>
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-                Generating...
+                {generationPhase === 'analyzing' ? 'Generating chart code...' : 
+                 generationPhase === 'enhancing' ? 'Enhancing design...' : 
+                 'Generating...'}
               </>
             ) : (
               <>
@@ -1367,6 +1569,7 @@ export function ChartsInfographicsGeneratorInterface({
       {/* Previous Generations */}
       <PreviousGenerations contentType="charts_infographics" userId={user?.id || ''} className="mt-8" />
     </div>
+    </>
   )
 }
 

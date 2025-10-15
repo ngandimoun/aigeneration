@@ -2,6 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
+import { buildCodeInterpreterPrompt, buildEnhancementPrompt } from '@/lib/utils/chart-prompt-builder'
+import { generateChartCode } from '@/lib/openai/code-interpreter'
+import { executeChartCode } from '@/lib/modal/chart-generation'
+import { generateWithFal, downloadImage } from '@/lib/utils/fal-generation'
+import { validateImageFiles } from '@/lib/utils/image-validation'
+import { sanitizeFilename } from '@/lib/utils'
 
 // Cache for 30 seconds
 export const revalidate = 30
@@ -56,33 +62,56 @@ export async function GET(request: NextRequest) {
     // Apply pagination (use range instead of limit to avoid conflicts)
     query = query.range(offset, offset + limit - 1)
 
-    const { data: chartsInfographics, error } = await query
+    const { data: chartsInfographicsData, error } = await query
 
     if (error) {
       console.error('Error fetching charts/infographics:', error)
       return NextResponse.json({ error: 'Failed to fetch charts/infographics' }, { status: 500 })
     }
 
-    // Regenerate expired signed URLs from storage_paths
+    // Filter and regenerate URLs - ONLY show charts with enhanced versions
+    let chartsInfographics = chartsInfographicsData
     if (chartsInfographics && chartsInfographics.length > 0) {
+      const enhancedCharts = []
+      
       for (const chart of chartsInfographics) {
         if (chart.storage_paths && chart.storage_paths.length > 0) {
-          // Regenerate fresh signed URLs from storage paths
-          const freshUrls: string[] = []
-          for (const storagePath of chart.storage_paths) {
+          // Find the enhanced chart path (contains "enhanced" in filename)
+          const enhancedPath = chart.storage_paths.find(path => path.includes('enhanced'))
+          
+          if (enhancedPath) {
+            // This chart has an enhanced version - include it
+            console.log('🔍 Regenerating URL for enhanced chart:', {
+              id: chart.id,
+              title: chart.title,
+              enhancedPath
+            })
+            
+            // Regenerate fresh signed URL for the enhanced chart
             const { data: signedUrlData } = await supabase.storage
               .from('dreamcut')
-              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+              .createSignedUrl(enhancedPath, 86400) // 24 hour expiry
+            
             if (signedUrlData?.signedUrl) {
-              freshUrls.push(signedUrlData.signedUrl)
+              // Only use the enhanced chart URL for display
+              chart.generated_images = [signedUrlData.signedUrl]
+              enhancedCharts.push(chart)
+              console.log('✅ Regenerated enhanced chart URL:', signedUrlData.signedUrl)
             }
-          }
-          // Replace expired URLs with fresh ones
-          if (freshUrls.length > 0) {
-            chart.generated_images = freshUrls
+          } else {
+            // This chart has no enhanced version - skip it
+            console.log('⏭️ Skipping chart without enhanced version:', {
+              id: chart.id,
+              title: chart.title,
+              storagePaths: chart.storage_paths
+            })
           }
         }
       }
+      
+      // Replace the original array with only enhanced charts
+      chartsInfographics = enhancedCharts
+      console.log(`📊 Filtered charts: ${enhancedCharts.length} enhanced charts out of ${chartsInfographicsData.length} total`)
     }
 
     return NextResponse.json({ chartsInfographics }, { 
@@ -158,6 +187,7 @@ export async function POST(request: NextRequest) {
       ? JSON.parse(formData.get('logoPlacement')?.toString() || '[]') 
       : []
     const logoDescription = formData.get('logoDescription')?.toString() || null
+    const colorPalette = formData.get('colorPalette')?.toString() || null
     
     // Annotations & Labels
     const dataLabels = formData.get('dataLabels')?.toString() === 'true'
@@ -174,6 +204,10 @@ export async function POST(request: NextRequest) {
     const aspectRatio = formData.get('aspectRatio')?.toString() || '16:9'
     const marginDensity = parseInt(formData.get('marginDensity')?.toString() || '50')
     const safeZoneOverlay = formData.get('safeZoneOverlay')?.toString() === 'true'
+    const exportPreset = formData.get('exportPreset')?.toString() || null
+    
+    // Multiple Variants
+    const generateVariants = formData.get('generateVariants')?.toString() === 'true'
     
     // Narrative
     const headline = formData.get('headline')?.toString() || null
@@ -184,30 +218,32 @@ export async function POST(request: NextRequest) {
     // Metadata
     const metadata = formData.get('metadata')?.toString() ? JSON.parse(formData.get('metadata')?.toString() || '{}') : {}
 
-    // Handle CSV file upload
-    let csvFilePath: string | null = null
-    const csvFile = formData.get('csvFile') as File | null
-    if (csvFile) {
-      const filePath = `renders/charts/${user.id}/csv/${uuidv4()}-${csvFile.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('dreamcut')
-        .upload(filePath, csvFile, {
-          cacheControl: '3600',
-          upsert: false,
-        })
-
-      if (uploadError) {
-        console.error('Error uploading CSV file:', uploadError)
-        return NextResponse.json({ error: `Failed to upload CSV file: ${uploadError.message}` }, { status: 500 })
-      }
-      csvFilePath = filePath
+    // Handle data file upload (CSV, Excel, JSON, PDF, etc.)
+    // Note: Data files are only used for Code Interpreter processing, not stored in Supabase
+    // Supabase storage doesn't support certain MIME types like application/json
+    let dataFilePath: string | null = null
+    const dataFile = formData.get('dataFile') as File | null
+    if (dataFile) {
+      // For data files, we only need the file content for Code Interpreter
+      // We'll store the filename and type in the database for reference
+      dataFilePath = `data-file-${dataFile.name}` // Just a reference, not actual storage path
+      console.log(`📁 Data file received: ${dataFile.name} (${dataFile.type}, ${dataFile.size} bytes)`)
     }
 
     // Handle logo upload
     let logoImagePath: string | null = null
     const logoFile = formData.get('logoFile') as File | null
     if (logoFile) {
-      const filePath = `renders/charts/${user.id}/logo/${uuidv4()}-${logoFile.name}`
+      // Validate logo image
+      const logoValidation = await validateImageFiles([logoFile])
+      if (!logoValidation.valid) {
+        return NextResponse.json({ 
+          error: `Invalid logo image: ${logoValidation.errors.join(', ')}` 
+        }, { status: 400 })
+      }
+
+      const sanitizedName = sanitizeFilename(logoFile.name)
+      const filePath = `renders/charts/${user.id}/logo/${uuidv4()}-${sanitizedName}`
       const { error: uploadError } = await supabase.storage
         .from('dreamcut')
         .upload(filePath, logoFile, {
@@ -229,7 +265,7 @@ export async function POST(request: NextRequest) {
       chartType,
       artDirection,
       visualInfluence,
-      csvFile: csvFilePath ? 'uploaded' : 'none',
+      dataFile: dataFilePath ? `uploaded (${dataFile?.name})` : 'none',
       logoFile: logoImagePath ? 'uploaded' : 'none'
     })
 
@@ -237,19 +273,234 @@ export async function POST(request: NextRequest) {
     const generationId = `ci_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const generationTimestamp = new Date().toISOString()
 
-    // For now, we'll simulate chart generation with placeholder URLs
-    // In a real implementation, you would call a chart generation service
-    const imageUrls = Array.from({ length: 4 }, (_, index) => 
-      `https://picsum.photos/seed/${generationId}_${index}/1024/1024`
-    )
-    const generatedStoragePaths = Array.from({ length: 4 }, (_, index) => 
-      `renders/charts/${user.id}/generated/${uuidv4()}-generated_${index}.jpg`
+    // ===== PHASE 1: CODE INTERPRETER CHART GENERATION =====
+    console.log('🚀 Phase 1: Starting Code Interpreter chart generation...')
+    
+    // Build Code Interpreter prompt
+    const codeInterpreterPrompt = buildCodeInterpreterPrompt({
+      prompt: prompt || textData || '',
+      dataSource,
+      textData: prompt || textData,
+      autoDetected,
+      aggregationType,
+      units,
+      labels,
+      purpose,
+      chartType,
+      multiSeries,
+      orientation,
+      dataLabels,
+      legends,
+      gridlines,
+      callouts,
+      calloutThreshold,
+      axisTitles,
+      headline,
+      caption,
+      generateVariants
+    })
+
+    // Prepare data file for Code Interpreter if uploaded
+    let dataFileBuffer: Buffer | undefined
+    if (dataFilePath && dataFile) {
+      dataFileBuffer = Buffer.from(await dataFile.arrayBuffer())
+    }
+
+    // Phase 1: Generate validated Python code using Code Interpreter
+    console.log('📊 Phase 1: Generating validated Python code with Code Interpreter...')
+    const chartCodeResult = await generateChartCode({
+      dataFile: dataFileBuffer ? {
+        buffer: dataFileBuffer,
+        filename: dataFile.name
+      } : undefined,
+      prompt: codeInterpreterPrompt,
+      chartConfig: {
+        aspectRatio,
+        format: 'png',
+        dpi: 300
+      }
+    })
+
+    if (!chartCodeResult.success || !chartCodeResult.pythonCode) {
+      console.error('❌ Phase 1 failed:', chartCodeResult.error)
+      return NextResponse.json({ 
+        error: `Chart code generation failed: ${chartCodeResult.error}` 
+      }, { status: 500 })
+    }
+
+    console.log('✅ Phase 1 completed: Validated Python code generated')
+
+    // Post-process generated code to fix filename mismatches
+    if (chartCodeResult.success && chartCodeResult.pythonCode && dataFile) {
+      // Replace any file paths with actual uploaded filename
+      chartCodeResult.pythonCode = chartCodeResult.pythonCode.replace(
+        /\/mnt\/data\/[^\s'"]+\.(xlsx|xls|csv|json|txt|pdf|docx|doc|xml|html|md)/gi,
+        `/mnt/data/${dataFile.name}`
+      )
+      console.log(`📝 Replaced file paths with actual filename: ${dataFile.name}`)
+    }
+
+    // Phase 2: Execute validated code in Modal
+    console.log('🚀 Phase 2: Executing validated code in Modal...')
+    const chartImageBuffer = await executeChartCode(
+      chartCodeResult.pythonCode,
+      dataFileBuffer ? { buffer: dataFileBuffer, filename: dataFile.name } : undefined
     )
 
-    console.log('📊 Generated charts:', imageUrls)
+    console.log('✅ Phase 2 completed: Chart executed successfully in Modal')
+
+    // Upload raw chart to Supabase storage
+    const rawChartFileName = `${uuidv4()}-raw.png`
+    const rawChartPath = `renders/charts/${user.id}/raw/${rawChartFileName}`
+    
+    const { error: rawUploadError } = await supabase.storage
+      .from('dreamcut')
+      .upload(rawChartPath, chartImageBuffer, {
+        contentType: 'image/png',
+        cacheControl: '3600'
+      })
+
+    if (rawUploadError) {
+      console.error('❌ Failed to upload raw chart:', rawUploadError)
+      return NextResponse.json({ 
+        error: 'Failed to save raw chart' 
+      }, { status: 500 })
+    }
+
+    // Get signed URL for raw chart
+    const { data: rawSignedUrlData } = await supabase.storage
+      .from('dreamcut')
+      .createSignedUrl(rawChartPath, 86400) // 24 hour expiry
+
+    // ===== PHASE 3: GPT IMAGE 1 ENHANCEMENT =====
+    console.log('🎨 Phase 3: Starting GPT Image 1 enhancement...')
+    
+    // Build enhancement prompt
+    const enhancementPrompt = buildEnhancementPrompt({
+      prompt: prompt || textData || '',
+      artDirection,
+      visualInfluence,
+      chartDepth,
+      backgroundTexture,
+      accentShapes,
+      moodContext,
+      toneIntensity,
+      lightingTemperature,
+      motionAccent,
+      brandSync,
+      paletteMode,
+      backgroundType,
+      fontFamily,
+      logoPlacement,
+      logoDescription,
+      colorPalette,
+      layoutTemplate,
+      marginDensity,
+      exportPreset,
+      tone,
+      platform
+    })
+
+    // Phase 3: Enhance chart with GPT Image 1 via fal.ai
+    console.log('🎨 Phase 3: Enhancing chart with GPT Image 1 via fal.ai...')
+    
+    // Get signed URL for raw chart
+    const { data: { signedUrl: rawChartUrl } } = await supabase.storage
+      .from('dreamcut')
+      .createSignedUrl(rawChartPath, 86400) // 24 hour expiry
+
+    if (!rawChartUrl) {
+      throw new Error('Failed to create signed URL for raw chart')
+    }
+
+    // Enhance with fal.ai GPT Image 1
+    const enhancementResult = await generateWithFal({
+      prompt: enhancementPrompt,
+      aspectRatio,
+      numImages: 1,
+      model: 'gpt-image-1',
+      hasImages: true,
+      imageUrls: [rawChartUrl],
+      logoImagePath: logoImagePath
+    })
+
+    let enhancedImageUrl: string | undefined
+    let enhancedStoragePath: string | undefined
+
+    if (enhancementResult.success && enhancementResult.images.length > 0) {
+      console.log('✅ Phase 3 completed: Chart enhanced')
+      console.log('🔍 Debug - fal.ai returned image URL:', enhancementResult.images[0])
+      
+      // Download enhanced image
+      const enhancedImageBuffer = await downloadImage(enhancementResult.images[0])
+      console.log('🔍 Debug - Downloaded enhanced image buffer size:', enhancedImageBuffer.length)
+      
+      // Upload enhanced chart to Supabase storage
+      const enhancedChartFileName = `${uuidv4()}-enhanced.png`
+      enhancedStoragePath = `renders/charts/${user.id}/generated/${enhancedChartFileName}`
+      console.log('🔍 Debug - Enhanced storage path:', enhancedStoragePath)
+      
+      const { error: enhancedUploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(enhancedStoragePath, enhancedImageBuffer, {
+          contentType: 'image/png',
+          cacheControl: '3600'
+        })
+
+      if (enhancedUploadError) {
+        console.error('❌ Failed to upload enhanced chart:', enhancedUploadError)
+        // Continue with raw chart only
+      } else {
+        console.log('✅ Enhanced chart uploaded to Supabase successfully')
+        // Get signed URL for enhanced chart
+        const { data: enhancedSignedUrlData } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(enhancedStoragePath, 86400) // 24 hour expiry
+        
+        if (enhancedSignedUrlData?.signedUrl) {
+          enhancedImageUrl = enhancedSignedUrlData.signedUrl
+          console.log('✅ Enhanced chart signed URL created:', enhancedImageUrl)
+        } else {
+          console.error('❌ Failed to create signed URL for enhanced chart')
+        }
+      }
+    } else {
+      console.error('❌ Phase 3 failed:', enhancementResult.error)
+      throw new Error(`Chart enhancement failed: ${enhancementResult.error || 'Unknown error'}`)
+    }
+
+    // Prepare final results - ONLY show enhanced chart to users
+    const imageUrls: string[] = []
+    const allStoragePaths: string[] = []
+
+    // Always store both raw and enhanced paths for backup/debugging
+    allStoragePaths.push(rawChartPath)
+    if (enhancedStoragePath) {
+      allStoragePaths.push(enhancedStoragePath)
+    }
+
+    // Debug logging to understand what URLs we have
+    console.log('🔍 Debug - Raw chart signed URL:', rawSignedUrlData?.signedUrl)
+    console.log('🔍 Debug - Enhanced image URL:', enhancedImageUrl)
+    console.log('🔍 Debug - Enhanced storage path:', enhancedStoragePath)
+
+    if (enhancedImageUrl && enhancedStoragePath) {
+      // Use enhanced chart - this is what users see
+      imageUrls.push(enhancedImageUrl)
+      console.log('📊 Using enhanced chart for display:', enhancedImageUrl)
+      console.log('📊 Enhanced chart URL contains "enhanced":', enhancedImageUrl.includes('enhanced'))
+    } else {
+      // No enhanced chart available - this should not happen since we throw error above
+      throw new Error('No enhanced chart was generated')
+    }
+
+    console.log('📊 Final chart generation completed - imageUrls:', imageUrls)
+    console.log('📊 Final chart generation completed - allStoragePaths:', allStoragePaths)
 
     // Save to charts_infographics table with new schema
     console.log('🔄 Attempting to save to charts_infographics table...')
+    console.log('🔍 Final verification - imageUrls being saved to database:', imageUrls)
+    console.log('🔍 Final verification - allStoragePaths being saved to database:', allStoragePaths)
     const chartData = {
         user_id: user.id,
         title: title || `Chart ${new Date().toLocaleDateString()}`,
@@ -258,7 +509,7 @@ export async function POST(request: NextRequest) {
         
         // Data Source & Content
         data_source: dataSource,
-        csv_file_path: csvFilePath,
+        csv_file_path: dataFilePath, // Reference to data file (not actual storage path)
         text_data: nullToUndefined(prompt),
         auto_detected: autoDetected,
         aggregation_type: aggregationType,
@@ -287,12 +538,14 @@ export async function POST(request: NextRequest) {
         
         // Branding
         brand_sync: brandSync,
-        palette_mode: paletteMode,
+        palette_mode: paletteMode === 'auto' ? 'categorical' : paletteMode,
         background_type: backgroundType,
         font_family: fontFamily,
         logo_image_path: logoImagePath,
         logo_placement: logoPlacement,
         logo_description: logoDescription,
+        color_palette: colorPalette,
+        export_preset: exportPreset,
         
         // Annotations & Labels
         data_labels: dataLabels,
@@ -318,7 +571,7 @@ export async function POST(request: NextRequest) {
         
         // Generated Content
         generated_images: imageUrls,
-        storage_paths: generatedStoragePaths,
+        storage_paths: allStoragePaths,
         
         // Status & Metadata
         status: 'completed',
@@ -332,7 +585,15 @@ export async function POST(request: NextRequest) {
           generated_via: 'charts-infographics-generation',
           brandSync,
           paletteMode,
-          backgroundType
+          backgroundType,
+          colorPalette,
+          exportPreset,
+          generateVariants,
+          dataFile: dataFile ? {
+            name: dataFile.name,
+            type: dataFile.type,
+            size: dataFile.size
+          } : null
         },
         content: {
           images: imageUrls,
@@ -434,7 +695,7 @@ export async function POST(request: NextRequest) {
           chartType,
           artDirection,
           visualInfluence,
-          csvFile: csvFilePath ? 'uploaded' : 'none',
+          dataFile: dataFile ? `${dataFile.name} (${dataFile.type})` : 'none',
           logoFile: logoImagePath ? 'uploaded' : 'none'
         }
       }

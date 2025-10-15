@@ -166,3 +166,4 @@ AND column_name IN (
 5. **User Control**: Can override AI choices anytime
 6. **Brand Alignment**: Can manually set brand colors when needed
 
+
