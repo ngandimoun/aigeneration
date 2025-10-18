@@ -173,24 +173,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <div className="ml-6 mt-1 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
-                disabled
-              >
-                <BookOpen className="h-4 w-4 shrink-0" />
-                <span>Comics</span>
-                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
-                disabled
-              >
-                <Palette className="h-4 w-4 shrink-0" />
-                <span>Illustration</span>
-                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
-              </Button>
-              <Button
-                variant="ghost"
                 className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'avatars-personas'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
@@ -221,15 +203,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
-                disabled
-              >
-                <Globe className="h-4 w-4 shrink-0" />
-                <span>Concept Worlds</span>
-                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
-              </Button>
-              <Button
-                variant="ghost"
                 className={`w-full justify-start gap-3 text-xs ${
                   selectedSection === 'charts-infographics'
                     ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
@@ -242,6 +215,33 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               >
                 <BarChart3 className="h-4 w-4 shrink-0" />
                 <span>Charts & Infographics</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+                disabled
+              >
+                <BookOpen className="h-4 w-4 shrink-0" />
+                <span>Comics</span>
+                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+                disabled
+              >
+                <Palette className="h-4 w-4 shrink-0" />
+                <span>Illustration</span>
+                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+                disabled
+              >
+                <Globe className="h-4 w-4 shrink-0" />
+                <span>Concept Worlds</span>
+                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
               </Button>
             </div>
           )}
@@ -274,15 +274,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
         {/* Audios Submenu */}
         {!isCollapsed && isAudiosOpen && (
           <div className="ml-6 mt-1 space-y-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
-              disabled
-            >
-              <Mic className="h-4 w-4 shrink-0" />
-              <span>Voice Creation</span>
-              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
-            </Button>
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
@@ -333,6 +324,15 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
               disabled
             >
+              <Mic className="h-4 w-4 shrink-0" />
+              <span>Voice Creation</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
+            >
               <Zap className="h-4 w-4 shrink-0" />
               <span>Sound FX</span>
               <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
@@ -366,15 +366,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
         {/* Motions Submenu */}
         {!isCollapsed && isMotionsOpen && (
           <div className="ml-6 mt-1 space-y-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
-              disabled
-            >
-              <PlayCircle className="h-4 w-4 shrink-0" />
-              <span>Explainers</span>
-              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
-            </Button>
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
@@ -419,6 +410,15 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             >
               <MessageCircle className="h-4 w-4 shrink-0" />
               <span>Talking Avatars</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
+            >
+              <PlayCircle className="h-4 w-4 shrink-0" />
+              <span>Explainers</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
             </Button>
             <Button
               variant="ghost"
