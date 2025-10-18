@@ -647,8 +647,8 @@ export function GeneratorPanel() {
   }
 
   return (
-    <div className={`w-[380px] border-r border-border bg-background ${(showImageGenerator || showVideoGenerator) ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hover'}`}>
-      <div className={`${(showImageGenerator || showVideoGenerator) ? 'p-4 space-y-4' : 'p-6 space-y-6'}`}>
+    <div className={`w-[380px] h-full border-r border-border bg-background ${(showImageGenerator || showVideoGenerator) ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hover'}`}>
+      <div className={`${(showImageGenerator || showVideoGenerator) ? 'p-4 space-y-4 h-full flex flex-col' : 'p-6 space-y-6'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{getDisplayTitle()}</h2>
           {shouldShowNewProjectButton() && <NewProjectButton />}
@@ -696,28 +696,30 @@ export function GeneratorPanel() {
         )}
         
         {showVideoGenerator && selectedVideoProject && videoGeneratorSection === selectedSection && (
-          selectedSection === 'explainers' ? (
-            <ExplainerGeneratorInterface 
-              onClose={handleCloseVideoGenerator}
-              projectTitle={selectedVideoProject.title}
-            />
-          ) : selectedSection === 'ugc-ads' ? (
-            <UGCAdsGeneratorInterface 
-              onClose={handleCloseVideoGenerator}
-              projectTitle={selectedVideoProject.title}
-            />
-          ) : selectedSection === 'diverse-motion' ? (
-            <DiverseMotionGeneratorInterface 
-              onClose={handleCloseVideoGenerator}
-              projectTitle={selectedVideoProject.title}
-              selectedArtifact={selectedVideoProject as any}
-            />
-          ) : (
-            <VideoGeneratorInterface 
-              onClose={handleCloseVideoGenerator}
-              projectTitle={selectedVideoProject.title}
-            />
-          )
+          <div className="flex-1 min-h-0">
+            {selectedSection === 'explainers' ? (
+              <ExplainerGeneratorInterface 
+                onClose={handleCloseVideoGenerator}
+                projectTitle={selectedVideoProject.title}
+              />
+            ) : selectedSection === 'ugc-ads' ? (
+              <UGCAdsGeneratorInterface 
+                onClose={handleCloseVideoGenerator}
+                projectTitle={selectedVideoProject.title}
+              />
+            ) : selectedSection === 'diverse-motion' ? (
+              <DiverseMotionGeneratorInterface 
+                onClose={handleCloseVideoGenerator}
+                projectTitle={selectedVideoProject.title}
+                selectedArtifact={selectedVideoProject as any}
+              />
+            ) : (
+              <VideoGeneratorInterface 
+                onClose={handleCloseVideoGenerator}
+                projectTitle={selectedVideoProject.title}
+              />
+            )}
+          </div>
         )}
         
         {/* Voice Creation Interface */}

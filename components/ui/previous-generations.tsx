@@ -52,6 +52,8 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
   const [batchRecoveryProgress, setBatchRecoveryProgress] = useState(0)
   const [batchRecoveryResults, setBatchRecoveryResults] = useState<any>(null)
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
+  const [showLightbox, setShowLightbox] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
   const { user } = useAuth()
@@ -315,6 +317,105 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       toast({
         title: "Download failed",
         description: "Could not download the voiceover.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Handle avatar download
+  const handleDownloadAvatar = async (item: any) => {
+    try {
+      const imageUrl = item.generated_images?.[0]
+      if (!imageUrl) {
+        throw new Error('No image available for download')
+      }
+      
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.title || 'avatar'}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      toast({
+        title: "Download started",
+        description: `Downloading ${item.title || 'avatar'}...`
+      })
+    } catch (error) {
+      console.error('Avatar download error:', error)
+      toast({
+        title: "Download failed",
+        description: "Could not download the avatar.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Handle product mockup download
+  const handleDownloadMockup = async (item: any) => {
+    try {
+      const imageUrl = item.generated_images?.[0]
+      if (!imageUrl) {
+        throw new Error('No image available for download')
+      }
+      
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.title || 'mockup'}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      toast({
+        title: "Download started",
+        description: `Downloading ${item.title || 'mockup'}...`
+      })
+    } catch (error) {
+      console.error('Mockup download error:', error)
+      toast({
+        title: "Download failed",
+        description: "Could not download the mockup.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Handle charts & infographics download
+  const handleDownloadChart = async (item: any) => {
+    try {
+      const imageUrl = item.generated_images?.[0]
+      if (!imageUrl) {
+        throw new Error('No image available for download')
+      }
+      
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.title || 'chart'}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      toast({
+        title: "Download started",
+        description: `Downloading ${item.title || 'chart'}...`
+      })
+    } catch (error) {
+      console.error('Chart download error:', error)
+      toast({
+        title: "Download failed",
+        description: "Could not download the chart.",
         variant: "destructive"
       })
     }
@@ -593,7 +694,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       return (
         <video
           src={videoUrl}
-          className="w-full h-32 object-cover rounded-t-lg"
+          className="w-full h-48 object-cover rounded-t-lg"
           poster="/placeholder.jpg"
           muted
         >
@@ -604,7 +705,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       // Special handling for music jingles with cover images
       if (contentType === 'music_jingles' && item.image_url) {
         return (
-          <div className="relative w-full h-32 rounded-t-lg overflow-hidden">
+          <div className="relative w-full h-48 rounded-t-lg overflow-hidden">
             <img
               src={item.image_url}
               alt={item.title || 'Music cover'}
@@ -636,21 +737,28 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       } else {
         // Default audio preview for other content types or music without cover
         return (
-          <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
+          <div className="w-full h-48 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
             <Volume2 className="h-8 w-8 text-white" />
           </div>
         )
       }
     } else if (isImageContentType(contentType) && imageUrl) {
       console.log(`🖼️ Rendering image for ${contentType}:`, imageUrl)
+      // Special handling for avatars_personas, product_mockups, and charts_infographics with responsive height
+      const isAvatar = contentType === 'avatars_personas'
+      const isMockup = contentType === 'product_mockups'
+      const isChart = contentType === 'charts_infographics'
+      const isVisualContent = isAvatar || isMockup || isChart
       return (
-        <img
-          src={imageUrl}
-          alt={item.title || 'Generated content'}
-          className="w-full h-32 object-cover rounded-t-lg"
-          onLoad={() => console.log(`✅ Image loaded successfully for ${contentType}`)}
-          onError={(e) => console.error(`❌ Image failed to load for ${contentType}:`, e)}
-        />
+        <div className={`w-full ${isVisualContent ? 'h-48' : 'h-32'} rounded-t-lg overflow-hidden`}>
+          <img
+            src={imageUrl}
+            alt={item.title || 'Generated content'}
+            className="w-full h-full object-cover"
+            onLoad={() => console.log(`✅ Image loaded successfully for ${contentType}`)}
+            onError={(e) => console.error(`❌ Image failed to load for ${contentType}:`, e)}
+          />
+        </div>
       )
     } else {
       // Show different placeholder based on status
@@ -946,7 +1054,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
           {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.isArray(items) ? items.map((item) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-shadow relative">
+              <Card key={item.id} className={`group hover:shadow-lg transition-shadow relative ${(contentType === 'avatars_personas' || contentType === 'product_mockups' || contentType === 'charts_infographics' || contentType === 'voiceovers' || contentType === 'music_jingles' || contentType === 'music_videos') ? '!pt-0' : ''}`}>
                 <div className="relative">
                   {renderMediaPreview(item)}
                   <div className="absolute top-2 right-2 flex gap-1">
@@ -980,15 +1088,33 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 overflow-hidden">
                   {/* Style Tags for Music Jingles */}
                   {contentType === 'music_jingles' && item.tags && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {item.tags.split(',').map((tag: string, index: number) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag.trim()}
-                        </Badge>
-                      ))}
+                      {(() => {
+                        const tags = item.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+                        const maxVisibleTags = 3
+                        const visibleTags = tags.slice(0, maxVisibleTags)
+                        const remainingCount = tags.length - maxVisibleTags
+                        
+                        return (
+                          <>
+                            {visibleTags.map((tag: string, index: number) => (
+                              <Badge key={index} variant="outline" className="text-xs max-w-[150px]">
+                                <span className="block truncate">
+                                  {tag}
+                                </span>
+                              </Badge>
+                            ))}
+                            {remainingCount > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{remainingCount} more
+                              </Badge>
+                            )}
+                          </>
+                        )
+                      })()}
                     </div>
                   )}
                   
@@ -998,13 +1124,50 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
                       {new Date(item.created_at).toLocaleDateString()}
                     </div>
                     <div className="flex items-center gap-1">
-                      {getMediaIcon(item)}
+                      {/* Eye icon and Download button for avatars, product mockups, and charts & infographics */}
+                      {(contentType === 'avatars_personas' || contentType === 'product_mockups' || contentType === 'charts_infographics') && item.generated_images?.[0] ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedImage(item.generated_images[0])
+                              setShowLightbox(true)
+                            }}
+                            title="View full size"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (contentType === 'avatars_personas') {
+                                handleDownloadAvatar(item)
+                              } else if (contentType === 'product_mockups') {
+                                handleDownloadMockup(item)
+                              } else if (contentType === 'charts_infographics') {
+                                handleDownloadChart(item)
+                              }
+                            }}
+                            title={`Download ${contentType === 'avatars_personas' ? 'avatar' : contentType === 'product_mockups' ? 'mockup' : 'chart'}`}
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        getMediaIcon(item)
+                      )}
                     </div>
                   </div>
                   
                   {/* Model Information for Music Jingles */}
                   {contentType === 'music_jingles' && item.model_name && (
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-muted-foreground mt-1 truncate">
                       Model: {item.model_name}
                     </div>
                   )}
@@ -1016,32 +1179,30 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
                         <>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 px-3"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
                             onClick={(e) => {
                               e.stopPropagation()
                               handlePlayVoiceover(item.id, item.storage_path)
                             }}
                           >
                             {playingVoiceId === item.id ? (
-                              <Pause className="h-4 w-4 mr-1" />
+                              <Pause className="h-4 w-4" />
                             ) : (
-                              <Play className="h-4 w-4 mr-1" />
+                              <Play className="h-4 w-4" />
                             )}
-                            {playingVoiceId === item.id ? 'Pause' : 'Play'}
                           </Button>
                           
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 px-3"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleDownloadVoiceover(item)
                             }}
                           >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
+                            <Download className="h-4 w-4" />
                           </Button>
                         </>
                       ) : (
@@ -1059,32 +1220,30 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
                         <>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 px-3"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
                             onClick={(e) => {
                               e.stopPropagation()
                               handlePlayVoiceover(item.id, item.audio_url || item.generated_audio_path)
                             }}
                           >
                             {playingVoiceId === item.id ? (
-                              <Pause className="h-4 w-4 mr-1" />
+                              <Pause className="h-4 w-4" />
                             ) : (
-                              <Play className="h-4 w-4 mr-1" />
+                              <Play className="h-4 w-4" />
                             )}
-                            {playingVoiceId === item.id ? 'Pause' : 'Play'}
                           </Button>
                           
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 px-3"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleDownloadVoiceover(item)
                             }}
                           >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
+                            <Download className="h-4 w-4" />
                           </Button>
                         </>
                       ) : (
@@ -1208,6 +1367,20 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
               </div>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Avatar Lightbox Dialog */}
+      <Dialog open={showLightbox} onOpenChange={setShowLightbox}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0 bg-background border-border">
+          {/* Full-size image */}
+          {selectedImage && (
+            <img
+              src={selectedImage}
+              alt="Avatar full size"
+              className="w-full h-auto max-h-[85vh] object-contain bg-muted rounded-lg"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -21,7 +21,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { WatermarkProject } from "@/lib/types/watermark"
 import { convertToSignedUrls } from "@/lib/storage/signed-urls"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface WatermarkInterfaceProps {
   onClose: () => void
@@ -205,157 +204,25 @@ export function WatermarkInterface({ onClose, projectTitle }: WatermarkInterface
   }
 
   return (
-    <div className="bg-background border border-border rounded-lg p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Watermark Projects</h2>
-          <p className="text-muted-foreground">Manage your video watermark generation projects</p>
+    <div className="flex items-center justify-center min-h-[600px] bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 dark:from-cyan-950/20 dark:via-blue-950/20 dark:to-purple-950/20 rounded-lg p-8">
+      <div className="text-center max-w-md space-y-6">
+        {/* Icône attractive */}
+        <div className="relative inline-block">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-2xl opacity-30 animate-pulse"></div>
+          <Droplets className="relative h-24 w-24 text-transparent bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
         </div>
-        <Button onClick={onClose} variant="ghost" size="icon">
-          <Plus className="h-4 w-4" />
-        </Button>
+        
+        {/* Titre accrocheur */}
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-700 bg-clip-text text-transparent">
+          Add Watermark to Your Videos
+        </h2>
+        
+        {/* Message engageant */}
+        <p className="text-muted-foreground text-lg">
+          Protect your content with custom watermarks. Simple, fast, and professional.
+        </p>
+        
       </div>
-
-      {/* Projects Grid */}
-      {watermarkProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <Droplets className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No watermark projects yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first watermark project to get started
-          </p>
-          <Button 
-            onClick={onClose}
-            className="bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Project
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {watermarkProjects.map((project) => (
-            <Card key={project.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-sm font-medium line-clamp-2">
-                      {project.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1 line-clamp-2">
-                      {project.description}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    {getStatusIcon(project.status)}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  {/* Status Badge */}
-                  <div className="flex items-center justify-between">
-                    {getStatusBadge(project.status)}
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(project.created_at)}
-                    </span>
-                  </div>
-
-                  {/* Watermark Details */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Watermark:</span>
-                      <span className="font-medium truncate max-w-[120px]" title={project.watermark_text}>
-                        {project.watermark_text}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Font Size:</span>
-                      <span className="font-medium">{project.font_size}px</span>
-                    </div>
-                  </div>
-
-                  {/* Video Preview */}
-                  {project.video_url && (
-                    <div className="relative w-full h-20 bg-muted rounded-lg overflow-hidden">
-                      <video
-                        src={signedUrls.get(project.video_url) || project.video_url}
-                        className="w-full h-full object-cover"
-                        muted
-                        preload="metadata"
-                      />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Video className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    {project.status === 'completed' && project.output_video_url && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1"
-                          onClick={() => handleView(project)}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1"
-                          onClick={() => handleDownload(project)}
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          Download
-                        </Button>
-                      </>
-                    )}
-                    {project.status === 'processing' && (
-                      <Button size="sm" variant="outline" className="flex-1" disabled>
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        Processing...
-                      </Button>
-                    )}
-                    {project.status === 'failed' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => handleRetry(project)}
-                      >
-                        <Edit className="h-3 w-3 mr-1" />
-                        Retry
-                      </Button>
-                    )}
-                    {project.status === 'draft' && (
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Edit className="h-3 w-3 mr-1" />
-                        Edit
-                      </Button>
-                    )}
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="px-2"
-                      onClick={() => handleDelete(project.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="watermarks" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

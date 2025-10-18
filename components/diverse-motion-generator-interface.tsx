@@ -65,7 +65,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface DiverseMotionGeneratorInterfaceProps {
   onClose: () => void
@@ -2239,14 +2238,14 @@ export function DiverseMotionGeneratorInterface({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Zap className="h-6 w-6 text-primary" />
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <Zap className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gradient bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-base font-semibold text-foreground">
                 Diverse Motion Studio
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Transform "{projectTitle}" into cinematic motion
               </p>
             </div>
@@ -2268,33 +2267,30 @@ export function DiverseMotionGeneratorInterface({
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - DNA Fields */}
-          <div className="flex-1 border-r border-border overflow-y-auto">
-            <div className="p-6 space-y-6">
+          {/* Centered Content Container */}
+          <div className="flex-1 flex justify-center">
+            <div className="w-full max-w-4xl border-r border-border overflow-y-auto scrollbar-hover">
+              <div className="p-6 space-y-6 max-w-3xl mx-auto">
               
               {/* Mode Selection Tabs */}
               <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="none" className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    No Asset
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
+                  <TabsTrigger value="none" className="text-xs py-2 px-1">
+                    <span className="truncate">No Asset</span>
                   </TabsTrigger>
-                  <TabsTrigger value="single" className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Single Asset
+                  <TabsTrigger value="single" className="text-xs py-2 px-1">
+                    <span className="truncate">Single</span>
                   </TabsTrigger>
-                  <TabsTrigger value="dual" className="flex items-center gap-2">
-                    <Film className="h-4 w-4" />
-                    Dual Asset
+                  <TabsTrigger value="dual" className="text-xs py-2 px-1">
+                    <span className="truncate">Dual</span>
                   </TabsTrigger>
-                  <TabsTrigger value="multi" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Multi Asset
+                  <TabsTrigger value="multi" className="text-xs py-2 px-1">
+                    <span className="truncate">Multi</span>
                   </TabsTrigger>
                 </TabsList>
 
                 {/* Mode Description Card */}
-                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 max-w-2xl mx-auto">
                   {mode === 'none' && (
                     <div className="flex items-start gap-3">
                       <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
@@ -2349,10 +2345,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.content} 
                 onOpenChange={() => toggleSection('content')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
-                    <span className="font-medium text-amber-600 dark:text-amber-400">✨ Content Setup</span>
+                    <span className="font-medium text-amber-600 dark:text-amber-400">Content Setup</span>
                   </div>
                   {expandedSections.content ? (
                     <ChevronDown className="h-4 w-4" />
@@ -2360,7 +2356,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <label className="block text-sm font-medium text-purple-600 dark:text-purple-400">
@@ -2448,10 +2444,7 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="custom">
                           <div className="flex items-center gap-2">
                             <span>🎨</span>
-                            <div>
-                              <div className="font-medium">Custom (no template)</div>
-                              <div className="text-xs text-muted-foreground">Full manual control</div>
-                            </div>
+                            <span className="font-medium">Custom (no template)</span>
                           </div>
                         </SelectItem>
                         {TEMPLATE_MAP[productCategory]?.map((template) => {
@@ -2460,18 +2453,7 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem key={template.id} value={template.id}>
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">{template.icon}</span>
-                                <div>
-                                  <div className="font-medium flex items-center gap-2">
-                                    {template.name}
-                                    {preset && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">Auto-config</span>}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">{template.description}</div>
-                                  {preset && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-                                      {preset.description}
-                                    </div>
-                                  )}
-                                </div>
+                                <span className="font-medium">{template.name}</span>
                               </div>
                             </SelectItem>
                           )
@@ -2578,10 +2560,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.visual} 
                 onOpenChange={() => toggleSection('visual')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Camera className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium text-blue-600 dark:text-blue-400">📸 Visual Context</span>
+                    <span className="font-medium text-blue-600 dark:text-blue-400">Visual Context</span>
                   </div>
                   {expandedSections.visual ? (
                     <ChevronDown className="h-4 w-4" />
@@ -2589,7 +2571,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <label className="block text-sm font-medium text-cyan-600 dark:text-cyan-400 mb-2">
                       🌍 Environment
@@ -2690,10 +2672,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.motion} 
                 onOpenChange={() => toggleSection('motion')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-red-500" />
-                    <span className="font-medium text-red-600 dark:text-red-400">⚡ Motion & Energy</span>
+                    <span className="font-medium text-red-600 dark:text-red-400">Motion & Energy</span>
                   </div>
                   {expandedSections.motion ? (
                     <ChevronDown className="h-4 w-4" />
@@ -2701,7 +2683,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                       ⚡ Reveal Type
@@ -2790,10 +2772,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.audio} 
                 onOpenChange={() => toggleSection('audio')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Music className="h-4 w-4 text-indigo-500" />
-                    <span className="font-medium text-indigo-600 dark:text-indigo-400">🎵 Audio DNA</span>
+                    <span className="font-medium text-indigo-600 dark:text-indigo-400">Audio DNA</span>
                   </div>
                   {expandedSections.audio ? (
                     <ChevronDown className="h-4 w-4" />
@@ -2801,7 +2783,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
                       🎵 Sound Mode
@@ -2877,10 +2859,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.brand} 
                 onOpenChange={() => toggleSection('brand')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Palette className="h-4 w-4 text-rose-500" />
-                    <span className="font-medium text-rose-600 dark:text-rose-400">🎨 Brand Touch</span>
+                    <span className="font-medium text-rose-600 dark:text-rose-400">Brand Touch</span>
                   </div>
                   {expandedSections.brand ? (
                     <ChevronDown className="h-4 w-4" />
@@ -2888,7 +2870,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-rose-600 dark:text-rose-400">
                       🎨 Accent Color Sync
@@ -2920,22 +2902,6 @@ export function DiverseMotionGeneratorInterface({
                     </div>
                   )}
                   
-                  <div>
-                    <label className="block text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">
-                      🏷️ Logo Moment
-                    </label>
-                    <Select value={logoMoment} onValueChange={(value: LogoMoment) => setLogoMoment(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="None">❌ None</SelectItem>
-                        <SelectItem value="Morph From Form">🔄 Morph From Form</SelectItem>
-                        <SelectItem value="Fade-In">✨ Fade-In</SelectItem>
-                        <SelectItem value="Hover">👆 Hover</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                   
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -2954,10 +2920,10 @@ export function DiverseMotionGeneratorInterface({
                       open={expandedSections.characters} 
                       onOpenChange={() => toggleSection('characters')}
                     >
-                      <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-purple-500" />
-                          <span className="font-medium text-purple-600 dark:text-purple-400">👥 Characters</span>
+                          <span className="font-medium text-purple-600 dark:text-purple-400">Characters</span>
                         </div>
                         {expandedSections.characters ? (
                           <ChevronDown className="h-4 w-4" />
@@ -2965,7 +2931,7 @@ export function DiverseMotionGeneratorInterface({
                           <ChevronRight className="h-4 w-4" />
                         )}
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-4 mt-4">
+                      <CollapsibleContent className="space-y-6 mt-6">
                         <div>
                           <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
                             👥 How many characters? <span className="text-red-500">*</span>
@@ -3136,10 +3102,10 @@ export function DiverseMotionGeneratorInterface({
                       open={expandedSections.dialog} 
                       onOpenChange={() => toggleSection('dialog')}
                     >
-                      <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                         <div className="flex items-center gap-2">
                           <MessageCircle className="h-4 w-4 text-blue-500" />
-                          <span className="font-medium text-blue-600 dark:text-blue-400">💬 Dialog / Conversation</span>
+                          <span className="font-medium text-blue-600 dark:text-blue-400">Dialog / Conversation</span>
                         </div>
                         {expandedSections.dialog ? (
                           <ChevronDown className="h-4 w-4" />
@@ -3147,7 +3113,7 @@ export function DiverseMotionGeneratorInterface({
                           <ChevronRight className="h-4 w-4" />
                         )}
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-4 mt-4">
+                      <CollapsibleContent className="space-y-6 mt-6">
                         {characterCount === 1 ? (
                           // Single character monologue
                           <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -3305,10 +3271,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.content} 
                 onOpenChange={() => toggleSection('content')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
-                    <span className="font-medium text-amber-600 dark:text-amber-400">✨ Content Setup</span>
+                    <span className="font-medium text-amber-600 dark:text-amber-400">Content Setup</span>
                   </div>
                   {expandedSections.content ? (
                     <ChevronDown className="h-4 w-4" />
@@ -3316,7 +3282,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <label className="block text-sm font-medium text-purple-600 dark:text-purple-400">
@@ -3634,10 +3600,7 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="custom">
                           <div className="flex items-center gap-2">
                             <span>🎨</span>
-                            <div>
-                              <div className="font-medium">Custom (no template)</div>
-                              <div className="text-xs text-muted-foreground">Full manual control</div>
-                            </div>
+                            <span className="font-medium">Custom (no template)</span>
                           </div>
                         </SelectItem>
                         {TEMPLATE_MAP[productCategory]?.map((template) => {
@@ -3646,18 +3609,7 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem key={template.id} value={template.id}>
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">{template.icon}</span>
-                                <div>
-                                  <div className="font-medium flex items-center gap-2">
-                                    {template.name}
-                                    {preset && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">Auto-config</span>}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">{template.description}</div>
-                                  {preset && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-                                      {preset.description}
-                                    </div>
-                                  )}
-                                </div>
+                                <span className="font-medium">{template.name}</span>
                               </div>
                             </SelectItem>
                           )
@@ -3764,10 +3716,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.visual} 
                 onOpenChange={() => toggleSection('visual')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Camera className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium text-blue-600 dark:text-blue-400">📸 Visual Context</span>
+                    <span className="font-medium text-blue-600 dark:text-blue-400">Visual Context</span>
                   </div>
                   {expandedSections.visual ? (
                     <ChevronDown className="h-4 w-4" />
@@ -3775,7 +3727,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <label className="block text-sm font-medium text-cyan-600 dark:text-cyan-400 mb-2">
                       🌍 Environment
@@ -3876,10 +3828,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.motion} 
                 onOpenChange={() => toggleSection('motion')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-red-500" />
-                    <span className="font-medium text-red-600 dark:text-red-400">⚡ Motion & Energy</span>
+                    <span className="font-medium text-red-600 dark:text-red-400">Motion & Energy</span>
                   </div>
                   {expandedSections.motion ? (
                     <ChevronDown className="h-4 w-4" />
@@ -3887,7 +3839,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                       ⚡ Reveal Type
@@ -3976,10 +3928,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.audio} 
                 onOpenChange={() => toggleSection('audio')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Music className="h-4 w-4 text-indigo-500" />
-                    <span className="font-medium text-indigo-600 dark:text-indigo-400">🎵 Audio DNA</span>
+                    <span className="font-medium text-indigo-600 dark:text-indigo-400">Audio DNA</span>
                   </div>
                   {expandedSections.audio ? (
                     <ChevronDown className="h-4 w-4" />
@@ -3987,7 +3939,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div>
                     <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
                       🎵 Sound Mode
@@ -4063,10 +4015,10 @@ export function DiverseMotionGeneratorInterface({
                 open={expandedSections.brand} 
                 onOpenChange={() => toggleSection('brand')}
               >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                   <div className="flex items-center gap-2">
                     <Palette className="h-4 w-4 text-rose-500" />
-                    <span className="font-medium text-rose-600 dark:text-rose-400">🎨 Brand Touch</span>
+                    <span className="font-medium text-rose-600 dark:text-rose-400">Brand Touch</span>
                   </div>
                   {expandedSections.brand ? (
                     <ChevronDown className="h-4 w-4" />
@@ -4074,7 +4026,7 @@ export function DiverseMotionGeneratorInterface({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 mt-4">
+                <CollapsibleContent className="space-y-6 mt-6">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-rose-600 dark:text-rose-400">
                       🎨 Accent Color Sync
@@ -4106,22 +4058,6 @@ export function DiverseMotionGeneratorInterface({
                     </div>
                   )}
                   
-                  <div>
-                    <label className="block text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">
-                      🏷️ Logo Moment
-                    </label>
-                    <Select value={logoMoment} onValueChange={(value: LogoMoment) => setLogoMoment(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="None">❌ None</SelectItem>
-                        <SelectItem value="Morph From Form">🔄 Morph From Form</SelectItem>
-                        <SelectItem value="Fade-In">✨ Fade-In</SelectItem>
-                        <SelectItem value="Hover">👆 Hover</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                   
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -4143,10 +4079,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.content} 
                     onOpenChange={() => toggleSection('content')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-amber-500" />
-                        <span className="font-medium text-amber-600 dark:text-amber-400">✨ Content Setup</span>
+                        <span className="font-medium text-amber-600 dark:text-amber-400">Content Setup</span>
                       </div>
                       {expandedSections.content ? (
                         <ChevronDown className="h-4 w-4" />
@@ -4154,7 +4090,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       {/* Category and Template (same as single mode) */}
                       <div>
                         <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
@@ -4774,7 +4710,7 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.visual} 
                     onOpenChange={() => toggleSection('visual')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Camera className="h-4 w-4 text-blue-500" />
                         <span className="font-medium text-blue-600 dark:text-blue-400">📸 Visual DNA</span>
@@ -4785,7 +4721,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div>
                         <label className="block text-sm font-medium text-cyan-600 dark:text-cyan-400 mb-2">
                           🌍 Environment
@@ -4886,10 +4822,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.motion} 
                     onOpenChange={() => toggleSection('motion')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-red-500" />
-                        <span className="font-medium text-red-600 dark:text-red-400">⚡ Motion & Energy</span>
+                        <span className="font-medium text-red-600 dark:text-red-400">Motion & Energy</span>
                       </div>
                       {expandedSections.motion ? (
                         <ChevronDown className="h-4 w-4" />
@@ -4897,7 +4833,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div>
                         <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                           ⚡ Reveal Type
@@ -4986,10 +4922,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.audio} 
                     onOpenChange={() => toggleSection('audio')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Music className="h-4 w-4 text-indigo-500" />
-                        <span className="font-medium text-indigo-600 dark:text-indigo-400">🎵 Audio DNA</span>
+                        <span className="font-medium text-indigo-600 dark:text-indigo-400">Audio DNA</span>
                       </div>
                       {expandedSections.audio ? (
                         <ChevronDown className="h-4 w-4" />
@@ -4997,7 +4933,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div>
                         <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
                           🎵 Sound Mode
@@ -5073,10 +5009,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.brand} 
                     onOpenChange={() => toggleSection('brand')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Palette className="h-4 w-4 text-rose-500" />
-                        <span className="font-medium text-rose-600 dark:text-rose-400">🎨 Brand Touch</span>
+                        <span className="font-medium text-rose-600 dark:text-rose-400">Brand Touch</span>
                       </div>
                       {expandedSections.brand ? (
                         <ChevronDown className="h-4 w-4" />
@@ -5084,7 +5020,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-rose-600 dark:text-rose-400">
                           🎨 Accent Color Sync
@@ -5116,22 +5052,6 @@ export function DiverseMotionGeneratorInterface({
                         </div>
                       )}
                       
-                      <div>
-                        <label className="block text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">
-                          🏷️ Logo Moment
-                        </label>
-                        <Select value={logoMoment} onValueChange={(value: LogoMoment) => setLogoMoment(value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="None">❌ None</SelectItem>
-                            <SelectItem value="Morph From Form">🔄 Morph From Form</SelectItem>
-                            <SelectItem value="Fade-In">✨ Fade-In</SelectItem>
-                            <SelectItem value="Hover">👆 Hover</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                       
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -5153,10 +5073,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.content} 
                     onOpenChange={() => toggleSection('content')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-amber-500" />
-                        <span className="font-medium text-amber-600 dark:text-amber-400">✨ Content Setup</span>
+                        <span className="font-medium text-amber-600 dark:text-amber-400">Content Setup</span>
                       </div>
                       {expandedSections.content ? (
                         <ChevronDown className="h-4 w-4" />
@@ -5164,7 +5084,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       {/* Category and Template (same as other modes) */}
                       <div>
                         <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
@@ -5647,7 +5567,7 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.visual} 
                     onOpenChange={() => toggleSection('visual')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Camera className="h-4 w-4 text-blue-500" />
                         <span className="font-medium text-blue-600 dark:text-blue-400">📸 Visual DNA</span>
@@ -5658,7 +5578,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div>
                         <label className="block text-sm font-medium text-cyan-600 dark:text-cyan-400 mb-2">
                           🌍 Environment
@@ -5759,10 +5679,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.motion} 
                     onOpenChange={() => toggleSection('motion')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-red-500" />
-                        <span className="font-medium text-red-600 dark:text-red-400">⚡ Motion & Energy</span>
+                        <span className="font-medium text-red-600 dark:text-red-400">Motion & Energy</span>
                       </div>
                       {expandedSections.motion ? (
                         <ChevronDown className="h-4 w-4" />
@@ -5770,7 +5690,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div>
                         <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                           ⚡ Reveal Type
@@ -5859,10 +5779,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.audio} 
                     onOpenChange={() => toggleSection('audio')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Music className="h-4 w-4 text-indigo-500" />
-                        <span className="font-medium text-indigo-600 dark:text-indigo-400">🎵 Audio DNA</span>
+                        <span className="font-medium text-indigo-600 dark:text-indigo-400">Audio DNA</span>
                       </div>
                       {expandedSections.audio ? (
                         <ChevronDown className="h-4 w-4" />
@@ -5870,7 +5790,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div>
                         <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
                           🎵 Sound Mode
@@ -5946,10 +5866,10 @@ export function DiverseMotionGeneratorInterface({
                     open={expandedSections.brand} 
                     onOpenChange={() => toggleSection('brand')}
                   >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/50 rounded-lg hover:bg-accent/70 transition-colors">
                       <div className="flex items-center gap-2">
                         <Palette className="h-4 w-4 text-rose-500" />
-                        <span className="font-medium text-rose-600 dark:text-rose-400">🎨 Brand Touch</span>
+                        <span className="font-medium text-rose-600 dark:text-rose-400">Brand Touch</span>
                       </div>
                       {expandedSections.brand ? (
                         <ChevronDown className="h-4 w-4" />
@@ -5957,7 +5877,7 @@ export function DiverseMotionGeneratorInterface({
                         <ChevronRight className="h-4 w-4" />
                       )}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-6 mt-6">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-rose-600 dark:text-rose-400">
                           🎨 Accent Color Sync
@@ -5989,22 +5909,6 @@ export function DiverseMotionGeneratorInterface({
                         </div>
                       )}
                       
-                      <div>
-                        <label className="block text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">
-                          🏷️ Logo Moment
-                        </label>
-                        <Select value={logoMoment} onValueChange={(value: LogoMoment) => setLogoMoment(value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="None">❌ None</SelectItem>
-                            <SelectItem value="Morph From Form">🔄 Morph From Form</SelectItem>
-                            <SelectItem value="Fade-In">✨ Fade-In</SelectItem>
-                            <SelectItem value="Hover">👆 Hover</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                       
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -6019,12 +5923,12 @@ export function DiverseMotionGeneratorInterface({
                   </Collapsible>
                 </TabsContent>
               </Tabs>
+              </div>
             </div>
           </div>
 
-
           {/* Right Panel - Preview & Hints */}
-          <div className="w-80 border-l border-border overflow-y-auto">
+          <div className="w-80 border-l border-border overflow-y-auto scrollbar-hover">
             <div className="p-6">
               {/* Preview Toggle */}
               <div className="flex items-center justify-between mb-4">
@@ -6086,7 +5990,7 @@ export function DiverseMotionGeneratorInterface({
               ) : (
                 /* Smart Hints Panel */
                 <div className="space-y-4">
-                  <div className="p-3 bg-accent/50 rounded-lg">
+                  <div className="p-4 bg-accent/50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Lightbulb className="h-4 w-4 text-yellow-500" />
                       <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Lighting Tip</span>
@@ -6096,7 +6000,7 @@ export function DiverseMotionGeneratorInterface({
                     </p>
                   </div>
                   
-                  <div className="p-3 bg-accent/50 rounded-lg">
+                  <div className="p-4 bg-accent/50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Camera className="h-4 w-4 text-blue-500" />
                       <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Camera Suggestion</span>
@@ -6106,7 +6010,7 @@ export function DiverseMotionGeneratorInterface({
                     </p>
                   </div>
                   
-                  <div className="p-3 bg-accent/50 rounded-lg">
+                  <div className="p-4 bg-accent/50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Music className="h-4 w-4 text-green-500" />
                       <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Audio Enhancement</span>
@@ -6176,8 +6080,6 @@ export function DiverseMotionGeneratorInterface({
         </div>
       </div>
 
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="product_motions" userId={user?.id || ''} className="mt-8" />
 
       {/* Asset Library Modal */}
       <AssetLibraryModal

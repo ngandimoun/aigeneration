@@ -676,7 +676,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
   }
 
   return (
-    <div className="bg-background border border-border rounded-lg p-4 space-y-4 h-full overflow-hidden flex flex-col relative">
+    <div className="bg-background border border-border rounded-lg p-4 space-y-4 h-full overflow-hidden flex flex-col relative min-h-0">
       {/* Disabled overlay during generation */}
       {isGenerating && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -688,7 +688,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         </div>
       )}
       
-      <div className="flex-1 overflow-y-auto scrollbar-hover">
+      <div className="flex-1 overflow-y-auto scrollbar-hover min-h-0">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex-1">
@@ -714,25 +714,25 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         {/* Mode Selection Tabs */}
         <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)} className="w-full mb-4">
           <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="single" className="text-xs py-2 px-2 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
-              <Package className="h-3 w-3 mr-1" />
-              Single Product
+            <TabsTrigger value="single" className="text-xs py-2 px-1 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
+              <Package className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">Single</span>
             </TabsTrigger>
-            <TabsTrigger value="dual" className="text-xs py-2 px-2 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
-              <Film className="h-3 w-3 mr-1" />
-              Dual Visual
+            <TabsTrigger value="dual" className="text-xs py-2 px-1 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
+              <Film className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">Dual</span>
             </TabsTrigger>
-            <TabsTrigger value="multi" className="text-xs py-2 px-2 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
-              <Users className="h-3 w-3 mr-1" />
-              Multi-Story
+            <TabsTrigger value="multi" className="text-xs py-2 px-1 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
+              <Users className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">Multi</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Mode Description */}
-          <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <p className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2">
-              <Sparkles className="h-3 w-3" />
-              {getModeDescription()}
+          <div className="mt-3 p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <p className="text-xs text-purple-700 dark:text-purple-300 flex items-start gap-2">
+              <Sparkles className="h-3 w-3 flex-shrink-0 mt-0.5" />
+              <span className="leading-tight">{getModeDescription()}</span>
             </p>
           </div>
 
@@ -750,74 +750,74 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="product-review">
-                    <div className="flex items-center gap-2">
-                      <span>⭐</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Product Review</span>
-                        <span className="text-[10px] text-muted-foreground">Honest review & recommendation</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">⭐</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Product Review</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Honest review & recommendation</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="unboxing">
-                    <div className="flex items-center gap-2">
-                      <span>📦</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Unboxing</span>
-                        <span className="text-[10px] text-muted-foreground">First impressions & reveal</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">📦</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Unboxing</span>
+                        <span className="text-[10px] text-muted-foreground truncate">First impressions & reveal</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="before-after">
-                    <div className="flex items-center gap-2">
-                      <span>🔄</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Before/After</span>
-                        <span className="text-[10px] text-muted-foreground">Show the transformation</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">🔄</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Before/After</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Show the transformation</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="tutorial">
-                    <div className="flex items-center gap-2">
-                      <span>📚</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Tutorial</span>
-                        <span className="text-[10px] text-muted-foreground">Step-by-step guide</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">📚</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Tutorial</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Step-by-step guide</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="comparison">
-                    <div className="flex items-center gap-2">
-                      <span>⚖️</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Comparison</span>
-                        <span className="text-[10px] text-muted-foreground">Compare features & benefits</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">⚖️</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Comparison</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Compare features & benefits</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="transformation">
-                    <div className="flex items-center gap-2">
-                      <span>✨</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Transformation</span>
-                        <span className="text-[10px] text-muted-foreground">Dramatic change reveal</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">✨</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Transformation</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Dramatic change reveal</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="professional-demo">
-                    <div className="flex items-center gap-2">
-                      <span>💼</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Professional Demo</span>
-                        <span className="text-[10px] text-muted-foreground">Detailed product showcase</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">💼</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Professional Demo</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Detailed product showcase</span>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="lifestyle">
-                    <div className="flex items-center gap-2">
-                      <span>🎨</span>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-xs">Lifestyle</span>
-                        <span className="text-[10px] text-muted-foreground">Product in daily life</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0">🎨</span>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <span className="font-medium text-xs truncate">Lifestyle</span>
+                        <span className="text-[10px] text-muted-foreground truncate">Product in daily life</span>
                       </div>
                     </div>
                   </SelectItem>
@@ -833,7 +833,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </label>
               
               {/* Source Toggle */}
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="flex gap-1 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                   type="button"
                   variant="ghost"
@@ -842,13 +842,13 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                     setProductSource('library')
                     setUseCustomProduct(false)
                   }}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     productSource === 'library'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  From Product Library
+                  <span className="truncate">From Library</span>
                 </Button>
                 <Button
                   type="button"
@@ -858,13 +858,13 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                     setProductSource('upload')
                     setUseCustomProduct(true)
                   }}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     productSource === 'upload'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  Upload Image
+                  <span className="truncate">Upload Image</span>
                 </Button>
               </div>
 
@@ -1001,45 +1001,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Character Presence (Optional)
               </label>
               
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('voiceover')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'voiceover'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  🎙️ Voiceover Only
+                  🎙️ Voiceover
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('show')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'show'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  👤 Show Character
+                  👤 Show
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('partial')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'partial'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  ✋ Partial Presence
+                  ✋ Partial
                 </Button>
               </div>
             </div>
@@ -1055,39 +1055,39 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 {characterPresence === 'show' ? (
                   <>
                     {/* Character Source Toggle */}
-                    <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                    <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setCharacterSource('library')}
-                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                        className={`text-xs h-8 transition-all duration-200 font-medium ${
                           characterSource === 'library'
                             ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
-                        From Avatar Library
+                        <span className="truncate">From Library</span>
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setCharacterSource('upload')}
-                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                        className={`text-xs h-8 transition-all duration-200 font-medium ${
                           characterSource === 'upload'
                             ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
-                        Upload Image
+                        <span className="truncate">Upload Image</span>
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setCharacterSource('describe')}
-                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                        className={`text-xs h-8 transition-all duration-200 font-medium ${
                           characterSource === 'describe'
                             ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -1217,39 +1217,39 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 {characterPresence === 'show' ? (
                   <>
                     {/* Character Source Toggle */}
-                    <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                    <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setCharacterSource('library')}
-                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                        className={`text-xs h-8 transition-all duration-200 font-medium ${
                           characterSource === 'library'
                             ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
-                        From Avatar Library
+                        <span className="truncate">From Library</span>
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setCharacterSource('upload')}
-                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                        className={`text-xs h-8 transition-all duration-200 font-medium ${
                           characterSource === 'upload'
                             ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
-                        Upload Image
+                        <span className="truncate">Upload Image</span>
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setCharacterSource('describe')}
-                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                        className={`text-xs h-8 transition-all duration-200 font-medium ${
                           characterSource === 'describe'
                             ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -1394,9 +1394,9 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
 
               {/* Voice Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="space-y-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground">Voice Style</label>
+                  <label className="text-xs font-medium text-foreground">Voice Style</label>
                   <Select value={voiceStyle} onValueChange={setVoiceStyle}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select style..." />
@@ -1417,37 +1417,37 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground">Tone of Delivery</label>
+                  <label className="text-xs font-medium text-foreground">Tone of Delivery</label>
                   <Select value={toneOfDelivery} onValueChange={setToneOfDelivery}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select tone..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="natural" className="text-xs">Natural & Conversational</SelectItem>
-                      <SelectItem value="slow" className="text-xs">Slow & Emphasised</SelectItem>
-                      <SelectItem value="fast" className="text-xs">Fast & Punchy</SelectItem>
-                      <SelectItem value="whisper" className="text-xs">Whisper & Intimate</SelectItem>
-                      <SelectItem value="loud" className="text-xs">Loud & Commanding</SelectItem>
+                      <SelectItem value="natural" className="text-xs">💬 Natural & Conversational</SelectItem>
+                      <SelectItem value="slow" className="text-xs">🐌 Slow & Emphasised</SelectItem>
+                      <SelectItem value="fast" className="text-xs">⚡ Fast & Punchy</SelectItem>
+                      <SelectItem value="whisper" className="text-xs">🤫 Whisper & Intimate</SelectItem>
+                      <SelectItem value="loud" className="text-xs">📢 Loud & Commanding</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground">Language</label>
+                  <label className="text-xs font-medium text-foreground">Language</label>
                   <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select language..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en" className="text-xs">English</SelectItem>
-                      <SelectItem value="es" className="text-xs">Spanish</SelectItem>
-                      <SelectItem value="fr" className="text-xs">French</SelectItem>
-                      <SelectItem value="de" className="text-xs">German</SelectItem>
-                      <SelectItem value="it" className="text-xs">Italian</SelectItem>
-                      <SelectItem value="pt" className="text-xs">Portuguese</SelectItem>
-                      <SelectItem value="zh" className="text-xs">Chinese</SelectItem>
-                      <SelectItem value="ja" className="text-xs">Japanese</SelectItem>
-                      <SelectItem value="ko" className="text-xs">Korean</SelectItem>
+                      <SelectItem value="en" className="text-xs">🇺🇸 English</SelectItem>
+                      <SelectItem value="es" className="text-xs">🇪🇸 Spanish</SelectItem>
+                      <SelectItem value="fr" className="text-xs">🇫🇷 French</SelectItem>
+                      <SelectItem value="de" className="text-xs">🇩🇪 German</SelectItem>
+                      <SelectItem value="it" className="text-xs">🇮🇹 Italian</SelectItem>
+                      <SelectItem value="pt" className="text-xs">🇵🇹 Portuguese</SelectItem>
+                      <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
+                      <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
+                      <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1461,46 +1461,42 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Video Duration
               </label>
               
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={duration === 15 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(15)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">⚡ 15s Quick</span>
-                  <span className="sm:hidden">⚡ 15s</span>
+                  ⚡ 15s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 30 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(30)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">📱 30s Social</span>
-                  <span className="sm:hidden">📱 30s</span>
+                  📱 30s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 60 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(60)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">🎬 60s Standard</span>
-                  <span className="sm:hidden">🎬 60s</span>
+                  🎬 60s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 120 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(120)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">🎥 120s Full</span>
-                  <span className="sm:hidden">🎥 120s</span>
+                  🎥 120s
                 </Button>
               </div>
               
@@ -1538,11 +1534,11 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectValue placeholder="Brand tone..." />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="professional">Professional & Trustworthy</SelectItem>
-                         <SelectItem value="friendly">Friendly & Approachable</SelectItem>
-                         <SelectItem value="luxury">Luxury & Premium</SelectItem>
-                         <SelectItem value="playful">Playful & Fun</SelectItem>
-                         <SelectItem value="minimalist">Minimalist & Clean</SelectItem>
+                         <SelectItem value="professional">💼 Professional & Trustworthy</SelectItem>
+                         <SelectItem value="friendly">😊 Friendly & Approachable</SelectItem>
+                         <SelectItem value="luxury">💎 Luxury & Premium</SelectItem>
+                         <SelectItem value="playful">🎉 Playful & Fun</SelectItem>
+                         <SelectItem value="minimalist">✨ Minimalist & Clean</SelectItem>
                        </SelectContent>
                      </Select>
                      <Input placeholder="Brand color (hex code, optional)" className="h-8 text-xs" />
@@ -1562,10 +1558,10 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectValue placeholder="Visual focus..." />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="product">Product Close-up</SelectItem>
-                         <SelectItem value="lifestyle">Lifestyle Context</SelectItem>
-                         <SelectItem value="comparison">Before/After</SelectItem>
-                         <SelectItem value="process">Usage Process</SelectItem>
+                         <SelectItem value="product">🔍 Product Close-up</SelectItem>
+                         <SelectItem value="lifestyle">🏠 Lifestyle Context</SelectItem>
+                         <SelectItem value="comparison">⚖️ Before/After</SelectItem>
+                         <SelectItem value="process">⚙️ Usage Process</SelectItem>
                        </SelectContent>
                      </Select>
                      <Select>
@@ -1594,11 +1590,11 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectValue placeholder="Core angle..." />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="problem-solution">Problem & Solution</SelectItem>
-                         <SelectItem value="transformation">Transformation Story</SelectItem>
-                         <SelectItem value="social-proof">Social Proof</SelectItem>
-                         <SelectItem value="urgency">Urgency & Scarcity</SelectItem>
-                         <SelectItem value="emotional">Emotional Connection</SelectItem>
+                         <SelectItem value="problem-solution">🔧 Problem & Solution</SelectItem>
+                         <SelectItem value="transformation">🦋 Transformation Story</SelectItem>
+                         <SelectItem value="social-proof">👥 Social Proof</SelectItem>
+                         <SelectItem value="urgency">⏰ Urgency & Scarcity</SelectItem>
+                         <SelectItem value="emotional">💝 Emotional Connection</SelectItem>
                        </SelectContent>
                      </Select>
                      <Input placeholder="Pattern interrupt - unexpected element" className="h-8 text-xs" />
@@ -1618,10 +1614,10 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectValue placeholder="Rhythm..." />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="fast">Fast & Dynamic</SelectItem>
-                         <SelectItem value="medium">Medium Pace</SelectItem>
-                         <SelectItem value="slow">Slow & Cinematic</SelectItem>
-                         <SelectItem value="varied">Varied Rhythm</SelectItem>
+                         <SelectItem value="fast">⚡ Fast & Dynamic</SelectItem>
+                         <SelectItem value="medium">🎯 Medium Pace</SelectItem>
+                         <SelectItem value="slow">🎬 Slow & Cinematic</SelectItem>
+                         <SelectItem value="varied">🎭 Varied Rhythm</SelectItem>
                        </SelectContent>
                      </Select>
                      <Select>
@@ -1629,10 +1625,10 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectValue placeholder="Movement..." />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="static">Static Shots</SelectItem>
-                         <SelectItem value="pan">Pan & Tilt</SelectItem>
-                         <SelectItem value="zoom">Zoom In/Out</SelectItem>
-                         <SelectItem value="tracking">Tracking Movement</SelectItem>
+                         <SelectItem value="static">📷 Static Shots</SelectItem>
+                         <SelectItem value="pan">📹 Pan & Tilt</SelectItem>
+                         <SelectItem value="zoom">🔍 Zoom In/Out</SelectItem>
+                         <SelectItem value="tracking">🎥 Tracking Movement</SelectItem>
                        </SelectContent>
                      </Select>
                      <Select>
@@ -1672,11 +1668,11 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectValue placeholder="Music mood..." />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="upbeat">Upbeat & Energetic</SelectItem>
-                         <SelectItem value="calm">Calm & Relaxing</SelectItem>
-                         <SelectItem value="dramatic">Dramatic & Intense</SelectItem>
-                         <SelectItem value="playful">Playful & Fun</SelectItem>
-                         <SelectItem value="corporate">Corporate & Professional</SelectItem>
+                         <SelectItem value="upbeat">🎉 Upbeat & Energetic</SelectItem>
+                         <SelectItem value="calm">🧘 Calm & Relaxing</SelectItem>
+                         <SelectItem value="dramatic">🎭 Dramatic & Intense</SelectItem>
+                         <SelectItem value="playful">🎪 Playful & Fun</SelectItem>
+                         <SelectItem value="corporate">🏢 Corporate & Professional</SelectItem>
                        </SelectContent>
                      </Select>
                      <div className="space-y-1">
@@ -1767,26 +1763,26 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </label>
               
               {/* Source Toggle */}
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(0, { source: 'library' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[0]?.source === 'library'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  From Library
+                  <span className="truncate">From Library</span>
                 </Button>
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(0, { source: 'upload' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[0]?.source === 'upload'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -1894,26 +1890,26 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </label>
               
               {/* Source Toggle */}
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(1, { source: 'library' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[1]?.source === 'library'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  From Library
+                  <span className="truncate">From Library</span>
                 </Button>
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(1, { source: 'upload' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[1]?.source === 'upload'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -2071,9 +2067,9 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
             </div>
 
             {/* Voice Configuration */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="space-y-2">
               <div className="space-y-1">
-                <label className="text-[10px] font-medium text-muted-foreground">Voice Style</label>
+                <label className="text-xs font-medium text-foreground">Voice Style</label>
                 <Select value={voiceStyle} onValueChange={setVoiceStyle}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Select style..." />
@@ -2094,37 +2090,37 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-medium text-muted-foreground">Tone of Delivery</label>
+                <label className="text-xs font-medium text-foreground">Tone of Delivery</label>
                 <Select value={toneOfDelivery} onValueChange={setToneOfDelivery}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Select tone..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="natural" className="text-xs">Natural & Conversational</SelectItem>
-                    <SelectItem value="slow" className="text-xs">Slow & Emphasised</SelectItem>
-                    <SelectItem value="fast" className="text-xs">Fast & Punchy</SelectItem>
-                    <SelectItem value="whisper" className="text-xs">Whisper & Intimate</SelectItem>
-                    <SelectItem value="loud" className="text-xs">Loud & Commanding</SelectItem>
+                    <SelectItem value="natural" className="text-xs">💬 Natural & Conversational</SelectItem>
+                    <SelectItem value="slow" className="text-xs">🐌 Slow & Emphasised</SelectItem>
+                    <SelectItem value="fast" className="text-xs">⚡ Fast & Punchy</SelectItem>
+                    <SelectItem value="whisper" className="text-xs">🤫 Whisper & Intimate</SelectItem>
+                    <SelectItem value="loud" className="text-xs">📢 Loud & Commanding</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-medium text-muted-foreground">Language</label>
+                <label className="text-xs font-medium text-foreground">Language</label>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Select language..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en" className="text-xs">English</SelectItem>
-                    <SelectItem value="es" className="text-xs">Spanish</SelectItem>
-                    <SelectItem value="fr" className="text-xs">French</SelectItem>
-                    <SelectItem value="de" className="text-xs">German</SelectItem>
-                    <SelectItem value="it" className="text-xs">Italian</SelectItem>
-                    <SelectItem value="pt" className="text-xs">Portuguese</SelectItem>
-                    <SelectItem value="zh" className="text-xs">Chinese</SelectItem>
-                    <SelectItem value="ja" className="text-xs">Japanese</SelectItem>
-                    <SelectItem value="ko" className="text-xs">Korean</SelectItem>
+                    <SelectItem value="en" className="text-xs">🇺🇸 English</SelectItem>
+                    <SelectItem value="es" className="text-xs">🇪🇸 Spanish</SelectItem>
+                    <SelectItem value="fr" className="text-xs">🇫🇷 French</SelectItem>
+                    <SelectItem value="de" className="text-xs">🇩🇪 German</SelectItem>
+                    <SelectItem value="it" className="text-xs">🇮🇹 Italian</SelectItem>
+                    <SelectItem value="pt" className="text-xs">🇵🇹 Portuguese</SelectItem>
+                    <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
+                    <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
+                    <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2137,46 +2133,42 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Video Duration
               </label>
               
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={duration === 15 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(15)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">⚡ 15s Quick</span>
-                  <span className="sm:hidden">⚡ 15s</span>
+                  ⚡ 15s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 30 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(30)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">📱 30s Social</span>
-                  <span className="sm:hidden">📱 30s</span>
+                  📱 30s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 60 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(60)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">🎬 60s Standard</span>
-                  <span className="sm:hidden">🎬 60s</span>
+                  🎬 60s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 120 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(120)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">🎥 120s Full</span>
-                  <span className="sm:hidden">🎥 120s</span>
+                  🎥 120s
                 </Button>
               </div>
               
@@ -2195,45 +2187,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Character Presence (Optional)
               </label>
               
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('voiceover')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'voiceover'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  🎙️ Voiceover Only
+                  🎙️ Voiceover
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('show')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'show'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  👤 Show Character
+                  👤 Show
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('partial')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'partial'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  ✋ Partial Presence
+                  ✋ Partial
                 </Button>
               </div>
             </div>
@@ -2355,26 +2347,26 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
               
               {/* Source Toggle */}
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(0, { source: 'library' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[0]?.source === 'library'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  From Library
+                  <span className="truncate">From Library</span>
                 </Button>
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(0, { source: 'upload' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[0]?.source === 'upload'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -2506,26 +2498,26 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
               
               {/* Source Toggle */}
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(1, { source: 'library' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[1]?.source === 'library'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  From Library
+                  <span className="truncate">From Library</span>
                 </Button>
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(1, { source: 'upload' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[1]?.source === 'upload'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -2649,26 +2641,26 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
               
               {/* Source Toggle */}
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(2, { source: 'library' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[2]?.source === 'library'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  From Library
+                  <span className="truncate">From Library</span>
                 </Button>
                 <Button
                     type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => updateImageSlot(2, { source: 'upload' })}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     images[2]?.source === 'upload'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -2786,9 +2778,9 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
 
               {/* Voice Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="space-y-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground">Voice Style</label>
+                  <label className="text-xs font-medium text-foreground">Voice Style</label>
                   <Select value={voiceStyle} onValueChange={setVoiceStyle}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select style..." />
@@ -2809,37 +2801,37 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground">Tone of Delivery</label>
+                  <label className="text-xs font-medium text-foreground">Tone of Delivery</label>
                   <Select value={toneOfDelivery} onValueChange={setToneOfDelivery}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select tone..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="natural" className="text-xs">Natural & Conversational</SelectItem>
-                      <SelectItem value="slow" className="text-xs">Slow & Emphasised</SelectItem>
-                      <SelectItem value="fast" className="text-xs">Fast & Punchy</SelectItem>
-                      <SelectItem value="whisper" className="text-xs">Whisper & Intimate</SelectItem>
-                      <SelectItem value="loud" className="text-xs">Loud & Commanding</SelectItem>
+                      <SelectItem value="natural" className="text-xs">💬 Natural & Conversational</SelectItem>
+                      <SelectItem value="slow" className="text-xs">🐌 Slow & Emphasised</SelectItem>
+                      <SelectItem value="fast" className="text-xs">⚡ Fast & Punchy</SelectItem>
+                      <SelectItem value="whisper" className="text-xs">🤫 Whisper & Intimate</SelectItem>
+                      <SelectItem value="loud" className="text-xs">📢 Loud & Commanding</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground">Language</label>
+                  <label className="text-xs font-medium text-foreground">Language</label>
                   <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select language..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en" className="text-xs">English</SelectItem>
-                      <SelectItem value="es" className="text-xs">Spanish</SelectItem>
-                      <SelectItem value="fr" className="text-xs">French</SelectItem>
-                      <SelectItem value="de" className="text-xs">German</SelectItem>
-                      <SelectItem value="it" className="text-xs">Italian</SelectItem>
-                      <SelectItem value="pt" className="text-xs">Portuguese</SelectItem>
-                      <SelectItem value="zh" className="text-xs">Chinese</SelectItem>
-                      <SelectItem value="ja" className="text-xs">Japanese</SelectItem>
-                      <SelectItem value="ko" className="text-xs">Korean</SelectItem>
+                      <SelectItem value="en" className="text-xs">🇺🇸 English</SelectItem>
+                      <SelectItem value="es" className="text-xs">🇪🇸 Spanish</SelectItem>
+                      <SelectItem value="fr" className="text-xs">🇫🇷 French</SelectItem>
+                      <SelectItem value="de" className="text-xs">🇩🇪 German</SelectItem>
+                      <SelectItem value="it" className="text-xs">🇮🇹 Italian</SelectItem>
+                      <SelectItem value="pt" className="text-xs">🇵🇹 Portuguese</SelectItem>
+                      <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
+                      <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
+                      <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2853,46 +2845,42 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Video Duration
               </label>
               
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={duration === 15 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(15)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">⚡ 15s Quick</span>
-                  <span className="sm:hidden">⚡ 15s</span>
+                  ⚡ 15s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 30 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(30)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">📱 30s Social</span>
-                  <span className="sm:hidden">📱 30s</span>
+                  📱 30s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 60 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(60)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">🎬 60s Standard</span>
-                  <span className="sm:hidden">🎬 60s</span>
+                  🎬 60s
                 </Button>
                 <Button
                   type="button"
                   variant={duration === 120 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(120)}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 text-xs"
                 >
-                  <span className="hidden sm:inline">🎥 120s Full</span>
-                  <span className="sm:hidden">🎥 120s</span>
+                  🎥 120s
                 </Button>
               </div>
               
@@ -2911,45 +2899,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Character Presence (Optional)
               </label>
               
-              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('voiceover')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'voiceover'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  🎙️ Voiceover Only
+                  🎙️ Voiceover
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('show')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'show'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  👤 Show Character
+                  👤 Show
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setCharacterPresence('partial')}
-                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                  className={`text-xs h-8 transition-all duration-200 font-medium ${
                     characterPresence === 'partial'
                       ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   }`}
                 >
-                  ✋ Partial Presence
+                  ✋ Partial
                 </Button>
               </div>
             </div>

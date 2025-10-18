@@ -59,7 +59,6 @@ import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
 import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
 import type { FalModel } from '@/lib/utils/fal-generation'
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 import { GenerationLoading } from "@/components/ui/generation-loading"
 import { GenerationError } from "@/components/ui/generation-error"
 
@@ -1655,9 +1654,6 @@ export function ChartsInfographicsGeneratorInterface({
           </Button>
         </div>
       </div>
-
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="charts_infographics" userId={user?.id || ''} className="mt-8" />
     </div>
     </>
   )

@@ -57,7 +57,6 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
 import { detectProblematicContent, getContentWarningMessage } from "@/lib/utils/content-validation"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 import { LyricsGeneratorInterface } from "@/components/lyrics-generator-interface"
 
 interface MusicJingleGeneratorInterfaceProps {
@@ -239,7 +238,6 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [showPreviousGenerations, setShowPreviousGenerations] = useState(false)
   
   // Status tracking for automatic polling
   const [generatingTaskId, setGeneratingTaskId] = useState<string | null>(null)
@@ -2625,9 +2623,6 @@ In the
            )}
          </div>
        </div>
-
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="music_jingles" userId={user?.id || ''} className="mt-8" />
 
       {/* Lyrics Generator Modal */}
       {showLyricsGenerator && (

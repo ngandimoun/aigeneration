@@ -19,7 +19,6 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface SubtitleProject {
   id: string
@@ -119,124 +118,24 @@ export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfacePr
   }
 
   return (
-    <div className="bg-background border border-border rounded-lg p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Subtitle Projects</h2>
-          <p className="text-muted-foreground">Manage your video subtitle generation projects</p>
+    <div className="flex items-center justify-center min-h-[600px] bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/20 dark:via-amber-950/20 dark:to-orange-950/20 rounded-lg p-8">
+      <div className="text-center max-w-md space-y-6">
+        {/* Icône attractive */}
+        <div className="relative inline-block">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 blur-2xl opacity-30 animate-pulse"></div>
+          <FileText className="relative h-24 w-24 text-transparent bg-gradient-to-r from-yellow-500 via-amber-600 to-orange-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
         </div>
-        <Button onClick={onClose} variant="ghost" size="icon">
-          <Plus className="h-4 w-4" />
-        </Button>
+        
+        {/* Titre accrocheur */}
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+          Add Subtitles to Your Videos
+        </h2>
+        
+        {/* Message engageant */}
+        <p className="text-muted-foreground text-lg">
+          Make your content accessible with professional subtitles. Fast, accurate, and easy.
+        </p>
       </div>
-
-      {/* Projects Grid */}
-      {subtitleProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <Video className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No subtitle projects yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first subtitle project to get started
-          </p>
-          <Button className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-500 hover:via-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0">
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Project
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {subtitleProjects.map((project) => (
-            <Card key={project.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-sm font-medium line-clamp-2">
-                      {project.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1 line-clamp-2">
-                      {project.description}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    {getStatusIcon(project.status)}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  {/* Status Badge */}
-                  <div className="flex items-center justify-between">
-                    {getStatusBadge(project.status)}
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(project.created_at)}
-                    </span>
-                  </div>
-
-                  {/* Features */}
-                  <div className="flex flex-wrap gap-1">
-                    {project.emoji_enrichment && (
-                      <Badge variant="outline" className="text-xs">
-                        Emoji
-                      </Badge>
-                    )}
-                    {project.keyword_emphasis && (
-                      <Badge variant="outline" className="text-xs">
-                        Keywords
-                      </Badge>
-                    )}
-                    {project.transcript_file_input && (
-                      <Badge variant="outline" className="text-xs">
-                        Custom Transcript
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    {project.status === 'completed' && (
-                      <>
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Download className="h-3 w-3 mr-1" />
-                          Download
-                        </Button>
-                      </>
-                    )}
-                    {project.status === 'processing' && (
-                      <Button size="sm" variant="outline" className="flex-1" disabled>
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        Processing...
-                      </Button>
-                    )}
-                    {project.status === 'failed' && (
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Edit className="h-3 w-3 mr-1" />
-                        Retry
-                      </Button>
-                    )}
-                    {project.status === 'draft' && (
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Edit className="h-3 w-3 mr-1" />
-                        Edit
-                      </Button>
-                    )}
-                    <Button size="sm" variant="ghost" className="px-2">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="subtitles" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

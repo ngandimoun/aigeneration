@@ -45,7 +45,6 @@ import { useToast} from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { buildOpenAIInstructions } from "@/lib/utils/openai-voice-instructions-builder"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface VoiceoverGeneratorInterfaceProps {
   onClose: () => void
@@ -1157,9 +1156,6 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
           </Card>
         </div>
       </div>
-
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="voiceovers" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

@@ -21,7 +21,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { VideoTranslationForm } from "@/components/forms/video-translation-form"
 import { VideoTranslationProject, VideoTranslationInputs } from "@/lib/types/video-translation"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface VideoTranslationInterfaceProps {
   onClose: () => void
@@ -289,8 +288,6 @@ export function VideoTranslationInterface({ onClose, projectTitle, hideHeader = 
           ))}
         </div>
       )}
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="video_translations" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

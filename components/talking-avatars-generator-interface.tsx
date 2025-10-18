@@ -62,7 +62,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface TalkingAvatarsGeneratorInterfaceProps {
   onClose: () => void
@@ -3013,8 +3012,6 @@ export function TalkingAvatarsGeneratorInterface({
         </Button>
       </div>
 
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="talking_avatars" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }
