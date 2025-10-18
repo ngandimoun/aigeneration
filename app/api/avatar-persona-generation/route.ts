@@ -157,6 +157,25 @@ export async function POST(request: NextRequest) {
     const outfitPalette = formData.get('outfitPalette')?.toString() || null
     const accessories = formData.get('accessories')?.toString() ? JSON.parse(formData.get('accessories')?.toString() || '[]') : []
     
+    // Extract custom field values
+    const customEthnicity = formData.get('custom_ethnicity')?.toString() || null
+    const customRole = formData.get('custom_role')?.toString() || null
+    const customAgeRange = formData.get('custom_age_range')?.toString() || null
+    const customGenderExpression = formData.get('custom_gender_expression')?.toString() || null
+    const customArtDirection = formData.get('custom_art_direction')?.toString() || null
+    const customVisualInfluence = formData.get('custom_visual_influence')?.toString() || null
+    const customLightingPreset = formData.get('custom_lighting_preset')?.toString() || null
+    const customBackgroundEnvironment = formData.get('custom_background_environment')?.toString() || null
+    const customMoodContext = formData.get('custom_mood_context')?.toString() || null
+    const customBodyType = formData.get('custom_body_type')?.toString() || null
+    const customSkinTone = formData.get('custom_skin_tone')?.toString() || null
+    const customHairStyle = formData.get('custom_hair_style')?.toString() || null
+    const customHairColor = formData.get('custom_hair_color')?.toString() || null
+    const customEyeColor = formData.get('custom_eye_color')?.toString() || null
+    const customEyeShape = formData.get('custom_eye_shape')?.toString() || null
+    const customOutfitCategory = formData.get('custom_outfit_category')?.toString() || null
+    const customAccessories = formData.get('custom_accessories')?.toString() || null
+    
     // Handle reference images upload
     const referenceImagePaths: string[] = []
     const referenceImages: File[] = []
@@ -516,6 +535,25 @@ export async function POST(request: NextRequest) {
             outfitCategory: outfitCategory,
             outfitPalette: outfitPalette,
             accessories: accessories
+          },
+          custom_fields: {
+            customEthnicity: customEthnicity,
+            customRole: customRole,
+            customAgeRange: customAgeRange,
+            customGenderExpression: customGenderExpression,
+            customArtDirection: customArtDirection,
+            customVisualInfluence: customVisualInfluence,
+            customLightingPreset: customLightingPreset,
+            customBackgroundEnvironment: customBackgroundEnvironment,
+            customMoodContext: customMoodContext,
+            customBodyType: customBodyType,
+            customSkinTone: customSkinTone,
+            customHairStyle: customHairStyle,
+            customHairColor: customHairColor,
+            customEyeColor: customEyeColor,
+            customEyeShape: customEyeShape,
+            customOutfitCategory: customOutfitCategory,
+            customAccessories: customAccessories
           },
           reference_images: referenceImagePaths
         },

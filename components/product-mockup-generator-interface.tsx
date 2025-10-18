@@ -51,7 +51,6 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { toast } from "sonner"
 import { GenerationLoading } from "@/components/ui/generation-loading"
 import { GenerationError } from "@/components/ui/generation-error"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 import { cn } from "@/lib/utils"
 import { STYLE_MAP } from "@/lib/styles/style-map"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
@@ -143,9 +142,9 @@ export function ProductMockupGeneratorInterface({
   const [moodContext, setMoodContext] = useState<string>("")
   
   // Composition & Branding
-  const [compositionTemplate, setCompositionTemplate] = useState<"Centered Hero" | "Rule of Thirds" | "Floating Object" | "Flat Lay" | "Collage">("Centered Hero")
-  const [objectCount, setObjectCount] = useState<1 | 2 | 3>(1)
-  const [shadowType, setShadowType] = useState<"Soft" | "Hard" | "Floating" | "Mirror">("Soft")
+  const [compositionTemplate, setCompositionTemplate] = useState<"Centered Hero" | "Rule of Thirds" | "Floating Object" | "Flat Lay" | "Collage" | "custom">("Centered Hero")
+  const [objectCount, setObjectCount] = useState<1 | 2 | 3 | "custom">(1)
+  const [shadowType, setShadowType] = useState<"Soft" | "Hard" | "Floating" | "Mirror" | "custom">("Soft")
   
   // Text & CTA Overlay
   const [headline, setHeadline] = useState("")
@@ -157,24 +156,24 @@ export function ProductMockupGeneratorInterface({
   const [ctaText, setCtaText] = useState("")
   const [ctaColor, setCtaColor] = useState("#3B82F6") // Brand primary by default
   const [ctaColorAuto, setCtaColorAuto] = useState(true)
-  const [fontFamily, setFontFamily] = useState<"serif" | "sans" | "condensed" | "rounded" | "monospace" | "script" | "display" | "handwriting" | "decorative" | "modern" | "classic" | "futuristic" | "elegant" | "bold" | "minimal" | "vintage" | "tech" | "artistic" | "playful" | "professional" | "luxury" | "casual" | "formal" | "creative" | "clean" | "stylized" | "geometric" | "organic" | "industrial" | "romantic" | "edgy" | "sophisticated" | "friendly" | "dramatic" | "subtle" | "expressive" | "refined" | "dynamic" | "serene" | "energetic" | "mysterious" | "vibrant" | "calm" | "powerful" | "gentle" | "striking" | "smooth" | "rough" | "precise" | "flowing" | "structured" | "freeform" | "technical" | "artistic" | "corporate" | "personal" | "trendy" | "timeless" | "innovative" | "traditional" | "contemporary" | "retro" | "cutting-edge" | "nostalgic" | "futuristic" | "classic" | "avant-garde" | "minimalist" | "maximalist" | "elegant" | "raw" | "polished" | "rustic" | "urban" | "natural" | "synthetic" | "warm" | "cool" | "neutral" | "bold" | "delicate" | "strong" | "soft" | "hard" | "fluid" | "rigid" | "curved" | "angular" | "rounded" | "sharp" | "blunt" | "pointed" | "smooth" | "textured" | "flat" | "dimensional" | "layered" | "simple" | "complex" | "abstract" | "literal" | "symbolic" | "direct" | "indirect" | "obvious" | "subtle" | "loud" | "quiet" | "bright" | "dark" | "light" | "heavy" | "thin" | "thick" | "wide" | "narrow" | "tall" | "short" | "expanded" | "condensed" | "extended" | "compressed" | "spacious" | "tight" | "loose" | "dense" | "sparse" | "full" | "empty" | "rich" | "poor" | "luxurious" | "basic" | "premium" | "standard" | "exclusive" | "common" | "rare" | "unique" | "ordinary" | "special" | "regular" | "irregular" | "consistent" | "inconsistent" | "stable" | "unstable" | "balanced" | "unbalanced" | "symmetrical" | "asymmetrical" | "proportional" | "disproportional" | "harmonious" | "discordant" | "melodic" | "rhythmic" | "static" | "dynamic" | "still" | "moving" | "frozen" | "flowing" | "solid" | "liquid" | "gaseous" | "crystalline" | "amorphous" | "structured" | "unstructured" | "organized" | "chaotic" | "orderly" | "random" | "planned" | "spontaneous" | "calculated" | "intuitive" | "logical" | "emotional" | "rational" | "irrational" | "scientific" | "artistic" | "mathematical" | "poetic" | "prosaic" | "lyrical" | "prosaic" | "musical" | "visual" | "tactile" | "auditory" | "olfactory" | "gustatory" | "kinesthetic" | "spatial" | "temporal" | "conceptual" | "perceptual" | "cognitive" | "affective" | "behavioral" | "physiological" | "psychological" | "social" | "cultural" | "historical" | "contemporary" | "traditional" | "modern" | "postmodern" | "premodern" | "antique" | "vintage" | "retro" | "neo" | "proto" | "meta" | "para" | "anti" | "pro" | "pre" | "post" | "inter" | "intra" | "trans" | "cis" | "ultra" | "infra" | "super" | "sub" | "hyper" | "hypo" | "macro" | "micro" | "mega" | "mini" | "maxi" | "mega" | "giga" | "tera" | "peta" | "exa" | "zetta" | "yotta" | "deca" | "hecto" | "kilo" | "milli" | "micro" | "nano" | "pico" | "femto" | "atto" | "zepto" | "yocto">("sans")
-  const [fontWeight, setFontWeight] = useState<"light" | "normal" | "medium" | "bold">("normal")
-  const [textCase, setTextCase] = useState<"uppercase" | "title" | "sentence">("sentence")
+  const [fontFamily, setFontFamily] = useState<"serif" | "sans" | "condensed" | "rounded" | "monospace" | "script" | "display" | "handwriting" | "decorative" | "modern" | "classic" | "futuristic" | "elegant" | "bold" | "minimal" | "vintage" | "tech" | "artistic" | "playful" | "professional" | "luxury" | "casual" | "formal" | "creative" | "clean" | "stylized" | "geometric" | "organic" | "industrial" | "romantic" | "edgy" | "sophisticated" | "friendly" | "dramatic" | "subtle" | "expressive" | "refined" | "dynamic" | "serene" | "energetic" | "mysterious" | "vibrant" | "calm" | "powerful" | "gentle" | "striking" | "smooth" | "rough" | "precise" | "flowing" | "structured" | "freeform" | "technical" | "artistic" | "corporate" | "personal" | "trendy" | "timeless" | "innovative" | "traditional" | "contemporary" | "retro" | "cutting-edge" | "nostalgic" | "futuristic" | "classic" | "avant-garde" | "minimalist" | "maximalist" | "elegant" | "raw" | "polished" | "rustic" | "urban" | "natural" | "synthetic" | "warm" | "cool" | "neutral" | "bold" | "delicate" | "strong" | "soft" | "hard" | "fluid" | "rigid" | "curved" | "angular" | "rounded" | "sharp" | "blunt" | "pointed" | "smooth" | "textured" | "flat" | "dimensional" | "layered" | "simple" | "complex" | "abstract" | "literal" | "symbolic" | "direct" | "indirect" | "obvious" | "subtle" | "loud" | "quiet" | "bright" | "dark" | "light" | "heavy" | "thin" | "thick" | "wide" | "narrow" | "tall" | "short" | "expanded" | "condensed" | "extended" | "compressed" | "spacious" | "tight" | "loose" | "dense" | "sparse" | "full" | "empty" | "rich" | "poor" | "luxurious" | "basic" | "premium" | "standard" | "exclusive" | "common" | "rare" | "unique" | "ordinary" | "special" | "regular" | "irregular" | "consistent" | "inconsistent" | "stable" | "unstable" | "balanced" | "unbalanced" | "symmetrical" | "asymmetrical" | "proportional" | "disproportional" | "harmonious" | "discordant" | "melodic" | "rhythmic" | "static" | "dynamic" | "still" | "moving" | "frozen" | "flowing" | "solid" | "liquid" | "gaseous" | "crystalline" | "amorphous" | "structured" | "unstructured" | "organized" | "chaotic" | "orderly" | "random" | "planned" | "spontaneous" | "calculated" | "intuitive" | "logical" | "emotional" | "rational" | "irrational" | "scientific" | "artistic" | "mathematical" | "poetic" | "prosaic" | "lyrical" | "prosaic" | "musical" | "visual" | "tactile" | "auditory" | "olfactory" | "gustatory" | "kinesthetic" | "spatial" | "temporal" | "conceptual" | "perceptual" | "cognitive" | "affective" | "behavioral" | "physiological" | "psychological" | "social" | "cultural" | "historical" | "contemporary" | "traditional" | "modern" | "postmodern" | "premodern" | "antique" | "vintage" | "retro" | "neo" | "proto" | "meta" | "para" | "anti" | "pro" | "pre" | "post" | "inter" | "intra" | "trans" | "cis" | "ultra" | "infra" | "super" | "sub" | "hyper" | "hypo" | "macro" | "micro" | "mega" | "mini" | "maxi" | "mega" | "giga" | "tera" | "peta" | "exa" | "zetta" | "yotta" | "deca" | "hecto" | "kilo" | "milli" | "micro" | "nano" | "pico" | "femto" | "atto" | "zepto" | "yocto" | "custom">("sans")
+  const [fontWeight, setFontWeight] = useState<"light" | "normal" | "medium" | "bold" | "custom">("normal")
+  const [textCase, setTextCase] = useState<"uppercase" | "title" | "sentence" | "custom">("sentence")
   const [letterSpacing, setLetterSpacing] = useState(0)
   const [lineHeight, setLineHeight] = useState(1.2)
   const [textAlignment, setTextAlignment] = useState<"left" | "center" | "right">("center")
   const [textEffects, setTextEffects] = useState<string[]>([])
   
   // Advanced Typography
-  const [highlightStyle, setHighlightStyle] = useState<"underline" | "boxed" | "glow" | "gradient" | "none">("none")
-  const [accentElement, setAccentElement] = useState<"line" | "shape" | "dot" | "none">("none")
+  const [highlightStyle, setHighlightStyle] = useState<"underline" | "boxed" | "glow" | "gradient" | "none" | "custom">("none")
+  const [accentElement, setAccentElement] = useState<"line" | "shape" | "dot" | "none" | "custom">("none")
   const [brilliance, setBrilliance] = useState(0)
   const [frostedGlass, setFrostedGlass] = useState(false)
   const [dropShadowIntensity, setDropShadowIntensity] = useState(0)
-  const [motionAccent, setMotionAccent] = useState<"fade" | "slide" | "sweep" | "none">("none")
+  const [motionAccent, setMotionAccent] = useState<"fade" | "slide" | "sweep" | "none" | "custom">("none")
   
   // Alignment & Positioning
-  const [layoutMode, setLayoutMode] = useState<"centered" | "left" | "right" | "split">("centered")
+  const [layoutMode, setLayoutMode] = useState<"centered" | "left" | "right" | "split" | "custom">("centered")
   const [verticalPosition, setVerticalPosition] = useState(50)
   const [horizontalOffset, setHorizontalOffset] = useState(0)
   const [smartAnchor, setSmartAnchor] = useState(true)
@@ -185,11 +184,27 @@ export function ProductMockupGeneratorInterface({
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("")
   const [avatarRole, setAvatarRole] = useState<"Model" | "User" | "Mascot" | "Spokesperson">("Model")
   const [avatarInteraction, setAvatarInteraction] = useState<"Holding" | "Wearing" | "Using" | "Observing">("Holding")
-  const [productMultiplicity, setProductMultiplicity] = useState<"Single" | "Lineup" | "Bundle">("Single")
+  const [productMultiplicity, setProductMultiplicity] = useState<"Single" | "Lineup" | "Bundle" | "custom">("Single")
   const [angleVarietyCount, setAngleVarietyCount] = useState<1 | 2 | 3 | 4 | 5>(1)
   
   // Platform Target
   const [platformTarget, setPlatformTarget] = useState<"Instagram" | "Facebook" | "TikTok" | "YouTube" | "Banner" | "Print" | undefined>(undefined)
+  
+  // Custom field states
+  const [customArtDirection, setCustomArtDirection] = useState("")
+  const [customComposition, setCustomComposition] = useState("")
+  const [customObjectCount, setCustomObjectCount] = useState("")
+  const [customShadow, setCustomShadow] = useState("")
+  const [customFont, setCustomFont] = useState("")
+  const [customWeight, setCustomWeight] = useState("")
+  const [customTextEffects, setCustomTextEffects] = useState("")
+  const [customTextCase, setCustomTextCase] = useState("")
+  const [customHighlightStyle, setCustomHighlightStyle] = useState("")
+  const [customAccentElement, setCustomAccentElement] = useState("")
+  const [customMotionAccent, setCustomMotionAccent] = useState("")
+  const [customLayoutMode, setCustomLayoutMode] = useState("")
+  const [customProductCount, setCustomProductCount] = useState("")
+  const [customPlatform, setCustomPlatform] = useState("")
   
   // Brand Colors
   const [brandColors, setBrandColors] = useState({
@@ -524,6 +539,22 @@ export function ProductMockupGeneratorInterface({
         selectedArtifact,
         timestamp: new Date().toISOString()
       }))
+      
+      // Add custom field values if provided
+      if (customArtDirection) formData.append('custom_art_direction', customArtDirection)
+      if (customComposition) formData.append('custom_composition', customComposition)
+      if (customObjectCount) formData.append('custom_object_count', customObjectCount)
+      if (customShadow) formData.append('custom_shadow', customShadow)
+      if (customFont) formData.append('custom_font', customFont)
+      if (customWeight) formData.append('custom_weight', customWeight)
+      if (customTextEffects) formData.append('custom_text_effects', customTextEffects)
+      if (customTextCase) formData.append('custom_text_case', customTextCase)
+      if (customHighlightStyle) formData.append('custom_highlight_style', customHighlightStyle)
+      if (customAccentElement) formData.append('custom_accent_element', customAccentElement)
+      if (customMotionAccent) formData.append('custom_motion_accent', customMotionAccent)
+      if (customLayoutMode) formData.append('custom_layout_mode', customLayoutMode)
+      if (customProductCount) formData.append('custom_product_count', customProductCount)
+      if (customPlatform) formData.append('custom_platform', customPlatform)
       
       // Add product photos
       productPhotos.forEach((file, index) => {
@@ -969,8 +1000,22 @@ export function ProductMockupGeneratorInterface({
                   </SelectItem>
                   )
                 })}
+                <SelectItem value="custom">
+                  <div className="flex items-center gap-2">
+                    <span>✏️</span>
+                    <span>Custom</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+            {artDirection === 'custom' && (
+              <Input
+                value={customArtDirection}
+                onChange={(e) => setCustomArtDirection(e.target.value)}
+                placeholder="Enter custom art direction..."
+                className="h-8 text-xs mt-2"
+              />
+            )}
           </div>
 
           {/* Visual Influence */}
@@ -1396,15 +1441,29 @@ export function ProductMockupGeneratorInterface({
                   </SelectItem>
                   )
                 })}
+                <SelectItem value="custom">
+                  <div className="flex items-center gap-2">
+                    <span>✏️</span>
+                    <span>Custom</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+            {compositionTemplate === 'custom' && (
+              <Input
+                value={customComposition}
+                onChange={(e) => setCustomComposition(e.target.value)}
+                placeholder="Enter custom composition..."
+                className="h-8 text-xs mt-2"
+              />
+            )}
           </div>
 
           {/* Object Count & Shadow */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground">Objects</label>
-              <Select value={objectCount.toString()} onValueChange={(value) => setObjectCount(parseInt(value) as any)}>
+              <Select value={objectCount.toString()} onValueChange={(value) => setObjectCount(value === "custom" ? "custom" : parseInt(value) as any)}>
                 <SelectTrigger className="w-full h-8 text-xs">
                   <SelectValue placeholder="Select Count" />
                 </SelectTrigger>
@@ -1414,8 +1473,22 @@ export function ProductMockupGeneratorInterface({
                       {count}
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom" className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {objectCount === 'custom' && (
+                <Input
+                  value={customObjectCount}
+                  onChange={(e) => setCustomObjectCount(e.target.value)}
+                  placeholder="Enter custom object count..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1457,8 +1530,22 @@ export function ProductMockupGeneratorInterface({
                     </SelectItem>
                     )
                   })}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {shadowType === 'custom' && (
+                <Input
+                  value={customShadow}
+                  onChange={(e) => setCustomShadow(e.target.value)}
+                  placeholder="Enter custom shadow..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
         </CollapsibleContent>
@@ -1836,8 +1923,22 @@ export function ProductMockupGeneratorInterface({
                     </SelectItem>
                     )
                   })}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {fontFamily === 'custom' && (
+                <Input
+                  value={customFont}
+                  onChange={(e) => setCustomFont(e.target.value)}
+                  placeholder="Enter custom font..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1879,8 +1980,22 @@ export function ProductMockupGeneratorInterface({
                     </SelectItem>
                     )
                   })}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {fontWeight === 'custom' && (
+                <Input
+                  value={customWeight}
+                  onChange={(e) => setCustomWeight(e.target.value)}
+                  placeholder="Enter custom weight..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -1924,8 +2039,22 @@ export function ProductMockupGeneratorInterface({
                     </SelectItem>
                   )
                 })}
+                <SelectItem value="custom" className="text-xs">
+                  <div className="flex items-center gap-2">
+                    <span>✏️</span>
+                    <span>Custom</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+            {textEffects[0] === 'custom' && (
+              <Input
+                value={customTextEffects}
+                onChange={(e) => setCustomTextEffects(e.target.value)}
+                placeholder="Enter custom text effects..."
+                className="h-8 text-xs mt-2"
+              />
+            )}
           </div>
 
           {/* Advanced Typography */}
@@ -1974,8 +2103,22 @@ export function ProductMockupGeneratorInterface({
                         </SelectItem>
                       )
                     })}
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <span>✏️</span>
+                        <span>Custom</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {textCase === 'custom' && (
+                  <Input
+                    value={customTextCase}
+                    onChange={(e) => setCustomTextCase(e.target.value)}
+                    placeholder="Enter custom text case..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -2007,8 +2150,22 @@ export function ProductMockupGeneratorInterface({
                       </SelectItem>
                       )
                     })}
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <span>✏️</span>
+                        <span>Custom</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {highlightStyle === 'custom' && (
+                  <Input
+                    value={customHighlightStyle}
+                    onChange={(e) => setCustomHighlightStyle(e.target.value)}
+                    placeholder="Enter custom highlight style..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
             </div>
 
@@ -2093,8 +2250,22 @@ export function ProductMockupGeneratorInterface({
                       </SelectItem>
                       )
                     })}
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <span>✏️</span>
+                        <span>Custom</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {accentElement === 'custom' && (
+                  <Input
+                    value={customAccentElement}
+                    onChange={(e) => setCustomAccentElement(e.target.value)}
+                    placeholder="Enter custom accent element..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -2125,8 +2296,22 @@ export function ProductMockupGeneratorInterface({
                       </SelectItem>
                       )
                     })}
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <span>✏️</span>
+                        <span>Custom</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {motionAccent === 'custom' && (
+                  <Input
+                    value={customMotionAccent}
+                    onChange={(e) => setCustomMotionAccent(e.target.value)}
+                    placeholder="Enter custom motion accent..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
             </div>
 
@@ -2186,8 +2371,22 @@ export function ProductMockupGeneratorInterface({
                       </SelectItem>
                     )
                   })}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {layoutMode === 'custom' && (
+                <Input
+                  value={customLayoutMode}
+                  onChange={(e) => setCustomLayoutMode(e.target.value)}
+                  placeholder="Enter custom layout mode..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -2517,8 +2716,22 @@ export function ProductMockupGeneratorInterface({
                     </SelectItem>
                     )
                   })}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {productMultiplicity === 'custom' && (
+                <Input
+                  value={customProductCount}
+                  onChange={(e) => setCustomProductCount(e.target.value)}
+                  placeholder="Enter custom product count..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -2598,8 +2811,22 @@ export function ProductMockupGeneratorInterface({
                   </SelectItem>
                   )
                 })}
+                <SelectItem value="custom" className="text-xs">
+                  <div className="flex items-center gap-2">
+                    <span>✏️</span>
+                    <span>Custom</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
+            {platformTarget === 'custom' as any && (
+              <Input
+                value={customPlatform}
+                onChange={(e) => setCustomPlatform(e.target.value)}
+                placeholder="Enter custom platform..."
+                className="h-8 text-xs mt-2"
+              />
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -2674,8 +2901,6 @@ export function ProductMockupGeneratorInterface({
       </Button>
     </div>
 
-    {/* Previous Generations */}
-    <PreviousGenerations contentType="product_mockups" userId={user?.id || ''} className="mt-8" />
     </>
   )
 }

@@ -144,6 +144,21 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
   // Validation state
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   
+  // Custom fields for UGC Ads Generator
+  const [customVoiceStyle, setCustomVoiceStyle] = useState("")
+  const [customToneOfDelivery, setCustomToneOfDelivery] = useState("")
+  const [customLanguage, setCustomLanguage] = useState("")
+  const [brandTone, setBrandTone] = useState("")
+  const [customBrandTone, setCustomBrandTone] = useState("")
+  const [visualFocus, setVisualFocus] = useState("")
+  const [customVisualFocus, setCustomVisualFocus] = useState("")
+  const [coreAngle, setCoreAngle] = useState("")
+  const [customCoreAngle, setCustomCoreAngle] = useState("")
+  const [cameraRhythm, setCameraRhythm] = useState("")
+  const [customCameraRhythm, setCustomCameraRhythm] = useState("")
+  const [musicMood, setMusicMood] = useState("")
+  const [customMusicMood, setCustomMusicMood] = useState("")
+  
   // Skeleton loader component
   const SkeletonLoader = ({ className }: { className?: string }) => (
     <div className={`animate-pulse bg-muted rounded ${className || 'h-4 w-full'}`} />
@@ -516,9 +531,10 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       formData.append('mode', mode)
       formData.append('template', selectedTemplate)
       formData.append('script', script)
-      formData.append('voiceStyle', voiceStyle)
-      formData.append('toneOfDelivery', toneOfDelivery)
-      formData.append('language', language)
+      // Utiliser la valeur custom si "custom" est sélectionné
+      formData.append('voiceStyle', voiceStyle === 'custom' ? customVoiceStyle : voiceStyle)
+      formData.append('toneOfDelivery', toneOfDelivery === 'custom' ? customToneOfDelivery : toneOfDelivery)
+      formData.append('language', language === 'custom' ? customLanguage : language)
       formData.append('duration', duration.toString())
       formData.append('characterPresence', characterPresence)
       
@@ -547,6 +563,13 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         } else {
           formData.append('selectedProductId', selectedProductId)
         }
+        
+        // Ajouter les valeurs custom pour Brand DNA, Product Essence, etc. (Mode Single uniquement)
+        formData.append('brandTone', brandTone === 'custom' ? customBrandTone : brandTone)
+        formData.append('visualFocus', visualFocus === 'custom' ? customVisualFocus : visualFocus)
+        formData.append('coreAngle', coreAngle === 'custom' ? customCoreAngle : coreAngle)
+        formData.append('cameraRhythm', cameraRhythm === 'custom' ? customCameraRhythm : cameraRhythm)
+        formData.append('musicMood', musicMood === 'custom' ? customMusicMood : musicMood)
       } else if (mode === 'dual') {
         formData.append('twoImageMode', twoImageMode)
         formData.append('sceneScripts', JSON.stringify(sceneScripts))
@@ -1412,8 +1435,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                       <SelectItem value="dramatic-theatrical" className="text-xs">🎭 Dramatic & Theatrical</SelectItem>
                       <SelectItem value="sincere-heartfelt" className="text-xs">💝 Sincere & Heartfelt</SelectItem>
                       <SelectItem value="playful-humorous" className="text-xs">😄 Playful & Humorous</SelectItem>
+                      <SelectItem value="custom" className="text-xs">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {voiceStyle === 'custom' && (
+                    <Input
+                      value={customVoiceStyle}
+                      onChange={(e) => setCustomVoiceStyle(e.target.value)}
+                      placeholder="Enter custom voice style..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -1428,8 +1460,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                       <SelectItem value="fast" className="text-xs">⚡ Fast & Punchy</SelectItem>
                       <SelectItem value="whisper" className="text-xs">🤫 Whisper & Intimate</SelectItem>
                       <SelectItem value="loud" className="text-xs">📢 Loud & Commanding</SelectItem>
+                      <SelectItem value="custom" className="text-xs">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {toneOfDelivery === 'custom' && (
+                    <Input
+                      value={customToneOfDelivery}
+                      onChange={(e) => setCustomToneOfDelivery(e.target.value)}
+                      placeholder="Enter custom tone of delivery..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -1448,8 +1489,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                       <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
                       <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
                       <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
+                      <SelectItem value="custom" className="text-xs">🌐 Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {language === 'custom' && (
+                    <Input
+                      value={customLanguage}
+                      onChange={(e) => setCustomLanguage(e.target.value)}
+                      placeholder="Enter custom language..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -1529,7 +1579,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                    </label>
                    <div className="space-y-2">
                      <Input placeholder="Brand name (optional)" className="h-8 text-xs" />
-                     <Select>
+                     <Select value={brandTone} onValueChange={setBrandTone}>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Brand tone..." />
                        </SelectTrigger>
@@ -1539,8 +1589,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectItem value="luxury">💎 Luxury & Premium</SelectItem>
                          <SelectItem value="playful">🎉 Playful & Fun</SelectItem>
                          <SelectItem value="minimalist">✨ Minimalist & Clean</SelectItem>
+                         <SelectItem value="custom">✏️ Custom</SelectItem>
                        </SelectContent>
                      </Select>
+                     {brandTone === 'custom' && (
+                       <Input
+                         value={customBrandTone}
+                         onChange={(e) => setCustomBrandTone(e.target.value)}
+                         placeholder="Enter custom brand tone..."
+                         className="h-8 text-xs"
+                       />
+                     )}
                      <Input placeholder="Brand color (hex code, optional)" className="h-8 text-xs" />
                    </div>
                  </div>
@@ -1553,7 +1612,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                    </label>
                    <div className="space-y-2">
                      <Textarea placeholder="Hero benefit - what makes this product special?" rows={2} className="resize-none text-xs" />
-                     <Select>
+                     <Select value={visualFocus} onValueChange={setVisualFocus}>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Visual focus..." />
                        </SelectTrigger>
@@ -1562,8 +1621,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectItem value="lifestyle">🏠 Lifestyle Context</SelectItem>
                          <SelectItem value="comparison">⚖️ Before/After</SelectItem>
                          <SelectItem value="process">⚙️ Usage Process</SelectItem>
+                         <SelectItem value="custom">✏️ Custom</SelectItem>
                        </SelectContent>
                      </Select>
+                     {visualFocus === 'custom' && (
+                       <Input
+                         value={customVisualFocus}
+                         onChange={(e) => setCustomVisualFocus(e.target.value)}
+                         placeholder="Enter custom visual focus..."
+                         className="h-8 text-xs"
+                       />
+                     )}
                      <Select>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Environment..." />
@@ -1585,7 +1653,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                      Creative Angle
                    </label>
                    <div className="space-y-2">
-                     <Select>
+                     <Select value={coreAngle} onValueChange={setCoreAngle}>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Core angle..." />
                        </SelectTrigger>
@@ -1595,8 +1663,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectItem value="social-proof">👥 Social Proof</SelectItem>
                          <SelectItem value="urgency">⏰ Urgency & Scarcity</SelectItem>
                          <SelectItem value="emotional">💝 Emotional Connection</SelectItem>
+                         <SelectItem value="custom">✏️ Custom</SelectItem>
                        </SelectContent>
                      </Select>
+                     {coreAngle === 'custom' && (
+                       <Input
+                         value={customCoreAngle}
+                         onChange={(e) => setCustomCoreAngle(e.target.value)}
+                         placeholder="Enter custom creative angle..."
+                         className="h-8 text-xs"
+                       />
+                     )}
                      <Input placeholder="Pattern interrupt - unexpected element" className="h-8 text-xs" />
                      <Textarea placeholder="Hook framework - opening line" rows={2} className="resize-none text-xs" />
                    </div>
@@ -1609,7 +1686,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                      Camera DNA
                    </label>
                    <div className="space-y-2">
-                     <Select>
+                     <Select value={cameraRhythm} onValueChange={setCameraRhythm}>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Rhythm..." />
                        </SelectTrigger>
@@ -1618,8 +1695,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectItem value="medium">🎯 Medium Pace</SelectItem>
                          <SelectItem value="slow">🎬 Slow & Cinematic</SelectItem>
                          <SelectItem value="varied">🎭 Varied Rhythm</SelectItem>
+                         <SelectItem value="custom">✏️ Custom</SelectItem>
                        </SelectContent>
                      </Select>
+                     {cameraRhythm === 'custom' && (
+                       <Input
+                         value={customCameraRhythm}
+                         onChange={(e) => setCustomCameraRhythm(e.target.value)}
+                         placeholder="Enter custom camera rhythm..."
+                         className="h-8 text-xs"
+                       />
+                     )}
                      <Select>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Movement..." />
@@ -1663,7 +1749,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                      Audio DNA
                    </label>
                    <div className="space-y-2">
-                     <Select>
+                     <Select value={musicMood} onValueChange={setMusicMood}>
                        <SelectTrigger className="h-8 text-xs">
                          <SelectValue placeholder="Music mood..." />
                        </SelectTrigger>
@@ -1673,8 +1759,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                          <SelectItem value="dramatic">🎭 Dramatic & Intense</SelectItem>
                          <SelectItem value="playful">🎪 Playful & Fun</SelectItem>
                          <SelectItem value="corporate">🏢 Corporate & Professional</SelectItem>
+                         <SelectItem value="custom">✏️ Custom</SelectItem>
                        </SelectContent>
                      </Select>
+                     {musicMood === 'custom' && (
+                       <Input
+                         value={customMusicMood}
+                         onChange={(e) => setCustomMusicMood(e.target.value)}
+                         placeholder="Enter custom music mood..."
+                         className="h-8 text-xs"
+                       />
+                     )}
                      <div className="space-y-1">
                        <label className="text-[10px] font-medium text-muted-foreground">Sound Effects</label>
                        <div className="flex flex-wrap gap-1">
@@ -2085,8 +2180,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                     <SelectItem value="dramatic-theatrical" className="text-xs">🎭 Dramatic & Theatrical</SelectItem>
                     <SelectItem value="sincere-heartfelt" className="text-xs">💝 Sincere & Heartfelt</SelectItem>
                     <SelectItem value="playful-humorous" className="text-xs">😄 Playful & Humorous</SelectItem>
+                    <SelectItem value="custom" className="text-xs">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {voiceStyle === 'custom' && (
+                  <Input
+                    value={customVoiceStyle}
+                    onChange={(e) => setCustomVoiceStyle(e.target.value)}
+                    placeholder="Enter custom voice style..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-1">
@@ -2101,8 +2205,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                     <SelectItem value="fast" className="text-xs">⚡ Fast & Punchy</SelectItem>
                     <SelectItem value="whisper" className="text-xs">🤫 Whisper & Intimate</SelectItem>
                     <SelectItem value="loud" className="text-xs">📢 Loud & Commanding</SelectItem>
+                    <SelectItem value="custom" className="text-xs">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {toneOfDelivery === 'custom' && (
+                  <Input
+                    value={customToneOfDelivery}
+                    onChange={(e) => setCustomToneOfDelivery(e.target.value)}
+                    placeholder="Enter custom tone of delivery..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-1">
@@ -2121,8 +2234,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                     <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
                     <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
                     <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
+                    <SelectItem value="custom" className="text-xs">🌐 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {language === 'custom' && (
+                  <Input
+                    value={customLanguage}
+                    onChange={(e) => setCustomLanguage(e.target.value)}
+                    placeholder="Enter custom language..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
             </div>
 
@@ -2796,8 +2918,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                       <SelectItem value="dramatic-theatrical" className="text-xs">🎭 Dramatic & Theatrical</SelectItem>
                       <SelectItem value="sincere-heartfelt" className="text-xs">💝 Sincere & Heartfelt</SelectItem>
                       <SelectItem value="playful-humorous" className="text-xs">😄 Playful & Humorous</SelectItem>
+                      <SelectItem value="custom" className="text-xs">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {voiceStyle === 'custom' && (
+                    <Input
+                      value={customVoiceStyle}
+                      onChange={(e) => setCustomVoiceStyle(e.target.value)}
+                      placeholder="Enter custom voice style..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -2812,8 +2943,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                       <SelectItem value="fast" className="text-xs">⚡ Fast & Punchy</SelectItem>
                       <SelectItem value="whisper" className="text-xs">🤫 Whisper & Intimate</SelectItem>
                       <SelectItem value="loud" className="text-xs">📢 Loud & Commanding</SelectItem>
+                      <SelectItem value="custom" className="text-xs">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {toneOfDelivery === 'custom' && (
+                    <Input
+                      value={customToneOfDelivery}
+                      onChange={(e) => setCustomToneOfDelivery(e.target.value)}
+                      placeholder="Enter custom tone of delivery..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -2832,8 +2972,17 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                       <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
                       <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
                       <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
+                      <SelectItem value="custom" className="text-xs">🌐 Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {language === 'custom' && (
+                    <Input
+                      value={customLanguage}
+                      onChange={(e) => setCustomLanguage(e.target.value)}
+                      placeholder="Enter custom language..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
               </div>
             </div>

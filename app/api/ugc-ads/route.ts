@@ -56,6 +56,16 @@ const createUgcAdSchema = z.object({
   
   // Generation State
   generated_json: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Custom fields for when user selects "custom" option
+  custom_voice_style: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_tone_of_delivery: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_language: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_brand_tone: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_visual_focus: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_core_angle: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_camera_rhythm: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_music_mood: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
 })
 
 // GET /api/ugc-ads - Get user's UGC ads
@@ -162,6 +172,16 @@ export async function POST(request: NextRequest) {
     const use_custom_product = formData.get('use_custom_product')?.toString() === 'true'
     const selected_product_id = formData.get('selected_product_id')?.toString()
     const generated_json = formData.get('generated_json')?.toString()
+    
+    // Extract custom field values
+    const custom_voice_style = formData.get('custom_voice_style')?.toString()
+    const custom_tone_of_delivery = formData.get('custom_tone_of_delivery')?.toString()
+    const custom_language = formData.get('custom_language')?.toString()
+    const custom_brand_tone = formData.get('custom_brand_tone')?.toString()
+    const custom_visual_focus = formData.get('custom_visual_focus')?.toString()
+    const custom_core_angle = formData.get('custom_core_angle')?.toString()
+    const custom_camera_rhythm = formData.get('custom_camera_rhythm')?.toString()
+    const custom_music_mood = formData.get('custom_music_mood')?.toString()
 
     // Validate the data
     const validatedData = createUgcAdSchema.parse({
@@ -172,7 +192,10 @@ export async function POST(request: NextRequest) {
       dialogue_voice_type, dialogue_script, dialogue_tone_of_voice, dialogue_language, dialogue_voice_asset_source,
       camera_rhythm, camera_movement_style, camera_cut_frequency, camera_ending_type,
       audio_sound_mode, audio_sound_emotion, audio_key_sounds,
-      use_custom_product, selected_product_id, generated_json
+      use_custom_product, selected_product_id, generated_json,
+      custom_voice_style, custom_tone_of_delivery, custom_language,
+      custom_brand_tone, custom_visual_focus, custom_core_angle,
+      custom_camera_rhythm, custom_music_mood
     })
 
     // Handle file uploads
@@ -290,6 +313,16 @@ export async function POST(request: NextRequest) {
             brand_prompt: validatedData.brand_prompt,
             product_name: validatedData.product_name,
             story_core_angle: validatedData.story_core_angle
+          },
+          custom_fields: {
+            voice_style: validatedData.custom_voice_style,
+            tone_of_delivery: validatedData.custom_tone_of_delivery,
+            language: validatedData.custom_language,
+            brand_tone: validatedData.custom_brand_tone,
+            visual_focus: validatedData.custom_visual_focus,
+            core_angle: validatedData.custom_core_angle,
+            camera_rhythm: validatedData.custom_camera_rhythm,
+            music_mood: validatedData.custom_music_mood
           }
         }
       })

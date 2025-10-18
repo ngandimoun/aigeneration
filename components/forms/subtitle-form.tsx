@@ -68,6 +68,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
   ])
   const [keywordsInput, setKeywordsInput] = useState("")
   const [selectedPreset, setSelectedPreset] = useState<string>("")
+  const [customFont, setCustomFont] = useState("")
   
   const videoInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -206,6 +207,11 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
       }
     })
     handleInputChange("emoji_map", emojiMap)
+
+    // Use custom font value if "custom" is selected
+    if (formData.font === 'custom' && customFont) {
+      handleInputChange("font", customFont)
+    }
 
     if (!formData.video_file_input) {
       toast({
@@ -466,8 +472,22 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
                     <SelectItem value="Tajawal/Tajawal-Bold.ttf">🌍 Tajawal Bold</SelectItem>
                     <SelectItem value="Tajawal/Tajawal-ExtraBold.ttf">🌎 Tajawal ExtraBold</SelectItem>
                     <SelectItem value="Tajawal/Tajawal-Black.ttf">🌏 Tajawal Black</SelectItem>
+                    <SelectItem value="custom">
+                      <div className="flex items-center gap-2">
+                        <span>✏️</span>
+                        <span>Custom</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {formData.font === 'custom' && (
+                  <Input
+                    value={customFont}
+                    onChange={(e) => setCustomFont(e.target.value)}
+                    placeholder="Enter custom font path..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
               <div className="space-y-1 max-w-xs">
                 <Label htmlFor="fontsize" className="text-sm">📏 Font Size</Label>

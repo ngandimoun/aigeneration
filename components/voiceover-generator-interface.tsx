@@ -369,6 +369,20 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   const [characterRole, setCharacterRole] = useState("")
   const [performanceStyle, setPerformanceStyle] = useState("")
   
+  // Custom field states
+  const [customLanguage, setCustomLanguage] = useState("")
+  const [customVoice, setCustomVoice] = useState("")
+  const [customGender, setCustomGender] = useState("")
+  const [customPerceivedAge, setCustomPerceivedAge] = useState("")
+  const [customAccent, setCustomAccent] = useState("")
+  const [customTone, setCustomTone] = useState("")
+  const [customPacing, setCustomPacing] = useState("")
+  const [customFidelity, setCustomFidelity] = useState("")
+  const [customMoodContext, setCustomMoodContext] = useState("")
+  const [customCharacterRole, setCustomCharacterRole] = useState("")
+  const [customPerformanceStyle, setCustomPerformanceStyle] = useState("")
+  const [customUseCase, setCustomUseCase] = useState("")
+  
   // Voice Preview Audio
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -462,26 +476,40 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
         title: title || `${selectedVoice?.name || 'Voiceover'} - ${new Date().toLocaleString()}`,
         description: description || `Voiceover generated with ${selectedVoice?.name}`,
         prompt: prompt.trim(), // Use original prompt
-        language: language,
-        voice_id: selectedVoice?.id,
-        use_case: useCase,
+        language: language === 'custom' ? customLanguage : language,
+        voice_id: selectedVoice?.id === 'custom' ? 'alloy' : selectedVoice?.id, // Fallback to default voice for custom
+        use_case: useCase === 'custom' ? customUseCase : useCase,
         content: {
           original_prompt: prompt, // User's original input
           instructions: instructions, // OpenAI instructions
           voice_identity: {
-            gender,
-            age: perceivedAge,
-            accent,
-            tone,
+            gender: gender === 'custom' ? customGender : gender,
+            age: perceivedAge === 'custom' ? customPerceivedAge : perceivedAge,
+            accent: accent === 'custom' ? customAccent : accent,
+            tone: tone === 'custom' ? customTone : tone,
             pitch: pitchLevel[0],
-            pacing,
-            fidelity
+            pacing: pacing === 'custom' ? customPacing : pacing,
+            fidelity: fidelity === 'custom' ? customFidelity : fidelity
           },
           emotional_dna: {
-            mood: moodContext,
+            mood: moodContext === 'custom' ? customMoodContext : moodContext,
             emotional_weight: emotionalWeight[0],
-            role: characterRole,
-            style: performanceStyle
+            role: characterRole === 'custom' ? customCharacterRole : characterRole,
+            style: performanceStyle === 'custom' ? customPerformanceStyle : performanceStyle
+          },
+          custom_fields: {
+            custom_voice: selectedVoice?.id === 'custom' ? customVoice : null,
+            custom_language: language === 'custom' ? customLanguage : null,
+            custom_gender: gender === 'custom' ? customGender : null,
+            custom_age: perceivedAge === 'custom' ? customPerceivedAge : null,
+            custom_accent: accent === 'custom' ? customAccent : null,
+            custom_tone: tone === 'custom' ? customTone : null,
+            custom_pacing: pacing === 'custom' ? customPacing : null,
+            custom_fidelity: fidelity === 'custom' ? customFidelity : null,
+            custom_mood: moodContext === 'custom' ? customMoodContext : null,
+            custom_role: characterRole === 'custom' ? customCharacterRole : null,
+            custom_style: performanceStyle === 'custom' ? customPerformanceStyle : null,
+            custom_use_case: useCase === 'custom' ? customUseCase : null
           }
         }
       }
@@ -782,8 +810,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {lang}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {language === 'custom' && (
+                      <Input
+                        value={customLanguage}
+                        onChange={(e) => setCustomLanguage(e.target.value)}
+                        placeholder="Enter custom language..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -791,13 +828,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                     <Select 
                       value={selectedVoice?.id || undefined} 
                       onValueChange={(value) => {
-                        const voice = OPENAI_VOICES.find(v => v.id === value)
-                        console.log('🎤 [OPENAI VOICE SELECTED]', {
-                          name: voice?.name,
-                          id: voice?.id,
-                          description: voice?.description
-                        })
-                        setSelectedVoice(voice || null)
+                        if (value === 'custom') {
+                          setSelectedVoice({ id: 'custom', name: 'Custom Voice', description: 'Custom voice description' } as OpenAIVoice)
+                        } else {
+                          const voice = OPENAI_VOICES.find(v => v.id === value)
+                          console.log('🎤 [OPENAI VOICE SELECTED]', {
+                            name: voice?.name,
+                            id: voice?.id,
+                            description: voice?.description
+                          })
+                          setSelectedVoice(voice || null)
+                        }
                       }}
                     >
                       <SelectTrigger className="h-7 text-xs">
@@ -825,8 +866,27 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             </div>
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                              <Mic className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-xs truncate">✏️ Custom Voice</div>
+                              <div className="text-[10px] text-muted-foreground truncate">Enter your own voice description</div>
+                            </div>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
+                    {selectedVoice?.id === 'custom' && (
+                      <Input
+                        value={customVoice}
+                        onChange={(e) => setCustomVoice(e.target.value)}
+                        placeholder="Enter custom voice description..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                 </div>
@@ -905,8 +965,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {option}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {gender === 'custom' && (
+                      <Input
+                        value={customGender}
+                        onChange={(e) => setCustomGender(e.target.value)}
+                        placeholder="Enter custom gender/timbre..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -921,8 +990,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {age}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {perceivedAge === 'custom' && (
+                      <Input
+                        value={customPerceivedAge}
+                        onChange={(e) => setCustomPerceivedAge(e.target.value)}
+                        placeholder="Enter custom age..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -941,8 +1019,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {accentOption}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {accent === 'custom' && (
+                      <Input
+                        value={customAccent}
+                        onChange={(e) => setCustomAccent(e.target.value)}
+                        placeholder="Enter custom accent..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -957,8 +1044,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {toneOption}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {tone === 'custom' && (
+                      <Input
+                        value={customTone}
+                        onChange={(e) => setCustomTone(e.target.value)}
+                        placeholder="Enter custom tone..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -989,8 +1085,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {pacingOption}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {pacing === 'custom' && (
+                      <Input
+                        value={customPacing}
+                        onChange={(e) => setCustomPacing(e.target.value)}
+                        placeholder="Enter custom pacing..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1 md:col-span-2">
@@ -1005,8 +1110,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {fidelityOption}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {fidelity === 'custom' && (
+                      <Input
+                        value={customFidelity}
+                        onChange={(e) => setCustomFidelity(e.target.value)}
+                        placeholder="Enter custom audio quality..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1032,8 +1146,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             <span className="text-xs">{mood.icon}</span> {mood.label}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {moodContext === 'custom' && (
+                      <Input
+                        value={customMoodContext}
+                        onChange={(e) => setCustomMoodContext(e.target.value)}
+                        placeholder="Enter custom mood..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -1064,8 +1187,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {role}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {characterRole === 'custom' && (
+                      <Input
+                        value={customCharacterRole}
+                        onChange={(e) => setCustomCharacterRole(e.target.value)}
+                        placeholder="Enter custom character role..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -1080,8 +1212,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {styleOption}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {performanceStyle === 'custom' && (
+                      <Input
+                        value={customPerformanceStyle}
+                        onChange={(e) => setCustomPerformanceStyle(e.target.value)}
+                        placeholder="Enter custom delivery style..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
 
                 </div>
@@ -1108,8 +1249,17 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                             {useCaseOption}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {useCase === 'custom' && (
+                      <Input
+                        value={customUseCase}
+                        onChange={(e) => setCustomUseCase(e.target.value)}
+                        placeholder="Enter custom content type..."
+                        className="h-7 text-xs mt-2"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

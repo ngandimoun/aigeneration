@@ -217,6 +217,24 @@ export async function POST(request: NextRequest) {
     
     // Metadata
     const metadata = formData.get('metadata')?.toString() ? JSON.parse(formData.get('metadata')?.toString() || '{}') : {}
+    
+    // Custom fields
+    const custom_aggregation_type = formData.get('custom_aggregation_type')?.toString() || null
+    const custom_purpose = formData.get('custom_purpose')?.toString() || null
+    const custom_orientation = formData.get('custom_orientation')?.toString() || null
+    const custom_art_direction = formData.get('custom_art_direction')?.toString() || null
+    const custom_background_texture = formData.get('custom_background_texture')?.toString() || null
+    const custom_mood_context = formData.get('custom_mood_context')?.toString() || null
+    const custom_color_palette = formData.get('custom_color_palette')?.toString() || null
+    const custom_palette_mode = formData.get('custom_palette_mode')?.toString() || null
+    const custom_background = formData.get('custom_background')?.toString() || null
+    const custom_font_family = formData.get('custom_font_family')?.toString() || null
+    const custom_label_placement = formData.get('custom_label_placement')?.toString() || null
+    const custom_gridlines = formData.get('custom_gridlines')?.toString() || null
+    const custom_layout_template = formData.get('custom_layout_template')?.toString() || null
+    const custom_export_preset = formData.get('custom_export_preset')?.toString() || null
+    const custom_tone = formData.get('custom_tone')?.toString() || null
+    const custom_platform = formData.get('custom_platform')?.toString() || null
 
     // Handle data file upload (CSV, Excel, JSON, PDF, etc.)
     // Note: Data files are only used for Code Interpreter processing, not stored in Supabase
@@ -666,6 +684,24 @@ export async function POST(request: NextRequest) {
           images: imageUrls,
           generation_id: generationId,
           full_prompt: prompt,
+          custom_fields: {
+            aggregation_type: custom_aggregation_type || undefined,
+            purpose: custom_purpose || undefined,
+            orientation: custom_orientation || undefined,
+            art_direction: custom_art_direction || undefined,
+            background_texture: custom_background_texture || undefined,
+            mood_context: custom_mood_context || undefined,
+            color_palette: custom_color_palette || undefined,
+            palette_mode: custom_palette_mode || undefined,
+            background: custom_background || undefined,
+            font_family: custom_font_family || undefined,
+            label_placement: custom_label_placement || undefined,
+            gridlines: custom_gridlines || undefined,
+            layout_template: custom_layout_template || undefined,
+            export_preset: custom_export_preset || undefined,
+            tone: custom_tone || undefined,
+            platform: custom_platform || undefined
+          },
           settings: {
             title,
             description,

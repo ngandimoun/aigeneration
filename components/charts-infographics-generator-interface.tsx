@@ -96,7 +96,7 @@ interface ChartState {
     chartType: string
     axisMapping: Record<string, string>
     multiSeries: boolean
-    orientation: "horizontal" | "vertical" | "radial"
+    orientation: "horizontal" | "vertical" | "radial" | "custom"
   }
   style: {
     artDirection: string
@@ -113,8 +113,8 @@ interface ChartState {
   }
   branding: {
     brandSync: boolean
-    paletteMode: "categorical" | "sequential" | "diverging"
-    background: "light" | "dark" | "transparent" | "gradient"
+    paletteMode: "categorical" | "sequential" | "diverging" | "custom"
+    background: "light" | "dark" | "transparent" | "gradient" | "custom"
     fontFamily: string
     logoUpload: File | null
     logoPlacement: string[]
@@ -223,6 +223,24 @@ export function ChartsInfographicsGeneratorInterface({
   const [previewMode, setPreviewMode] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
 
+  // Custom field states
+  const [customAggregationType, setCustomAggregationType] = useState("")
+  const [customPurpose, setCustomPurpose] = useState("")
+  const [customOrientation, setCustomOrientation] = useState("")
+  const [customArtDirection, setCustomArtDirection] = useState("")
+  const [customBackgroundTexture, setCustomBackgroundTexture] = useState("")
+  const [customMoodContext, setCustomMoodContext] = useState("")
+  const [customColorPalette, setCustomColorPalette] = useState("")
+  const [customPaletteMode, setCustomPaletteMode] = useState("")
+  const [customBackground, setCustomBackground] = useState("")
+  const [customFontFamily, setCustomFontFamily] = useState("")
+  const [customLabelPlacement, setCustomLabelPlacement] = useState("")
+  const [customGridlines, setCustomGridlines] = useState("")
+  const [customLayoutTemplate, setCustomLayoutTemplate] = useState("")
+  const [customExportPreset, setCustomExportPreset] = useState("")
+  const [customTone, setCustomTone] = useState("")
+  const [customPlatform, setCustomPlatform] = useState("")
+
   // Dynamic aspect ratio filtering based on selected model (default to Nano-banana)
   const model = 'Nano-banana' as FalModel
   const supportedRatios = getSupportedAspectRatios(model)
@@ -317,6 +335,27 @@ export function ChartsInfographicsGeneratorInterface({
     }
   }
 
+
+  // Helper function to get texture display info
+  const getTextureDisplay = (value: string) => {
+    if (value === 'none') return { icon: '🚫', title: 'None' }
+    if (value === 'custom') return { icon: '✏️', title: 'Custom' }
+    
+    const texture = Object.entries(TEXTURE_OPTIONS).find(([name]) => name.toLowerCase() === value)
+    if (!texture) return { icon: '🌿', title: 'Select texture' }
+    
+    const [name, option] = texture
+    const categoryIcons: Record<string, string> = {
+      natural: '🌿',
+      technical: '⚙️',
+      abstract: '🎨'
+    }
+    
+    return {
+      icon: categoryIcons[option.category] || '🌿',
+      title: name
+    }
+  }
 
   // Generate chart
   const handleGenerate = async () => {
@@ -441,6 +480,25 @@ export function ChartsInfographicsGeneratorInterface({
       formData.append('colorPalette', chartState.branding.colorPalette)
       formData.append('exportPreset', chartState.layout.exportPreset)
       formData.append('generateVariants', shouldGenerateMultiple().toString())
+      
+      // Add custom fields if they exist
+      if (customAggregationType) formData.append('custom_aggregation_type', customAggregationType)
+      if (customPurpose) formData.append('custom_purpose', customPurpose)
+      if (customOrientation) formData.append('custom_orientation', customOrientation)
+      if (customArtDirection) formData.append('custom_art_direction', customArtDirection)
+      if (customBackgroundTexture) formData.append('custom_background_texture', customBackgroundTexture)
+      if (customMoodContext) formData.append('custom_mood_context', customMoodContext)
+      if (customColorPalette) formData.append('custom_color_palette', customColorPalette)
+      if (customPaletteMode) formData.append('custom_palette_mode', customPaletteMode)
+      if (customBackground) formData.append('custom_background', customBackground)
+      if (customFontFamily) formData.append('custom_font_family', customFontFamily)
+      if (customLabelPlacement) formData.append('custom_label_placement', customLabelPlacement)
+      if (customGridlines) formData.append('custom_gridlines', customGridlines)
+      if (customLayoutTemplate) formData.append('custom_layout_template', customLayoutTemplate)
+      if (customExportPreset) formData.append('custom_export_preset', customExportPreset)
+      if (customTone) formData.append('custom_tone', customTone)
+      if (customPlatform) formData.append('custom_platform', customPlatform)
+      
       formData.append('metadata', JSON.stringify({
         projectTitle,
         timestamp: new Date().toISOString()
@@ -656,8 +714,17 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="count">🔢 Count</SelectItem>
                       <SelectItem value="max">📈 Maximum</SelectItem>
                       <SelectItem value="min">📉 Minimum</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.data.aggregationType === 'custom' && (
+                    <Input
+                      value={customAggregationType}
+                      onChange={(e) => setCustomAggregationType(e.target.value)}
+                      placeholder="Enter custom aggregation type..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -714,8 +781,17 @@ export function ChartsInfographicsGeneratorInterface({
                         </SelectItem>
                       )
                     })}
+                    <SelectItem value="custom">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.purpose.purpose === 'custom' && (
+                  <Input
+                    value={customPurpose}
+                    onChange={(e) => setCustomPurpose(e.target.value)}
+                    placeholder="Enter custom purpose..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               {chartState.purpose.purpose && (
@@ -756,8 +832,17 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="vertical">📊 Vertical</SelectItem>
                       <SelectItem value="horizontal">📈 Horizontal</SelectItem>
                       <SelectItem value="radial">⭕ Radial</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.purpose.orientation === 'custom' && (
+                    <Input
+                      value={customOrientation}
+                      onChange={(e) => setCustomOrientation(e.target.value)}
+                      placeholder="Enter custom orientation..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-1">
@@ -819,8 +904,17 @@ export function ChartsInfographicsGeneratorInterface({
                         </SelectItem>
                       )
                     })}
+                    <SelectItem value="custom">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.style.artDirection === 'custom' && (
+                  <Input
+                    value={customArtDirection}
+                    onChange={(e) => setCustomArtDirection(e.target.value)}
+                    placeholder="Enter custom art direction..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               {chartState.style.artDirection && (
@@ -880,7 +974,14 @@ export function ChartsInfographicsGeneratorInterface({
                     onValueChange={(value) => updateChartState("style", { backgroundTexture: value })}
                   >
                     <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Select texture" />
+                      {chartState.style.backgroundTexture ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{getTextureDisplay(chartState.style.backgroundTexture).icon}</span>
+                          <span className="text-sm">{getTextureDisplay(chartState.style.backgroundTexture).title}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Select texture</span>
+                      )}
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
                       <SelectItem value="none">
@@ -931,8 +1032,28 @@ export function ChartsInfographicsGeneratorInterface({
                           </div>
                         </SelectItem>
                       ))}
+                      
+                      {/* Custom Option */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Custom</div>
+                      <SelectItem value="custom">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">✏️</span>
+                          <div>
+                            <div className="text-sm font-medium">Custom</div>
+                            <div className="text-xs text-muted-foreground">Enter your own texture description</div>
+                          </div>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.style.backgroundTexture === 'custom' && (
+                    <Input
+                      value={customBackgroundTexture}
+                      onChange={(e) => setCustomBackgroundTexture(e.target.value)}
+                      placeholder="Enter custom background texture..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-1">
@@ -977,8 +1098,17 @@ export function ChartsInfographicsGeneratorInterface({
                         {mood.emoji} {mood.name}
                       </SelectItem>
                     ))}
+                    <SelectItem value="custom">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.mood.moodContext === 'custom' && (
+                  <Input
+                    value={customMoodContext}
+                    onChange={(e) => setCustomMoodContext(e.target.value)}
+                    placeholder="Enter custom mood context..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1070,8 +1200,17 @@ export function ChartsInfographicsGeneratorInterface({
                         </div>
                       </SelectItem>
                     ))}
+                    <SelectItem value="custom">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.branding.colorPalette === 'custom' && (
+                  <Input
+                    value={customColorPalette}
+                    onChange={(e) => setCustomColorPalette(e.target.value)}
+                    placeholder="Enter custom color palette..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1095,8 +1234,17 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="categorical">🎨 Categorical</SelectItem>
                       <SelectItem value="sequential">📊 Sequential</SelectItem>
                       <SelectItem value="diverging">🔄 Diverging</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.branding.paletteMode === 'custom' && (
+                    <Input
+                      value={customPaletteMode}
+                      onChange={(e) => setCustomPaletteMode(e.target.value)}
+                      placeholder="Enter custom palette mode..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -1166,8 +1314,25 @@ export function ChartsInfographicsGeneratorInterface({
                           </div>
                         </SelectItem>
                       ))}
+                      
+                      {/* Custom Option */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Custom</div>
+                      <SelectItem value="custom">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">✏️</span>
+                          <span className="text-sm">Custom</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.branding.background === 'custom' && (
+                    <Input
+                      value={customBackground}
+                      onChange={(e) => setCustomBackground(e.target.value)}
+                      placeholder="Enter custom background..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1193,8 +1358,17 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectItem value="Helvetica">📝 Helvetica</SelectItem>
                     <SelectItem value="Georgia">📰 Georgia</SelectItem>
                     <SelectItem value="Monaco">💻 Monaco</SelectItem>
+                    <SelectItem value="custom">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.branding.fontFamily === 'custom' && (
+                  <Input
+                    value={customFontFamily}
+                    onChange={(e) => setCustomFontFamily(e.target.value)}
+                    placeholder="Enter custom font family..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1356,8 +1530,17 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="bottom">⬇️ Bottom</SelectItem>
                       <SelectItem value="left">⬅️ Left</SelectItem>
                       <SelectItem value="right">➡️ Right</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.annotations.labelPlacement === 'custom' && (
+                    <Input
+                      value={customLabelPlacement}
+                      onChange={(e) => setCustomLabelPlacement(e.target.value)}
+                      placeholder="Enter custom label placement..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
               )}
 
@@ -1404,8 +1587,17 @@ export function ChartsInfographicsGeneratorInterface({
                       </SelectItem>
                       <SelectItem value="light">💡 Light</SelectItem>
                       <SelectItem value="strong">💪 Strong</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.annotations.gridlines === 'custom' && (
+                    <Input
+                      value={customGridlines}
+                      onChange={(e) => setCustomGridlines(e.target.value)}
+                      placeholder="Enter custom gridlines..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1455,8 +1647,17 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectItem value="story">📖 Story</SelectItem>
                     <SelectItem value="metric-cards">📈 Metric Cards</SelectItem>
                     <SelectItem value="timeline">⏰ Timeline</SelectItem>
+                    <SelectItem value="custom">✏️ Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.layout.layoutTemplate === 'custom' && (
+                  <Input
+                    value={customLayoutTemplate}
+                    onChange={(e) => setCustomLayoutTemplate(e.target.value)}
+                    placeholder="Enter custom layout template..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1485,8 +1686,17 @@ export function ChartsInfographicsGeneratorInterface({
                         </div>
                       </SelectItem>
                     ))}
+                    <SelectItem value="custom-input">✏️ Custom Input</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartState.layout.exportPreset === 'custom-input' && (
+                  <Input
+                    value={customExportPreset}
+                    onChange={(e) => setCustomExportPreset(e.target.value)}
+                    placeholder="Enter custom export preset..."
+                    className="h-8 text-xs mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1587,8 +1797,17 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="fun">🎉 Fun</SelectItem>
                       <SelectItem value="analytical">📊 Analytical</SelectItem>
                       <SelectItem value="urgent">⚡ Urgent</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.narrative.tone === 'custom' && (
+                    <Input
+                      value={customTone}
+                      onChange={(e) => setCustomTone(e.target.value)}
+                      placeholder="Enter custom tone..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -1612,8 +1831,17 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="linkedin">💼 LinkedIn</SelectItem>
                       <SelectItem value="web">🌐 Web</SelectItem>
                       <SelectItem value="pdf">📄 PDF</SelectItem>
+                      <SelectItem value="custom">✏️ Custom</SelectItem>
                     </SelectContent>
                   </Select>
+                  {chartState.narrative.platform === 'custom' && (
+                    <Input
+                      value={customPlatform}
+                      onChange={(e) => setCustomPlatform(e.target.value)}
+                      placeholder="Enter custom platform..."
+                      className="h-8 text-xs mt-2"
+                    />
+                  )}
                 </div>
               </div>
             </AccordionContent>

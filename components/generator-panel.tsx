@@ -115,6 +115,11 @@ export function GeneratorPanel() {
   const isVoiceCreationSection = (section: string) => voiceCreationSections.includes(section)
   const isVoiceoverSection = (section: string) => voiceoverSections.includes(section)
   const isSoundFxSection = (section: string) => soundFxSections.includes(section)
+  
+  // Helper function to determine if the section needs a scrollable container
+  const needsScrollableContainer = () => {
+    return !showImageGenerator && !showVideoGenerator
+  }
   const isMusicJingleSection = (section: string) => musicJingleSections.includes(section)
   const isNewFormSection = (section: string) => newFormSections.includes(section)
   const isTalkingAvatarsSection = (section: string) => talkingAvatarsSections.includes(section)
@@ -647,7 +652,7 @@ export function GeneratorPanel() {
   }
 
   return (
-    <div className={`w-[380px] h-full border-r border-border bg-background ${(showImageGenerator || showVideoGenerator) ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hover'}`}>
+    <div className={`w-[380px] h-full border-r border-border bg-background ${needsScrollableContainer() ? 'overflow-y-auto scrollbar-hover' : 'overflow-hidden'}`}>
       <div className={`${(showImageGenerator || showVideoGenerator) ? 'p-4 space-y-4 h-full flex flex-col' : 'p-6 space-y-6'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{getDisplayTitle()}</h2>

@@ -139,45 +139,73 @@ export function TalkingAvatarsGeneratorInterface({
     name: string
     description: string
     artStyle: string
+    customArtStyle: string
     ageRange: string
+    customAgeRange: string
     ethnicity: string
+    customEthnicity: string
     gender: string
+    customGender: string
     role: string
+    customRole: string
     bodyType: string
+    customBodyType: string
     skinTone: string
+    customSkinTone: string
     hairStyle: string
+    customHairStyle: string
     hairColor: string
+    customHairColor: string
     eyeColor: string
+    customEyeColor: string
     eyeShape: string
+    customEyeShape: string
     outfitCategory: string
+    customOutfitCategory: string
     outfitColors: string
     customOutfitColors: string
     accessories: string[]
     customAccessory: string
     expression: string
+    customExpression: string
     voice: string
+    customVoice: string
   }>>([{ 
     id: '1', 
     name: '', 
     description: '',
     artStyle: '',
+    customArtStyle: '',
     ageRange: '',
+    customAgeRange: '',
     ethnicity: '',
+    customEthnicity: '',
     gender: '',
+    customGender: '',
     role: '',
+    customRole: '',
     bodyType: '',
+    customBodyType: '',
     skinTone: '',
+    customSkinTone: '',
     hairStyle: '',
+    customHairStyle: '',
     hairColor: '',
+    customHairColor: '',
     eyeColor: '',
+    customEyeColor: '',
     eyeShape: '',
+    customEyeShape: '',
     outfitCategory: '',
+    customOutfitCategory: '',
     outfitColors: '',
     customOutfitColors: '',
     accessories: [],
     customAccessory: '',
     expression: '', 
-    voice: '' 
+    customExpression: '',
+    voice: '',
+    customVoice: ''
   }])
   const [dialogLines, setDialogLines] = useState<Array<{
     id: string
@@ -795,23 +823,37 @@ export function TalkingAvatarsGeneratorInterface({
           name: '',
           description: '',
           artStyle: '',
+          customArtStyle: '',
           ageRange: '',
+          customAgeRange: '',
           ethnicity: '',
+          customEthnicity: '',
           gender: '',
+          customGender: '',
           role: '',
+          customRole: '',
           bodyType: '',
+          customBodyType: '',
           skinTone: '',
+          customSkinTone: '',
           hairStyle: '',
+          customHairStyle: '',
           hairColor: '',
+          customHairColor: '',
           eyeColor: '',
+          customEyeColor: '',
           eyeShape: '',
+          customEyeShape: '',
           outfitCategory: '',
+          customOutfitCategory: '',
           outfitColors: '',
           customOutfitColors: '',
           accessories: [],
           customAccessory: '',
           expression: '',
-          voice: ''
+          customExpression: '',
+          voice: '',
+          customVoice: ''
         })
       }
       setCharacters(newCharacters)
@@ -1511,8 +1553,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="digital-art">🖼️ Digital Art</SelectItem>
                             <SelectItem value="watercolor">🎨 Watercolor</SelectItem>
                             <SelectItem value="oil-painting">🖌️ Oil Painting</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.artStyle === 'custom' && (
+                          <Input
+                            value={character.customArtStyle}
+                            onChange={(e) => updateCharacter(index, 'customArtStyle', e.target.value)}
+                            placeholder="Enter custom art style..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1537,8 +1588,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="adult">👩‍💼 Adult (26-40)</SelectItem>
                             <SelectItem value="middle-aged">👨‍💻 Middle-Aged (41-60)</SelectItem>
                             <SelectItem value="elder">👴 Elder (60+)</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.ageRange === 'custom' && (
+                          <Input
+                            value={character.customAgeRange}
+                            onChange={(e) => updateCharacter(index, 'customAgeRange', e.target.value)}
+                            placeholder="Enter custom age range..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Ethnicity</label>
@@ -1554,8 +1614,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="middle-eastern">Middle Eastern</SelectItem>
                             <SelectItem value="mixed">Mixed</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.ethnicity === 'custom' && (
+                          <Input
+                            value={character.customEthnicity}
+                            onChange={(e) => updateCharacter(index, 'customEthnicity', e.target.value)}
+                            placeholder="Enter custom ethnicity..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Gender</label>
@@ -1568,8 +1637,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="female">👩 Female</SelectItem>
                             <SelectItem value="non-binary">⚧ Non-binary</SelectItem>
                             <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.gender === 'custom' && (
+                          <Input
+                            value={character.customGender}
+                            onChange={(e) => updateCharacter(index, 'customGender', e.target.value)}
+                            placeholder="Enter custom gender..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Role</label>
@@ -1585,8 +1663,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="casual">😊 Casual</SelectItem>
                             <SelectItem value="executive">👔 Executive</SelectItem>
                             <SelectItem value="artist">🎭 Artist</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.role === 'custom' && (
+                          <Input
+                            value={character.customRole}
+                            onChange={(e) => updateCharacter(index, 'customRole', e.target.value)}
+                            placeholder="Enter custom role..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1611,8 +1698,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="curvy">Curvy</SelectItem>
                             <SelectItem value="plus-size">Plus-size</SelectItem>
                             <SelectItem value="muscular">Muscular</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.bodyType === 'custom' && (
+                          <Input
+                            value={character.customBodyType}
+                            onChange={(e) => updateCharacter(index, 'customBodyType', e.target.value)}
+                            placeholder="Enter custom body type..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Skin Tone</label>
@@ -1627,8 +1723,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="tan">Tan</SelectItem>
                             <SelectItem value="brown">Brown</SelectItem>
                             <SelectItem value="dark">Dark</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.skinTone === 'custom' && (
+                          <Input
+                            value={character.customSkinTone}
+                            onChange={(e) => updateCharacter(index, 'customSkinTone', e.target.value)}
+                            placeholder="Enter custom skin tone..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Hair Style</label>
@@ -1645,8 +1750,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="straight">Straight</SelectItem>
                             <SelectItem value="wavy">Wavy</SelectItem>
                             <SelectItem value="afro">Afro</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.hairStyle === 'custom' && (
+                          <Input
+                            value={character.customHairStyle}
+                            onChange={(e) => updateCharacter(index, 'customHairStyle', e.target.value)}
+                            placeholder="Enter custom hair style..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Hair Color</label>
@@ -1662,8 +1776,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="gray">Gray</SelectItem>
                             <SelectItem value="white">White</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.hairColor === 'custom' && (
+                          <Input
+                            value={character.customHairColor}
+                            onChange={(e) => updateCharacter(index, 'customHairColor', e.target.value)}
+                            placeholder="Enter custom hair color..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Eye Color</label>
@@ -1678,8 +1801,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="hazel">Hazel</SelectItem>
                             <SelectItem value="gray">Gray</SelectItem>
                             <SelectItem value="amber">Amber</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.eyeColor === 'custom' && (
+                          <Input
+                            value={character.customEyeColor}
+                            onChange={(e) => updateCharacter(index, 'customEyeColor', e.target.value)}
+                            placeholder="Enter custom eye color..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Eye Shape</label>
@@ -1694,8 +1826,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="monolid">Monolid</SelectItem>
                             <SelectItem value="upturned">Upturned</SelectItem>
                             <SelectItem value="downturned">Downturned</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.eyeShape === 'custom' && (
+                          <Input
+                            value={character.customEyeShape}
+                            onChange={(e) => updateCharacter(index, 'customEyeShape', e.target.value)}
+                            placeholder="Enter custom eye shape..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1738,6 +1879,14 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="custom">✏️ Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.outfitCategory === 'custom' && (
+                          <Input
+                            value={character.customOutfitCategory}
+                            onChange={(e) => updateCharacter(index, 'customOutfitCategory', e.target.value)}
+                            placeholder="Enter custom outfit category..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Outfit Colors</label>
@@ -1861,8 +2010,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="confident">😎 Confident</SelectItem>
                             <SelectItem value="friendly">😄 Friendly</SelectItem>
                             <SelectItem value="professional">💼 Professional</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.expression === 'custom' && (
+                          <Input
+                            value={character.customExpression}
+                            onChange={(e) => updateCharacter(index, 'customExpression', e.target.value)}
+                            placeholder="Enter custom expression/mood..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">Voice Style</label>
@@ -1877,8 +2035,17 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="calm">😌 Calm</SelectItem>
                             <SelectItem value="authoritative">🎯 Authoritative</SelectItem>
                             <SelectItem value="conversational">💬 Conversational</SelectItem>
+                            <SelectItem value="custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {character.voice === 'custom' && (
+                          <Input
+                            value={character.customVoice}
+                            onChange={(e) => updateCharacter(index, 'customVoice', e.target.value)}
+                            placeholder="Enter custom voice style..."
+                            className="h-8 text-xs mt-2"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2667,14 +2834,14 @@ export function TalkingAvatarsGeneratorInterface({
                                   <SelectValue placeholder="Select expression..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="happy">Happy</SelectItem>
-                                  <SelectItem value="serious">Serious</SelectItem>
-                                  <SelectItem value="excited">Excited</SelectItem>
-                                  <SelectItem value="calm">Calm</SelectItem>
-                                  <SelectItem value="confident">Confident</SelectItem>
-                                  <SelectItem value="friendly">Friendly</SelectItem>
-                                  <SelectItem value="concerned">Concerned</SelectItem>
-                                  <SelectItem value="surprised">Surprised</SelectItem>
+                                  <SelectItem value="happy">😊 Happy</SelectItem>
+                                  <SelectItem value="serious">😐 Serious</SelectItem>
+                                  <SelectItem value="excited">🤩 Excited</SelectItem>
+                                  <SelectItem value="calm">😌 Calm</SelectItem>
+                                  <SelectItem value="confident">😎 Confident</SelectItem>
+                                  <SelectItem value="friendly">😄 Friendly</SelectItem>
+                                  <SelectItem value="concerned">😟 Concerned</SelectItem>
+                                  <SelectItem value="surprised">😲 Surprised</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -2710,22 +2877,22 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue placeholder="Select setting..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="office">Office</SelectItem>
-                        <SelectItem value="home">Home</SelectItem>
-                        <SelectItem value="outdoors">Outdoors</SelectItem>
-                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                        <SelectItem value="coffee-shop">Coffee Shop</SelectItem>
-                        <SelectItem value="park">Park</SelectItem>
-                        <SelectItem value="beach">Beach</SelectItem>
-                        <SelectItem value="city-street">City Street</SelectItem>
-                        <SelectItem value="studio">Studio</SelectItem>
-                        <SelectItem value="classroom">Classroom</SelectItem>
-                        <SelectItem value="hospital">Hospital</SelectItem>
-                        <SelectItem value="gym">Gym</SelectItem>
-                        <SelectItem value="library">Library</SelectItem>
-                        <SelectItem value="hotel">Hotel</SelectItem>
-                        <SelectItem value="airport">Airport</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="office">🏢 Office</SelectItem>
+                        <SelectItem value="home">🏠 Home</SelectItem>
+                        <SelectItem value="outdoors">🌳 Outdoors</SelectItem>
+                        <SelectItem value="restaurant">🍽️ Restaurant</SelectItem>
+                        <SelectItem value="coffee-shop">☕ Coffee Shop</SelectItem>
+                        <SelectItem value="park">🌳 Park</SelectItem>
+                        <SelectItem value="beach">🏖️ Beach</SelectItem>
+                        <SelectItem value="city-street">🏙️ City Street</SelectItem>
+                        <SelectItem value="studio">🎬 Studio</SelectItem>
+                        <SelectItem value="classroom">🎓 Classroom</SelectItem>
+                        <SelectItem value="hospital">🏥 Hospital</SelectItem>
+                        <SelectItem value="gym">💪 Gym</SelectItem>
+                        <SelectItem value="library">📚 Library</SelectItem>
+                        <SelectItem value="hotel">🏨 Hotel</SelectItem>
+                        <SelectItem value="airport">✈️ Airport</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     {sceneEnvironment === 'custom' && (
@@ -2745,20 +2912,20 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue placeholder="Select background..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="modern">Modern</SelectItem>
-                        <SelectItem value="vintage">Vintage</SelectItem>
-                        <SelectItem value="minimalist">Minimalist</SelectItem>
-                        <SelectItem value="industrial">Industrial</SelectItem>
-                        <SelectItem value="natural">Natural</SelectItem>
-                        <SelectItem value="urban">Urban</SelectItem>
-                        <SelectItem value="abstract">Abstract</SelectItem>
-                        <SelectItem value="colorful">Colorful</SelectItem>
-                        <SelectItem value="neutral">Neutral</SelectItem>
-                        <SelectItem value="dramatic">Dramatic</SelectItem>
-                        <SelectItem value="soft">Soft</SelectItem>
-                        <SelectItem value="bright">Bright</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="modern">🏙️ Modern</SelectItem>
+                        <SelectItem value="vintage">📻 Vintage</SelectItem>
+                        <SelectItem value="minimalist">⚪ Minimalist</SelectItem>
+                        <SelectItem value="industrial">🏭 Industrial</SelectItem>
+                        <SelectItem value="natural">🌿 Natural</SelectItem>
+                        <SelectItem value="urban">🏙️ Urban</SelectItem>
+                        <SelectItem value="abstract">🎨 Abstract</SelectItem>
+                        <SelectItem value="colorful">🌈 Colorful</SelectItem>
+                        <SelectItem value="neutral">⚫ Neutral</SelectItem>
+                        <SelectItem value="dramatic">🎭 Dramatic</SelectItem>
+                        <SelectItem value="soft">💫 Soft</SelectItem>
+                        <SelectItem value="bright">☀️ Bright</SelectItem>
+                        <SelectItem value="dark">🌑 Dark</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     {sceneBackground === 'custom' && (
@@ -2778,19 +2945,19 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue placeholder="Select lighting..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="natural">Natural</SelectItem>
-                        <SelectItem value="bright">Bright</SelectItem>
-                        <SelectItem value="soft">Soft</SelectItem>
-                        <SelectItem value="dramatic">Dramatic</SelectItem>
-                        <SelectItem value="warm">Warm</SelectItem>
-                        <SelectItem value="cool">Cool</SelectItem>
-                        <SelectItem value="studio">Studio</SelectItem>
-                        <SelectItem value="golden-hour">Golden Hour</SelectItem>
-                        <SelectItem value="blue-hour">Blue Hour</SelectItem>
-                        <SelectItem value="moody">Moody</SelectItem>
-                        <SelectItem value="harsh">Harsh</SelectItem>
-                        <SelectItem value="dim">Dim</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="natural">🌅 Natural</SelectItem>
+                        <SelectItem value="bright">☀️ Bright</SelectItem>
+                        <SelectItem value="soft">💡 Soft</SelectItem>
+                        <SelectItem value="dramatic">🎭 Dramatic</SelectItem>
+                        <SelectItem value="warm">🔥 Warm</SelectItem>
+                        <SelectItem value="cool">❄️ Cool</SelectItem>
+                        <SelectItem value="studio">🎬 Studio</SelectItem>
+                        <SelectItem value="golden-hour">🌇 Golden Hour</SelectItem>
+                        <SelectItem value="blue-hour">🌆 Blue Hour</SelectItem>
+                        <SelectItem value="moody">🌙 Moody</SelectItem>
+                        <SelectItem value="harsh">⚡ Harsh</SelectItem>
+                        <SelectItem value="dim">🔦 Dim</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     {sceneLighting === 'custom' && (
@@ -2829,20 +2996,20 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue placeholder="Select background music..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="upbeat">Upbeat</SelectItem>
-                        <SelectItem value="calm">Calm</SelectItem>
-                        <SelectItem value="dramatic">Dramatic</SelectItem>
-                        <SelectItem value="romantic">Romantic</SelectItem>
-                        <SelectItem value="energetic">Energetic</SelectItem>
-                        <SelectItem value="peaceful">Peaceful</SelectItem>
-                        <SelectItem value="mysterious">Mysterious</SelectItem>
-                        <SelectItem value="inspiring">Inspiring</SelectItem>
-                        <SelectItem value="melancholic">Melancholic</SelectItem>
-                        <SelectItem value="playful">Playful</SelectItem>
-                        <SelectItem value="corporate">Corporate</SelectItem>
-                        <SelectItem value="ambient">Ambient</SelectItem>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="upbeat">⚡ Upbeat</SelectItem>
+                        <SelectItem value="calm">😌 Calm</SelectItem>
+                        <SelectItem value="dramatic">🎭 Dramatic</SelectItem>
+                        <SelectItem value="romantic">❤️ Romantic</SelectItem>
+                        <SelectItem value="energetic">🔥 Energetic</SelectItem>
+                        <SelectItem value="peaceful">🕊️ Peaceful</SelectItem>
+                        <SelectItem value="mysterious">🔮 Mysterious</SelectItem>
+                        <SelectItem value="inspiring">🌟 Inspiring</SelectItem>
+                        <SelectItem value="melancholic">😢 Melancholic</SelectItem>
+                        <SelectItem value="playful">🎪 Playful</SelectItem>
+                        <SelectItem value="corporate">💼 Corporate</SelectItem>
+                        <SelectItem value="ambient">🎵 Ambient</SelectItem>
+                        <SelectItem value="none">🚫 None</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     {sceneBackgroundMusic === 'custom' && (
@@ -2862,20 +3029,20 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue placeholder="Select sound effects..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="nature">Nature Sounds</SelectItem>
-                        <SelectItem value="city">City Sounds</SelectItem>
-                        <SelectItem value="office">Office Sounds</SelectItem>
-                        <SelectItem value="applause">Applause</SelectItem>
-                        <SelectItem value="door">Door Sounds</SelectItem>
-                        <SelectItem value="phone">Phone Ringing</SelectItem>
-                        <SelectItem value="footsteps">Footsteps</SelectItem>
-                        <SelectItem value="wind">Wind</SelectItem>
-                        <SelectItem value="rain">Rain</SelectItem>
-                        <SelectItem value="birds">Birds Chirping</SelectItem>
-                        <SelectItem value="traffic">Traffic</SelectItem>
-                        <SelectItem value="cafe">Cafe Sounds</SelectItem>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="nature">🌿 Nature Sounds</SelectItem>
+                        <SelectItem value="city">🏙️ City Sounds</SelectItem>
+                        <SelectItem value="office">💼 Office Sounds</SelectItem>
+                        <SelectItem value="applause">👏 Applause</SelectItem>
+                        <SelectItem value="door">🚪 Door Sounds</SelectItem>
+                        <SelectItem value="phone">📞 Phone Ringing</SelectItem>
+                        <SelectItem value="footsteps">👣 Footsteps</SelectItem>
+                        <SelectItem value="wind">💨 Wind</SelectItem>
+                        <SelectItem value="rain">🌧️ Rain</SelectItem>
+                        <SelectItem value="birds">🐦 Birds Chirping</SelectItem>
+                        <SelectItem value="traffic">🚗 Traffic</SelectItem>
+                        <SelectItem value="cafe">☕ Cafe Sounds</SelectItem>
+                        <SelectItem value="none">🚫 None</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     {sceneSoundEffects === 'custom' && (

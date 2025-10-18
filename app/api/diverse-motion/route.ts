@@ -7,33 +7,38 @@ import { z } from 'zod';
 const nullToUndefined = z.literal('null').transform(() => undefined);
 
 const createProductMotionSchema = z.object({
+  // Mode and Template
+  mode: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  template: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  custom_template: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
   // Product Description & Intent Capture
   product_category: z.enum(['Data Visualizations', 'Infographic', 'Logo Animation', 'UI/UX Element', 'Cinematic Videos']),
   product_name: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   prompt: z.string().min(1, "Prompt is required"),
   core_moment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  emotional_tone: z.enum(['Epic', 'Elegant', 'Calm', 'Poetic', 'Powerful']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  visual_style: z.enum(['Photoreal', 'Cinematic', 'Stylized CG', 'Watercolor Softness']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  emotional_tone: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  visual_style: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   duration: z.number().min(5).max(15).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   
   // Visual Context
   environment: z.enum(['Studio white', 'Urban twilight', 'Forest dawn', 'Black marble', 'Custom']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   custom_environment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  lighting_mood: z.enum(['Soft Daylight', 'Glossy Specular', 'Backlit Sunset', 'High-Contrast Spot']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  lighting_mood: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   material_focus: z.array(z.string()).optional(),
-  camera_type: z.enum(['Macro Precision', 'Orbit Reveal', 'Tracking Pull-Back']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  frame_rate: z.enum(['Slow Motion 120 fps', 'Cinematic 60 fps', 'Standard 30 fps']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  camera_type: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  frame_rate: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   
   // Motion & Energy
-  reveal_type: z.enum(['Assemble', 'Morph', 'Emerge', 'Disintegrate → Form', 'Morph From Form', 'Slide']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  reveal_type: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   camera_energy: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   loop_mode: z.boolean().optional(),
   hook_intensity: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   end_emotion: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   
   // Audio DNA
-  sound_mode: z.enum(['SFX only', 'Music driven', 'Hybrid']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  sound_mood: z.enum(['Ambient minimal', 'Percussive energy', 'Cinematic warm']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  sound_mode: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  sound_mood: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   key_effects: z.array(z.string()).optional(),
   mix_curve: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   
@@ -42,6 +47,27 @@ const createProductMotionSchema = z.object({
   accent_color: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   logo_moment: z.enum(['Morph From Form', 'Fade-In', 'Hover', 'None']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   text_constraint: z.boolean().optional(),
+  
+  // Category-specific fields - Data Visualizations
+  chart_type: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  data_points: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  animation_style: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  color_scheme: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Dual and Multi mode controls
+  transition_controls: z.object({
+    type: z.string().optional(),
+    duration: z.number().optional(),
+    easing: z.string().optional(),
+    direction: z.string().optional()
+  }).optional().nullable(),
+
+  sequence_controls: z.object({
+    style: z.string().optional(),
+    global_transition: z.string().optional(),
+    transition_duration: z.number().optional(),
+    total_duration: z.number().optional()
+  }).optional().nullable(),
 });
 
 export async function POST(request: NextRequest) {
@@ -120,6 +146,10 @@ export async function POST(request: NextRequest) {
           metadata: {
             project_title: body.projectTitle || null,
             selected_artifact: body.selectedArtifact || null,
+            template: validatedData.template || null,
+            custom_template: validatedData.custom_template || null,
+            transition_controls: validatedData.transition_controls || null,
+            sequence_controls: validatedData.sequence_controls || null,
             generation_timestamp: new Date().toISOString()
           },
           content: {
@@ -158,7 +188,13 @@ export async function POST(request: NextRequest) {
                 text_constraint: validatedData.text_constraint || false
               },
               duration: validatedData.duration || 10,
-              tone: `${validatedData.emotional_tone?.toLowerCase() || 'epic'}, modern, kinetically poetic`
+              tone: `${validatedData.emotional_tone?.toLowerCase() || 'epic'}, modern, kinetically poetic`,
+              category_specific: validatedData.product_category === "Data Visualizations" ? {
+                chart_type: validatedData.chart_type || null,
+                data_points: validatedData.data_points || null,
+                animation_style: validatedData.animation_style || null,
+                color_scheme: validatedData.color_scheme || null
+              } : null
             }
           }
         },

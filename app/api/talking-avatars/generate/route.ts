@@ -6,6 +6,45 @@ import { z } from 'zod';
 // Helper to convert null to undefined for Zod optional()
 const nullToUndefined = z.literal('null').transform(() => undefined);
 
+// Character schema for mode "Describe & Create"
+const characterSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  artStyle: z.string(),
+  customArtStyle: z.string().optional(),
+  ageRange: z.string(),
+  customAgeRange: z.string().optional(),
+  ethnicity: z.string(),
+  customEthnicity: z.string().optional(),
+  gender: z.string(),
+  customGender: z.string().optional(),
+  role: z.string(),
+  customRole: z.string().optional(),
+  bodyType: z.string(),
+  customBodyType: z.string().optional(),
+  skinTone: z.string(),
+  customSkinTone: z.string().optional(),
+  hairStyle: z.string(),
+  customHairStyle: z.string().optional(),
+  hairColor: z.string(),
+  customHairColor: z.string().optional(),
+  eyeColor: z.string(),
+  customEyeColor: z.string().optional(),
+  eyeShape: z.string(),
+  customEyeShape: z.string().optional(),
+  outfitCategory: z.string(),
+  customOutfitCategory: z.string().optional(),
+  outfitColors: z.string(),
+  customOutfitColors: z.string().optional(),
+  accessories: z.array(z.string()),
+  customAccessory: z.string().optional(),
+  expression: z.string(),
+  customExpression: z.string().optional(),
+  voice: z.string(),
+  customVoice: z.string().optional(),
+});
+
 const createTalkingAvatarSchema = z.object({
   title: z.string().min(1, "Title is required"),
   
@@ -32,6 +71,55 @@ const createTalkingAvatarSchema = z.object({
   eye_contact: z.boolean().default(true),
   head_movement: z.boolean().default(true),
   
+  // Mode 2: Describe & Create
+  mode: z.enum(['single', 'describe', 'multi']).optional(),
+  main_prompt: z.string().optional(),
+  character_count: z.number().optional(),
+  characters: z.array(characterSchema).optional(),
+  dialog_lines: z.array(z.object({
+    id: z.string(),
+    characterId: z.string(),
+    text: z.string(),
+    expression: z.string(),
+  })).optional(),
+  environment: z.string().optional(),
+  custom_environment: z.string().optional(),
+  background: z.string().optional(),
+  custom_background: z.string().optional(),
+  lighting: z.string().optional(),
+  custom_lighting: z.string().optional(),
+  background_music: z.string().optional(),
+  custom_background_music: z.string().optional(),
+  sound_effects: z.string().optional(),
+  custom_sound_effects: z.string().optional(),
+  
+  // Mode 3: Multi-Character Scene
+  use_custom_scene_image: z.boolean().optional(),
+  scene_image: z.any().optional(), // File object
+  selected_scene_avatar_id: z.string().optional(),
+  scene_description: z.string().optional(),
+  scene_character_count: z.number().optional(),
+  scene_characters: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+  })).optional(),
+  scene_dialog_lines: z.array(z.object({
+    id: z.string(),
+    characterId: z.string(),
+    text: z.string(),
+    expression: z.string(),
+  })).optional(),
+  scene_environment: z.string().optional(),
+  custom_scene_environment: z.string().optional(),
+  scene_background: z.string().optional(),
+  custom_scene_background: z.string().optional(),
+  scene_lighting: z.string().optional(),
+  custom_scene_lighting: z.string().optional(),
+  scene_background_music: z.string().optional(),
+  custom_scene_background_music: z.string().optional(),
+  scene_sound_effects: z.string().optional(),
+  custom_scene_sound_effects: z.string().optional(),
+
   // Metadata
   metadata: z.object({
     projectTitle: z.string().optional(),
@@ -86,8 +174,48 @@ export async function POST(request: NextRequest) {
           generated_video_url: generatedVideoUrl,
           storage_path: generatedStoragePath,
           status: 'completed', // Assuming immediate completion for now
-          metadata: validatedData.metadata || {},
-          content: {}, // Can be expanded later if needed
+          metadata: {
+            ...validatedData.metadata,
+            mode: validatedData.mode,
+          },
+          content: {
+            // Store mode-specific data
+            ...(validatedData.mode === 'describe' && {
+              main_prompt: validatedData.main_prompt,
+              character_count: validatedData.character_count,
+              characters: validatedData.characters,
+              dialog_lines: validatedData.dialog_lines,
+              environment: validatedData.environment,
+              custom_environment: validatedData.custom_environment,
+              background: validatedData.background,
+              custom_background: validatedData.custom_background,
+              lighting: validatedData.lighting,
+              custom_lighting: validatedData.custom_lighting,
+              background_music: validatedData.background_music,
+              custom_background_music: validatedData.custom_background_music,
+              sound_effects: validatedData.sound_effects,
+              custom_sound_effects: validatedData.custom_sound_effects,
+            }),
+            ...(validatedData.mode === 'multi' && {
+              use_custom_scene_image: validatedData.use_custom_scene_image,
+              scene_image: validatedData.scene_image,
+              selected_scene_avatar_id: validatedData.selected_scene_avatar_id,
+              scene_description: validatedData.scene_description,
+              scene_character_count: validatedData.scene_character_count,
+              scene_characters: validatedData.scene_characters,
+              scene_dialog_lines: validatedData.scene_dialog_lines,
+              scene_environment: validatedData.scene_environment,
+              custom_scene_environment: validatedData.custom_scene_environment,
+              scene_background: validatedData.scene_background,
+              custom_scene_background: validatedData.custom_scene_background,
+              scene_lighting: validatedData.scene_lighting,
+              custom_scene_lighting: validatedData.custom_scene_lighting,
+              scene_background_music: validatedData.scene_background_music,
+              custom_scene_background_music: validatedData.custom_scene_background_music,
+              scene_sound_effects: validatedData.scene_sound_effects,
+              custom_scene_sound_effects: validatedData.custom_scene_sound_effects,
+            }),
+          },
         },
       ])
       .select();

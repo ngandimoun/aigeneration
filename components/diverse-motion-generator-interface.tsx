@@ -79,17 +79,53 @@ interface DiverseMotionGeneratorInterfaceProps {
 
 // Motion DNA Types
 type ProductCategory = "Data Visualizations" | "Infographic" | "Logo Animation" | "UI/UX Element" | "Cinematic Videos"
+
+// Helper function to get accepted file types based on category
+const getAcceptedFileTypes = (category: ProductCategory): string => {
+  switch (category) {
+    case "Data Visualizations":
+      return "image/*,.csv,.json" // Images + fichiers de données
+    case "Infographic":
+      return "image/*" // Images uniquement
+    case "Logo Animation":
+      return "image/*,video/*" // Images et vidéos
+    case "UI/UX Element":
+      return "image/*,video/*" // Images et vidéos
+    case "Cinematic Videos":
+      return "video/*" // Vidéos uniquement
+    default:
+      return "image/*,video/*"
+  }
+}
+
+// Helper function to get help text based on category
+const getHelpText = (category: ProductCategory): string => {
+  switch (category) {
+    case "Data Visualizations":
+      return "Supported: JPG, PNG, CSV, JSON (Max 50MB)"
+    case "Infographic":
+      return "Supported: JPG, PNG, GIF (Max 50MB)"
+    case "Logo Animation":
+      return "Supported: JPG, PNG, MP4, MOV (Max 50MB)"
+    case "UI/UX Element":
+      return "Supported: JPG, PNG, MP4, MOV (Max 50MB)"
+    case "Cinematic Videos":
+      return "Supported: MP4, MOV, AVI (Max 50MB)"
+    default:
+      return "Supported: JPG, PNG, GIF, MP4, MOV (Max 50MB)"
+  }
+}
 type Mode = 'none' | 'single' | 'dual' | 'multi'
-type EmotionalTone = "Epic" | "Elegant" | "Calm" | "Poetic" | "Powerful"
-type VisualStyle = "Photoreal" | "Cinematic" | "Stylized CG" | "Watercolor Softness"
+type EmotionalTone = "Epic" | "Elegant" | "Calm" | "Poetic" | "Powerful" | "Custom"
+type VisualStyle = "Photoreal" | "Cinematic" | "Stylized CG" | "Watercolor Softness" | "Custom"
 type Environment = "Studio white" | "Urban twilight" | "Forest dawn" | "Black marble" | "Custom"
-type LightingMood = "Soft Daylight" | "Glossy Specular" | "Backlit Sunset" | "High-Contrast Spot"
+type LightingMood = "Soft Daylight" | "Glossy Specular" | "Backlit Sunset" | "High-Contrast Spot" | "Custom"
 type MaterialFocus = "Glass" | "Metal" | "Liquid" | "Fabric" | "All"
-type CameraType = "Macro Precision" | "Orbit Reveal" | "Tracking Pull-Back"
-type FrameRate = "Slow Motion 120 fps" | "Cinematic 60 fps" | "Standard 30 fps"
-type RevealType = "Assemble" | "Morph" | "Emerge" | "Disintegrate → Form" | "Morph From Form" | "Slide"
-type SoundMode = "SFX only" | "Music driven" | "Hybrid"
-type SoundMood = "Ambient minimal" | "Percussive energy" | "Cinematic warm"
+type CameraType = "Macro Precision" | "Orbit Reveal" | "Tracking Pull-Back" | "Custom"
+type FrameRate = "Slow Motion 120 fps" | "Cinematic 60 fps" | "Standard 30 fps" | "Custom"
+type RevealType = "Assemble" | "Morph" | "Emerge" | "Disintegrate → Form" | "Morph From Form" | "Slide" | "Custom"
+type SoundMode = "SFX only" | "Music driven" | "Hybrid" | "Custom"
+type SoundMood = "Ambient minimal" | "Percussive energy" | "Cinematic warm" | "Custom"
 type LogoMoment = "Morph From Form" | "Fade-In" | "Hover" | "None"
 
 // Template Types
@@ -456,18 +492,25 @@ export function DiverseMotionGeneratorInterface({
   // 1️⃣ Product Description & Intent Capture
   const [productCategory, setProductCategory] = useState<ProductCategory>("Data Visualizations")
   const [selectedTemplate, setSelectedTemplate] = useState<string>("custom")
+  const [customTemplateInstructions, setCustomTemplateInstructions] = useState("")
   const [productName, setProductName] = useState("")
   const [prompt, setPrompt] = useState("")
   const [coreMoment, setCoreMoment] = useState("")
   const [emotionalTone, setEmotionalTone] = useState<EmotionalTone>("Epic")
+  const [customEmotionalTone, setCustomEmotionalTone] = useState("")
   const [visualStyle, setVisualStyle] = useState<VisualStyle>("Cinematic")
+  const [customVisualStyle, setCustomVisualStyle] = useState("")
   const [duration, setDuration] = useState([10]) // 5-120 seconds (up to 2 minutes)
   
   // Category-specific fields - Data Visualizations
   const [chartType, setChartType] = useState<string>("Line Chart")
+  const [customChartType, setCustomChartType] = useState("")
   const [dataPoints, setDataPoints] = useState<string>("10-20")
+  const [customDataPoints, setCustomDataPoints] = useState("")
   const [animationStyle, setAnimationStyle] = useState<string>("Sequential")
+  const [customAnimationStyle, setCustomAnimationStyle] = useState("")
   const [colorScheme, setColorScheme] = useState<string>("Gradient")
+  const [customColorScheme, setCustomColorScheme] = useState("")
   
   // Category-specific fields - Infographic
   const [layoutType, setLayoutType] = useState<string>("Vertical")
@@ -505,14 +548,18 @@ export function DiverseMotionGeneratorInterface({
   
   // Dual Asset transition controls
   const [transitionType, setTransitionType] = useState<string>("morph")
+  const [customTransitionType, setCustomTransitionType] = useState("")
   const [transitionDuration, setTransitionDuration] = useState([1.0])
   const [transitionEasing, setTransitionEasing] = useState<string>("smooth")
+  const [customTransitionEasing, setCustomTransitionEasing] = useState("")
   const [transitionDirection, setTransitionDirection] = useState<string>("forward")
   
   // Multi Asset sequence controls
   const [sequenceStyle, setSequenceStyle] = useState<string>("sequential")
   const [globalTransition, setGlobalTransition] = useState<string>("fade")
   const [sceneTransitionDuration, setSceneTransitionDuration] = useState([0.8])
+  const [customSequenceStyle, setCustomSequenceStyle] = useState("")
+  const [customGlobalTransition, setCustomGlobalTransition] = useState("")
   
   // Preview system state
   const [showPreview, setShowPreview] = useState(false)
@@ -575,12 +622,16 @@ export function DiverseMotionGeneratorInterface({
   const [environment, setEnvironment] = useState<Environment>("Studio white")
   const [customEnvironment, setCustomEnvironment] = useState("")
   const [lightingMood, setLightingMood] = useState<LightingMood>("Soft Daylight")
+  const [customLightingMood, setCustomLightingMood] = useState("")
   const [materialFocus, setMaterialFocus] = useState<MaterialFocus[]>(["All"])
   const [cameraType, setCameraType] = useState<CameraType>("Macro Precision")
+  const [customCameraType, setCustomCameraType] = useState("")
   const [frameRate, setFrameRate] = useState<FrameRate>("Cinematic 60 fps")
+  const [customFrameRate, setCustomFrameRate] = useState("")
   
   // 3️⃣ Motion & Energy
   const [revealType, setRevealType] = useState<RevealType>("Morph")
+  const [customRevealType, setCustomRevealType] = useState("")
   const [cameraEnergy, setCameraEnergy] = useState([50]) // 0-100 slider
   const [loopMode, setLoopMode] = useState(false)
   const [hookIntensity, setHookIntensity] = useState([50]) // 0-100 slider
@@ -588,7 +639,9 @@ export function DiverseMotionGeneratorInterface({
   
   // 4️⃣ Audio DNA
   const [soundMode, setSoundMode] = useState<SoundMode>("SFX only")
+  const [customSoundMode, setCustomSoundMode] = useState("")
   const [soundMood, setSoundMood] = useState<SoundMood>("Ambient minimal")
+  const [customSoundMood, setCustomSoundMood] = useState("")
   const [keyEffects, setKeyEffects] = useState<string[]>([])
   const [mixCurve, setMixCurve] = useState([50]) // 0-100 slider (Calm→Energetic)
   
@@ -1102,6 +1155,12 @@ export function DiverseMotionGeneratorInterface({
       setUploadedFiles(prev => [...prev, ...newFiles])
       setAssetPreviews(prev => [...prev, ...newPreviews])
       
+      // En mode single, réinitialiser les sélections de chart/avatar
+      if (mode === 'single') {
+        setSelectedChartId("")
+        setSelectedAvatarId("")
+      }
+      
       toast({
         title: "Assets uploaded",
         description: `${newFiles.length} asset${newFiles.length > 1 ? 's' : ''} uploaded successfully.`,
@@ -1182,8 +1241,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Pie Chart">🥧 Pie Chart</SelectItem>
                     <SelectItem value="Area Chart">📉 Area Chart</SelectItem>
                     <SelectItem value="Scatter Plot">⚫ Scatter Plot</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartType === 'Custom' && (
+                  <Input
+                    value={customChartType}
+                    onChange={(e) => setCustomChartType(e.target.value)}
+                    placeholder="Enter custom chart type..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Data Points</label>
@@ -1196,8 +1264,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="10-20">10-20 points</SelectItem>
                     <SelectItem value="20-50">20-50 points</SelectItem>
                     <SelectItem value="50+">50+ points</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {dataPoints === 'Custom' && (
+                  <Input
+                    value={customDataPoints}
+                    onChange={(e) => setCustomDataPoints(e.target.value)}
+                    placeholder="Enter custom data points..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Animation Style</label>
@@ -1209,8 +1286,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Sequential">🔢 Sequential</SelectItem>
                     <SelectItem value="Simultaneous">⚡ Simultaneous</SelectItem>
                     <SelectItem value="Wave">🌊 Wave</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {animationStyle === 'Custom' && (
+                  <Input
+                    value={customAnimationStyle}
+                    onChange={(e) => setCustomAnimationStyle(e.target.value)}
+                    placeholder="Enter custom animation style..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Color Scheme</label>
@@ -1222,8 +1308,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Gradient">🌈 Gradient</SelectItem>
                     <SelectItem value="Solid">⬛ Solid</SelectItem>
                     <SelectItem value="Multi-color">🎨 Multi-color</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {colorScheme === 'Custom' && (
+                  <Input
+                    value={customColorScheme}
+                    onChange={(e) => setCustomColorScheme(e.target.value)}
+                    placeholder="Enter custom color scheme..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
             </>
           )}
@@ -1242,8 +1337,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Add Annotations">📝 Add Annotations</SelectItem>
                     <SelectItem value="Smooth Transitions">✨ Smooth Transitions</SelectItem>
                     <SelectItem value="Enhance Clarity">🔍 Enhance Clarity</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {chartType === 'Custom' && (
+                  <Input
+                    value={customChartType}
+                    onChange={(e) => setCustomChartType(e.target.value)}
+                    placeholder="Enter custom enhancement focus..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Data Emphasis</label>
@@ -1256,8 +1360,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Comparisons">⚖️ Comparisons</SelectItem>
                     <SelectItem value="Growth Areas">📊 Growth Areas</SelectItem>
                     <SelectItem value="Key Metrics">🎯 Key Metrics</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {dataPoints === 'Custom' && (
+                  <Input
+                    value={customDataPoints}
+                    onChange={(e) => setCustomDataPoints(e.target.value)}
+                    placeholder="Enter custom data emphasis..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Visual Treatment</label>
@@ -1270,8 +1383,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Add Depth">📐 Add Depth</SelectItem>
                     <SelectItem value="Modernize Style">✨ Modernize Style</SelectItem>
                     <SelectItem value="Professional Polish">💎 Professional Polish</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {animationStyle === 'Custom' && (
+                  <Input
+                    value={customAnimationStyle}
+                    onChange={(e) => setCustomAnimationStyle(e.target.value)}
+                    placeholder="Enter custom visual treatment..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Animation Approach</label>
@@ -1284,8 +1406,17 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Emphasize Key Points">⭐ Emphasize Key Points</SelectItem>
                     <SelectItem value="Smooth Reveal">✨ Smooth Reveal</SelectItem>
                     <SelectItem value="Dynamic Transitions">⚡ Dynamic Transitions</SelectItem>
+                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
+                {colorScheme === 'Custom' && (
+                  <Input
+                    value={customColorScheme}
+                    onChange={(e) => setCustomColorScheme(e.target.value)}
+                    placeholder="Enter custom animation approach..."
+                    className="mt-2 bg-background border-border"
+                  />
+                )}
               </div>
             </>
           )}
@@ -2008,13 +2139,14 @@ export function DiverseMotionGeneratorInterface({
         // Mode and Template
         mode: mode,
         template: selectedTemplate !== 'custom' ? selectedTemplate : null,
+        custom_template: selectedTemplate === 'custom' && customTemplateInstructions.trim() ? customTemplateInstructions.trim() : null,
         
         // Product Description & Intent Capture
         product_category: productCategory,
         product_name: productName.trim() || null,
         core_moment: coreMoment.trim() || null,
-        emotional_tone: emotionalTone,
-        visual_style: visualStyle,
+        emotional_tone: emotionalTone === 'Custom' ? customEmotionalTone : emotionalTone,
+        visual_style: visualStyle === 'Custom' ? customVisualStyle : visualStyle,
         duration: duration[0],
         
         // Asset data (mode-specific)
@@ -2024,21 +2156,21 @@ export function DiverseMotionGeneratorInterface({
         // Visual Context
         environment: environment,
         custom_environment: environment === "Custom" ? customEnvironment.trim() || null : null,
-        lighting_mood: lightingMood,
+        lighting_mood: lightingMood === 'Custom' ? customLightingMood : lightingMood,
         material_focus: materialFocus,
-        camera_type: cameraType,
-        frame_rate: frameRate,
+        camera_type: cameraType === 'Custom' ? customCameraType : cameraType,
+        frame_rate: frameRate === 'Custom' ? customFrameRate : frameRate,
         
         // Motion & Energy
-        reveal_type: revealType,
+        reveal_type: revealType === 'Custom' ? customRevealType : revealType,
         camera_energy: cameraEnergy[0],
         loop_mode: loopMode,
         hook_intensity: hookIntensity[0],
         end_emotion: endEmotion[0],
         
         // Audio DNA
-        sound_mode: soundMode,
-        sound_mood: soundMood,
+        sound_mode: soundMode === 'Custom' ? customSoundMode : soundMode,
+        sound_mood: soundMood === 'Custom' ? customSoundMood : soundMood,
         key_effects: keyEffects,
         mix_curve: mixCurve[0],
         
@@ -2051,10 +2183,10 @@ export function DiverseMotionGeneratorInterface({
         // Category-specific fields
         category_specific: {
           // Data Visualizations
-          chart_type: productCategory === "Data Visualizations" ? chartType : null,
-          data_points: productCategory === "Data Visualizations" ? dataPoints : null,
-          animation_style: productCategory === "Data Visualizations" ? animationStyle : null,
-          color_scheme: productCategory === "Data Visualizations" ? colorScheme : null,
+          chart_type: productCategory === "Data Visualizations" ? (chartType === 'Custom' ? customChartType : chartType) : null,
+          data_points: productCategory === "Data Visualizations" ? (dataPoints === 'Custom' ? customDataPoints : dataPoints) : null,
+          animation_style: productCategory === "Data Visualizations" ? (animationStyle === 'Custom' ? customAnimationStyle : animationStyle) : null,
+          color_scheme: productCategory === "Data Visualizations" ? (colorScheme === 'Custom' ? customColorScheme : colorScheme) : null,
           
           // Infographic
           layout_type: productCategory === "Infographic" ? layoutType : null,
@@ -2094,14 +2226,15 @@ export function DiverseMotionGeneratorInterface({
         // Mode and Template
         mode: mode,
         template: selectedTemplate !== 'custom' ? selectedTemplate : null,
+        custom_template: selectedTemplate === 'custom' && customTemplateInstructions.trim() ? customTemplateInstructions.trim() : null,
         
         // Product Description & Intent Capture
         product_category: productCategory,
         product_name: productName.trim() || null,
         prompt: (mode === 'none' || mode === 'single') ? prompt.trim() : null,
         core_moment: coreMoment.trim() || null,
-        emotional_tone: emotionalTone,
-        visual_style: visualStyle,
+        emotional_tone: emotionalTone === 'Custom' ? customEmotionalTone : emotionalTone,
+        visual_style: visualStyle === 'Custom' ? customVisualStyle : visualStyle,
         duration: duration[0],
         
         // Multi-asset support
@@ -2110,21 +2243,21 @@ export function DiverseMotionGeneratorInterface({
         // Visual Context
         environment: environment,
         custom_environment: environment === "Custom" ? customEnvironment.trim() || null : null,
-        lighting_mood: lightingMood,
+        lighting_mood: lightingMood === 'Custom' ? customLightingMood : lightingMood,
         material_focus: materialFocus,
-        camera_type: cameraType,
-        frame_rate: frameRate,
+        camera_type: cameraType === 'Custom' ? customCameraType : cameraType,
+        frame_rate: frameRate === 'Custom' ? customFrameRate : frameRate,
         
         // Motion & Energy
-        reveal_type: revealType,
+        reveal_type: revealType === 'Custom' ? customRevealType : revealType,
         camera_energy: cameraEnergy[0],
         loop_mode: loopMode,
         hook_intensity: hookIntensity[0],
         end_emotion: endEmotion[0],
         
         // Audio DNA
-        sound_mode: soundMode,
-        sound_mood: soundMood,
+        sound_mode: soundMode === 'Custom' ? customSoundMode : soundMode,
+        sound_mood: soundMood === 'Custom' ? customSoundMood : soundMood,
         key_effects: keyEffects,
         mix_curve: mixCurve[0],
         
@@ -2137,10 +2270,10 @@ export function DiverseMotionGeneratorInterface({
         // Category-specific fields
         category_specific: {
           // Data Visualizations
-          chart_type: productCategory === "Data Visualizations" ? chartType : null,
-          data_points: productCategory === "Data Visualizations" ? dataPoints : null,
-          animation_style: productCategory === "Data Visualizations" ? animationStyle : null,
-          color_scheme: productCategory === "Data Visualizations" ? colorScheme : null,
+          chart_type: productCategory === "Data Visualizations" ? (chartType === 'Custom' ? customChartType : chartType) : null,
+          data_points: productCategory === "Data Visualizations" ? (dataPoints === 'Custom' ? customDataPoints : dataPoints) : null,
+          animation_style: productCategory === "Data Visualizations" ? (animationStyle === 'Custom' ? customAnimationStyle : animationStyle) : null,
+          color_scheme: productCategory === "Data Visualizations" ? (colorScheme === 'Custom' ? customColorScheme : colorScheme) : null,
           
           // Infographic
           layout_type: productCategory === "Infographic" ? layoutType : null,
@@ -2174,16 +2307,16 @@ export function DiverseMotionGeneratorInterface({
         
         // Dual Asset Transition Controls (Phase 2)
         transition_controls: mode === 'dual' ? {
-          type: transitionType,
+          type: transitionType === 'custom' ? customTransitionType : transitionType,
           duration: transitionDuration[0],
-          easing: transitionEasing,
+          easing: transitionEasing === 'custom' ? customTransitionEasing : transitionEasing,
           direction: transitionDirection
         } : null,
         
         // Multi Asset Sequence Controls (Phase 2)
         sequence_controls: mode === 'multi' ? {
-          style: sequenceStyle,
-          global_transition: globalTransition,
+          style: sequenceStyle === 'custom' ? customSequenceStyle : sequenceStyle,
+          global_transition: globalTransition === 'custom' ? customGlobalTransition : globalTransition,
           transition_duration: sceneTransitionDuration[0],
           total_duration: assets.reduce((sum, asset) => sum + (asset.timing || 5), 0)
         } : null,
@@ -2482,6 +2615,19 @@ export function DiverseMotionGeneratorInterface({
                         </div>
                       </div>
                     )}
+                    {selectedTemplate === 'custom' && (
+                      <div className="mt-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Custom Template Instructions
+                        </label>
+                        <Input
+                          value={customTemplateInstructions}
+                          onChange={(e) => setCustomTemplateInstructions(e.target.value)}
+                          placeholder="Enter your custom template instructions here..."
+                          className="bg-background border-border"
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Category-Specific Fields */}
@@ -2514,8 +2660,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Calm">🌊 Calm</SelectItem>
                         <SelectItem value="Poetic">🌸 Poetic</SelectItem>
                         <SelectItem value="Powerful">💪 Powerful</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {emotionalTone === 'Custom' && (
+                      <Input
+                        value={customEmotionalTone}
+                        onChange={(e) => setCustomEmotionalTone(e.target.value)}
+                        placeholder="Enter custom emotional tone..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -2531,8 +2686,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Cinematic">🎬 Cinematic</SelectItem>
                         <SelectItem value="Stylized CG">🎨 Stylized CG</SelectItem>
                         <SelectItem value="Watercolor Softness">🎨 Watercolor Softness</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {visualStyle === 'Custom' && (
+                      <Input
+                        value={customVisualStyle}
+                        onChange={(e) => setCustomVisualStyle(e.target.value)}
+                        placeholder="Enter custom visual style..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -2611,8 +2775,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Glossy Specular">✨ Glossy Specular</SelectItem>
                         <SelectItem value="Backlit Sunset">🌅 Backlit Sunset</SelectItem>
                         <SelectItem value="High-Contrast Spot">💡 High-Contrast Spot</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {lightingMood === 'Custom' && (
+                      <Input
+                        value={customLightingMood}
+                        onChange={(e) => setCustomLightingMood(e.target.value)}
+                        placeholder="Enter custom lighting mood..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -2645,8 +2818,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Macro Precision">🔍 Macro Precision</SelectItem>
                         <SelectItem value="Orbit Reveal">🔄 Orbit Reveal</SelectItem>
                         <SelectItem value="Tracking Pull-Back">📹 Tracking Pull-Back</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {cameraType === 'Custom' && (
+                      <Input
+                        value={customCameraType}
+                        onChange={(e) => setCustomCameraType(e.target.value)}
+                        placeholder="Enter custom camera type..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -2661,8 +2843,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Slow Motion 120 fps">🐌 Slow Motion 120 fps</SelectItem>
                         <SelectItem value="Cinematic 60 fps">🎬 Cinematic 60 fps</SelectItem>
                         <SelectItem value="Standard 30 fps">📺 Standard 30 fps</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {frameRate === 'Custom' && (
+                      <Input
+                        value={customFrameRate}
+                        onChange={(e) => setCustomFrameRate(e.target.value)}
+                        placeholder="Enter custom frame rate..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -2697,8 +2888,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Morph">🔄 Morph</SelectItem>
                         <SelectItem value="Emerge">🌟 Emerge</SelectItem>
                         <SelectItem value="Disintegrate → Form">💫 Disintegrate → Form</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {revealType === 'Custom' && (
+                      <Input
+                        value={customRevealType}
+                        onChange={(e) => setCustomRevealType(e.target.value)}
+                        placeholder="Enter custom reveal type..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -2796,8 +2996,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="SFX only">🔊 SFX only</SelectItem>
                         <SelectItem value="Music driven">🎵 Music driven</SelectItem>
                         <SelectItem value="Hybrid">🎶 Hybrid</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {soundMode === 'Custom' && (
+                      <Input
+                        value={customSoundMode}
+                        onChange={(e) => setCustomSoundMode(e.target.value)}
+                        placeholder="Enter custom sound mode..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -2812,8 +3021,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Ambient minimal">🌊 Ambient minimal</SelectItem>
                         <SelectItem value="Percussive energy">🥁 Percussive energy</SelectItem>
                         <SelectItem value="Cinematic warm">🎬 Cinematic warm</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {soundMood === 'Custom' && (
+                      <Input
+                        value={customSoundMood}
+                        onChange={(e) => setCustomSoundMood(e.target.value)}
+                        placeholder="Enter custom sound mood..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3368,7 +3586,7 @@ export function DiverseMotionGeneratorInterface({
                         <input
                           ref={fileInputRef}
                           type="file"
-                          accept="image/*,video/*"
+                          accept={getAcceptedFileTypes(productCategory)}
                           onChange={handleFileUpload}
                           className="hidden"
                         />
@@ -3478,112 +3696,134 @@ export function DiverseMotionGeneratorInterface({
                           )}
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400 text-center">
-                          Supported: JPG, PNG, GIF, MP4, MOV (Max 50MB)
+                          {getHelpText(productCategory)}
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {assetPreviews.map((preview, index) => (
-                          <div key={index} className="relative group">
-                            <div className="relative aspect-video rounded-lg overflow-hidden bg-black/5 dark:bg-white/5">
-                              {uploadedFiles[index].type.startsWith('image/') ? (
-                                <img
-                                  src={preview}
-                                  alt={`Asset ${index + 1}`}
-                                  className="w-full h-full object-contain"
-                                />
-                              ) : (
-                                <video
-                                  src={preview}
-                                  className="w-full h-full object-contain"
-                                  controls
-                                />
-                              )}
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-green-700 dark:text-green-300 truncate">
-                                  {uploadedFiles[index].name}
-                                </p>
-                                <p className="text-xs text-green-600 dark:text-green-400">
-                                  {(uploadedFiles[index].size / (1024 * 1024)).toFixed(2)} MB
-                                </p>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removeUploadedAsset(index)}
-                                className="ml-2"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-green-300">
+                        {/* Miniature */}
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          {uploadedFiles[0].type.startsWith('image/') ? (
+                            <img 
+                              src={assetPreviews[0]} 
+                              alt="Asset" 
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            <video 
+                              src={assetPreviews[0]} 
+                              className="w-full h-full object-cover" 
+                            />
+                          )}
+                        </div>
+                        
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-green-700 truncate">
+                            {uploadedFiles[0].name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {(uploadedFiles[0].size / (1024 * 1024)).toFixed(2)} MB
+                          </p>
+                        </div>
+                        
+                        {/* Bouton supprimer */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeUploadedAsset(0)}
+                          className="flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                   </div>
                   
                   {/* Preview for selected chart */}
-                  {selectedChartId && selectedChart && (
-                    <div className="p-3 bg-muted/30 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        {getChartImageUrl(selectedChart) ? (
-                          <img 
-                            src={getChartImageUrl(selectedChart)} 
-                            alt={selectedChart.title}
-                            className="w-12 h-12 object-cover rounded-lg border border-border"
-                            onError={(e) => {
-                              console.error('Chart image failed to load:', getChartImageUrl(selectedChart))
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
-                            <BarChart className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="font-semibold text-primary text-sm">
-                            {selectedChart.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {selectedChart.description || 'Chart/Infographic'}
-                          </p>
+                  {selectedChartId && selectedChart && uploadedFiles.length === 0 && (
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                      {/* Image du chart */}
+                      {getChartImageUrl(selectedChart) ? (
+                        <img 
+                          src={getChartImageUrl(selectedChart)} 
+                          alt={selectedChart.title}
+                          className="w-12 h-12 object-cover rounded-lg border border-border flex-shrink-0"
+                          onError={(e) => {
+                            console.error('Chart image failed to load:', getChartImageUrl(selectedChart))
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center flex-shrink-0">
+                          <BarChart className="h-6 w-6 text-muted-foreground" />
                         </div>
+                      )}
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-primary text-sm truncate">
+                          {selectedChart.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedChart.description || 'Chart/Infographic'}
+                        </p>
                       </div>
+                      
+                      {/* Bouton supprimer */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedChartId("")}
+                        className="flex-shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   )}
                   
                   {/* Preview for selected avatar */}
-                  {selectedAvatarId && selectedAvatar && (
-                    <div className="p-3 bg-muted/30 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        {getAvatarImageUrl(selectedAvatar) ? (
-                          <img 
-                            src={getAvatarImageUrl(selectedAvatar)} 
-                            alt={selectedAvatar.title || selectedAvatar.name}
-                            className="w-12 h-12 object-cover rounded-lg border border-border"
-                            onError={(e) => {
-                              console.error('Avatar image failed to load:', getAvatarImageUrl(selectedAvatar))
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
-                            <Users className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="font-semibold text-primary text-sm">
-                            {selectedAvatar.title || selectedAvatar.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {selectedAvatar.description || selectedAvatar.role}
-                          </p>
+                  {selectedAvatarId && selectedAvatar && uploadedFiles.length === 0 && (
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                      {/* Image de l'avatar */}
+                      {getAvatarImageUrl(selectedAvatar) ? (
+                        <img 
+                          src={getAvatarImageUrl(selectedAvatar)} 
+                          alt={selectedAvatar.title || selectedAvatar.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border flex-shrink-0"
+                          onError={(e) => {
+                            console.error('Avatar image failed to load:', getAvatarImageUrl(selectedAvatar))
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center flex-shrink-0">
+                          <Users className="h-6 w-6 text-muted-foreground" />
                         </div>
+                      )}
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-primary text-sm truncate">
+                          {selectedAvatar.title || selectedAvatar.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedAvatar.description || selectedAvatar.role}
+                        </p>
                       </div>
+                      
+                      {/* Bouton supprimer */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedAvatarId("")}
+                        className="flex-shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   )}
                   
@@ -3638,6 +3878,19 @@ export function DiverseMotionGeneratorInterface({
                         </div>
                       </div>
                     )}
+                    {selectedTemplate === 'custom' && (
+                      <div className="mt-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Custom Template Instructions
+                        </label>
+                        <Input
+                          value={customTemplateInstructions}
+                          onChange={(e) => setCustomTemplateInstructions(e.target.value)}
+                          placeholder="Enter your custom template instructions here..."
+                          className="bg-background border-border"
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Category-Specific Fields */}
@@ -3670,8 +3923,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Calm">🌊 Calm</SelectItem>
                         <SelectItem value="Poetic">🌸 Poetic</SelectItem>
                         <SelectItem value="Powerful">💪 Powerful</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {emotionalTone === 'Custom' && (
+                      <Input
+                        value={customEmotionalTone}
+                        onChange={(e) => setCustomEmotionalTone(e.target.value)}
+                        placeholder="Enter custom emotional tone..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3687,8 +3949,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Cinematic">🎬 Cinematic</SelectItem>
                         <SelectItem value="Stylized CG">🎨 Stylized CG</SelectItem>
                         <SelectItem value="Watercolor Softness">🎨 Watercolor Softness</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {visualStyle === 'Custom' && (
+                      <Input
+                        value={customVisualStyle}
+                        onChange={(e) => setCustomVisualStyle(e.target.value)}
+                        placeholder="Enter custom visual style..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3767,8 +4038,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Glossy Specular">✨ Glossy Specular</SelectItem>
                         <SelectItem value="Backlit Sunset">🌅 Backlit Sunset</SelectItem>
                         <SelectItem value="High-Contrast Spot">💡 High-Contrast Spot</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {lightingMood === 'Custom' && (
+                      <Input
+                        value={customLightingMood}
+                        onChange={(e) => setCustomLightingMood(e.target.value)}
+                        placeholder="Enter custom lighting mood..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3801,8 +4081,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Macro Precision">🔍 Macro Precision</SelectItem>
                         <SelectItem value="Orbit Reveal">🔄 Orbit Reveal</SelectItem>
                         <SelectItem value="Tracking Pull-Back">📹 Tracking Pull-Back</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {cameraType === 'Custom' && (
+                      <Input
+                        value={customCameraType}
+                        onChange={(e) => setCustomCameraType(e.target.value)}
+                        placeholder="Enter custom camera type..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3817,8 +4106,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Slow Motion 120 fps">🐌 Slow Motion 120 fps</SelectItem>
                         <SelectItem value="Cinematic 60 fps">🎬 Cinematic 60 fps</SelectItem>
                         <SelectItem value="Standard 30 fps">📺 Standard 30 fps</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {frameRate === 'Custom' && (
+                      <Input
+                        value={customFrameRate}
+                        onChange={(e) => setCustomFrameRate(e.target.value)}
+                        placeholder="Enter custom frame rate..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -3853,8 +4151,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Morph">🔄 Morph</SelectItem>
                         <SelectItem value="Emerge">🌟 Emerge</SelectItem>
                         <SelectItem value="Disintegrate → Form">💫 Disintegrate → Form</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {revealType === 'Custom' && (
+                      <Input
+                        value={customRevealType}
+                        onChange={(e) => setCustomRevealType(e.target.value)}
+                        placeholder="Enter custom reveal type..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3952,8 +4259,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="SFX only">🔊 SFX only</SelectItem>
                         <SelectItem value="Music driven">🎵 Music driven</SelectItem>
                         <SelectItem value="Hybrid">🎶 Hybrid</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {soundMode === 'Custom' && (
+                      <Input
+                        value={customSoundMode}
+                        onChange={(e) => setCustomSoundMode(e.target.value)}
+                        placeholder="Enter custom sound mode..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -3968,8 +4284,17 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Ambient minimal">🌊 Ambient minimal</SelectItem>
                         <SelectItem value="Percussive energy">🥁 Percussive energy</SelectItem>
                         <SelectItem value="Cinematic warm">🎬 Cinematic warm</SelectItem>
+                        <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
+                    {soundMood === 'Custom' && (
+                      <Input
+                        value={customSoundMood}
+                        onChange={(e) => setCustomSoundMood(e.target.value)}
+                        placeholder="Enter custom sound mood..."
+                        className="mt-2 bg-background border-border"
+                      />
+                    )}
                   </div>
                   
                   <div>
@@ -4163,6 +4488,14 @@ export function DiverseMotionGeneratorInterface({
                             ))}
                           </SelectContent>
                         </Select>
+                        {selectedTemplate === 'custom' && (
+                          <Input
+                            value={customTemplateInstructions}
+                            onChange={(e) => setCustomTemplateInstructions(e.target.value)}
+                            placeholder="Enter custom template instructions..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       {/* Product Name */}
@@ -4324,40 +4657,43 @@ export function DiverseMotionGeneratorInterface({
                             </div>
                           </div>
                         ) : uploadedFiles[0] && (
-                          <div>
-                            <label className="block text-sm font-medium text-blue-700 mb-2">
-                              Asset 1 Preview
-                            </label>
-                            <div className="relative">
-                              <div className="relative aspect-video rounded-lg overflow-hidden bg-black/5">
-                                {uploadedFiles[0].type.startsWith('image/') ? (
-                                  <img
-                                    src={assetPreviews[0]}
-                                    alt="Asset 1"
-                                    className="w-full h-full object-contain"
-                                  />
-                                ) : (
-                                  <video
-                                    src={assetPreviews[0]}
-                                    className="w-full h-full object-contain"
-                                    controls
-                                  />
-                                )}
-                              </div>
-                              <div className="mt-2 flex items-center justify-between">
-                                <p className="text-sm font-medium text-blue-700 truncate">
-                                  {uploadedFiles[0].name}
-                                </p>
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => removeUploadedAsset(0)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
+                          <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-300">
+                            {/* Miniature */}
+                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                              {uploadedFiles[0].type.startsWith('image/') ? (
+                                <img 
+                                  src={assetPreviews[0]} 
+                                  alt="Asset 1" 
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <video 
+                                  src={assetPreviews[0]} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              )}
                             </div>
+                            
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-blue-700 truncate">
+                                {uploadedFiles[0].name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(uploadedFiles[0].size / (1024 * 1024)).toFixed(2)} MB
+                              </p>
+                            </div>
+                            
+                            {/* Bouton supprimer */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeUploadedAsset(0)}
+                              className="flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         )}
                         
@@ -4515,40 +4851,43 @@ export function DiverseMotionGeneratorInterface({
                             )}
                           </div>
                         ) : uploadedFiles[1] && (
-                          <div>
-                            <label className="block text-sm font-medium text-green-700 mb-2">
-                              Asset 2 Preview
-                            </label>
-                            <div className="relative">
-                              <div className="relative aspect-video rounded-lg overflow-hidden bg-black/5">
-                                {uploadedFiles[1].type.startsWith('image/') ? (
-                                  <img
-                                    src={assetPreviews[1]}
-                                    alt="Asset 2"
-                                    className="w-full h-full object-contain"
-                                  />
-                                ) : (
-                                  <video
-                                    src={assetPreviews[1]}
-                                    className="w-full h-full object-contain"
-                                    controls
-                                  />
-                                )}
-                              </div>
-                              <div className="mt-2 flex items-center justify-between">
-                                <p className="text-sm font-medium text-green-700 truncate">
-                                  {uploadedFiles[1].name}
-                                </p>
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => removeUploadedAsset(1)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
+                          <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-green-300">
+                            {/* Miniature */}
+                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                              {uploadedFiles[1].type.startsWith('image/') ? (
+                                <img 
+                                  src={assetPreviews[1]} 
+                                  alt="Asset 2" 
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <video 
+                                  src={assetPreviews[1]} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              )}
                             </div>
+                            
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-green-700 truncate">
+                                {uploadedFiles[1].name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(uploadedFiles[1].size / (1024 * 1024)).toFixed(2)} MB
+                              </p>
+                            </div>
+                            
+                            {/* Bouton supprimer */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeUploadedAsset(1)}
+                              className="flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         )}
                         
@@ -4603,8 +4942,17 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="slide">📱 Slide</SelectItem>
                                 <SelectItem value="zoom">🔍 Zoom</SelectItem>
                                 <SelectItem value="blur">🌫️ Blur</SelectItem>
+                                <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
+                            {transitionType === 'custom' && (
+                              <Input
+                                value={customTransitionType}
+                                onChange={(e) => setCustomTransitionType(e.target.value)}
+                                placeholder="Enter custom transition type..."
+                                className="mt-2 bg-white border-border"
+                              />
+                            )}
                             <p className="text-xs text-purple-600 mt-1">
                               {transitionType === 'morph' && 'Smooth organic blend'}
                               {transitionType === 'cut' && 'Instant switch'}
@@ -4628,8 +4976,17 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="linear">➡️ Linear</SelectItem>
                                 <SelectItem value="snap">⚡ Snap (ease-out)</SelectItem>
                                 <SelectItem value="bounce">🎾 Bounce</SelectItem>
+                                <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
+                            {transitionEasing === 'custom' && (
+                              <Input
+                                value={customTransitionEasing}
+                                onChange={(e) => setCustomTransitionEasing(e.target.value)}
+                                placeholder="Enter custom easing curve..."
+                                className="mt-2 bg-white border-border"
+                              />
+                            )}
                           </div>
                         </div>
                         
@@ -4761,8 +5118,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Glossy Specular">✨ Glossy Specular</SelectItem>
                             <SelectItem value="Backlit Sunset">🌅 Backlit Sunset</SelectItem>
                             <SelectItem value="High-Contrast Spot">💡 High-Contrast Spot</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {lightingMood === 'Custom' && (
+                          <Input
+                            value={customLightingMood}
+                            onChange={(e) => setCustomLightingMood(e.target.value)}
+                            placeholder="Enter custom lighting mood..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -4795,8 +5161,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Macro Precision">🔍 Macro Precision</SelectItem>
                             <SelectItem value="Orbit Reveal">🔄 Orbit Reveal</SelectItem>
                             <SelectItem value="Tracking Pull-Back">📹 Tracking Pull-Back</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {cameraType === 'Custom' && (
+                          <Input
+                            value={customCameraType}
+                            onChange={(e) => setCustomCameraType(e.target.value)}
+                            placeholder="Enter custom camera type..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -4811,8 +5186,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Slow Motion 120 fps">🐌 Slow Motion 120 fps</SelectItem>
                             <SelectItem value="Cinematic 60 fps">🎬 Cinematic 60 fps</SelectItem>
                             <SelectItem value="Standard 30 fps">📺 Standard 30 fps</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {frameRate === 'Custom' && (
+                          <Input
+                            value={customFrameRate}
+                            onChange={(e) => setCustomFrameRate(e.target.value)}
+                            placeholder="Enter custom frame rate..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -4847,8 +5231,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Morph">🔄 Morph</SelectItem>
                             <SelectItem value="Emerge">🌟 Emerge</SelectItem>
                             <SelectItem value="Disintegrate → Form">💫 Disintegrate → Form</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {revealType === 'Custom' && (
+                          <Input
+                            value={customRevealType}
+                            onChange={(e) => setCustomRevealType(e.target.value)}
+                            placeholder="Enter custom reveal type..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -4946,8 +5339,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="SFX only">🔊 SFX only</SelectItem>
                             <SelectItem value="Music driven">🎵 Music driven</SelectItem>
                             <SelectItem value="Hybrid">🎶 Hybrid</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {soundMode === 'Custom' && (
+                          <Input
+                            value={customSoundMode}
+                            onChange={(e) => setCustomSoundMode(e.target.value)}
+                            placeholder="Enter custom sound mode..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -4962,8 +5364,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Ambient minimal">🌊 Ambient minimal</SelectItem>
                             <SelectItem value="Percussive energy">🥁 Percussive energy</SelectItem>
                             <SelectItem value="Cinematic warm">🎬 Cinematic warm</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {soundMood === 'Custom' && (
+                          <Input
+                            value={customSoundMood}
+                            onChange={(e) => setCustomSoundMood(e.target.value)}
+                            placeholder="Enter custom sound mood..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -5157,6 +5568,14 @@ export function DiverseMotionGeneratorInterface({
                             ))}
                           </SelectContent>
                         </Select>
+                        {selectedTemplate === 'custom' && (
+                          <Input
+                            value={customTemplateInstructions}
+                            onChange={(e) => setCustomTemplateInstructions(e.target.value)}
+                            placeholder="Enter custom template instructions..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       {/* Product Name */}
@@ -5350,40 +5769,43 @@ export function DiverseMotionGeneratorInterface({
                               )}
                             </div>
                           ) : uploadedFiles[index] && (
-                            <div>
-                              <label className="block text-sm font-medium text-purple-700 mb-2">
-                                Asset {index + 1} Preview
-                              </label>
-                              <div className="relative">
-                                <div className="relative aspect-video rounded-lg overflow-hidden bg-black/5">
-                                  {uploadedFiles[index].type.startsWith('image/') ? (
-                                    <img
-                                      src={assetPreviews[index]}
-                                      alt={`Asset ${index + 1}`}
-                                      className="w-full h-full object-contain"
-                                    />
-                                  ) : (
-                                    <video
-                                      src={assetPreviews[index]}
-                                      className="w-full h-full object-contain"
-                                      controls
-                                    />
-                                  )}
-                                </div>
-                                <div className="mt-2 flex items-center justify-between">
-                                  <p className="text-sm font-medium text-purple-700 truncate">
-                                    {uploadedFiles[index].name}
-                                  </p>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => removeUploadedAsset(index)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                            <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-300">
+                              {/* Miniature */}
+                              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                {uploadedFiles[index].type.startsWith('image/') ? (
+                                  <img 
+                                    src={assetPreviews[index]} 
+                                    alt={`Asset ${index + 1}`} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <video 
+                                    src={assetPreviews[index]} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                )}
                               </div>
+                              
+                              {/* Info */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-purple-700 truncate">
+                                  {uploadedFiles[index].name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(uploadedFiles[index].size / (1024 * 1024)).toFixed(2)} MB
+                                </p>
+                              </div>
+                              
+                              {/* Bouton supprimer */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeUploadedAsset(index)}
+                                className="flex-shrink-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             </div>
                           )}
                           
@@ -5474,8 +5896,17 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="overlapping">🔄 Overlapping</SelectItem>
                                 <SelectItem value="staggered">⚡ Staggered</SelectItem>
                                 <SelectItem value="synchronized">🎯 Synchronized</SelectItem>
+                                <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
+                            {sequenceStyle === 'custom' && (
+                              <Input
+                                value={customSequenceStyle}
+                                onChange={(e) => setCustomSequenceStyle(e.target.value)}
+                                placeholder="Enter custom sequence style..."
+                                className="mt-2 bg-white border-border"
+                              />
+                            )}
                             <p className="text-xs text-orange-600 mt-1">
                               {sequenceStyle === 'sequential' && 'One after another'}
                               {sequenceStyle === 'overlapping' && 'Blend between scenes'}
@@ -5498,8 +5929,17 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="slide">📱 Slide</SelectItem>
                                 <SelectItem value="zoom">🔍 Zoom</SelectItem>
                                 <SelectItem value="wipe">🌊 Wipe</SelectItem>
+                                <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
+                            {globalTransition === 'custom' && (
+                              <Input
+                                value={customGlobalTransition}
+                                onChange={(e) => setCustomGlobalTransition(e.target.value)}
+                                placeholder="Enter custom global transition..."
+                                className="mt-2 bg-white border-border"
+                              />
+                            )}
                           </div>
                         </div>
                         
@@ -5618,8 +6058,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Glossy Specular">✨ Glossy Specular</SelectItem>
                             <SelectItem value="Backlit Sunset">🌅 Backlit Sunset</SelectItem>
                             <SelectItem value="High-Contrast Spot">💡 High-Contrast Spot</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {lightingMood === 'Custom' && (
+                          <Input
+                            value={customLightingMood}
+                            onChange={(e) => setCustomLightingMood(e.target.value)}
+                            placeholder="Enter custom lighting mood..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -5652,8 +6101,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Macro Precision">🔍 Macro Precision</SelectItem>
                             <SelectItem value="Orbit Reveal">🔄 Orbit Reveal</SelectItem>
                             <SelectItem value="Tracking Pull-Back">📹 Tracking Pull-Back</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {cameraType === 'Custom' && (
+                          <Input
+                            value={customCameraType}
+                            onChange={(e) => setCustomCameraType(e.target.value)}
+                            placeholder="Enter custom camera type..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -5668,8 +6126,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Slow Motion 120 fps">🐌 Slow Motion 120 fps</SelectItem>
                             <SelectItem value="Cinematic 60 fps">🎬 Cinematic 60 fps</SelectItem>
                             <SelectItem value="Standard 30 fps">📺 Standard 30 fps</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {frameRate === 'Custom' && (
+                          <Input
+                            value={customFrameRate}
+                            onChange={(e) => setCustomFrameRate(e.target.value)}
+                            placeholder="Enter custom frame rate..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -5704,8 +6171,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Morph">🔄 Morph</SelectItem>
                             <SelectItem value="Emerge">🌟 Emerge</SelectItem>
                             <SelectItem value="Disintegrate → Form">💫 Disintegrate → Form</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {revealType === 'Custom' && (
+                          <Input
+                            value={customRevealType}
+                            onChange={(e) => setCustomRevealType(e.target.value)}
+                            placeholder="Enter custom reveal type..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -5803,8 +6279,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="SFX only">🔊 SFX only</SelectItem>
                             <SelectItem value="Music driven">🎵 Music driven</SelectItem>
                             <SelectItem value="Hybrid">🎶 Hybrid</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {soundMode === 'Custom' && (
+                          <Input
+                            value={customSoundMode}
+                            onChange={(e) => setCustomSoundMode(e.target.value)}
+                            placeholder="Enter custom sound mode..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>
@@ -5819,8 +6304,17 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Ambient minimal">🌊 Ambient minimal</SelectItem>
                             <SelectItem value="Percussive energy">🥁 Percussive energy</SelectItem>
                             <SelectItem value="Cinematic warm">🎬 Cinematic warm</SelectItem>
+                            <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
+                        {soundMood === 'Custom' && (
+                          <Input
+                            value={customSoundMood}
+                            onChange={(e) => setCustomSoundMood(e.target.value)}
+                            placeholder="Enter custom sound mood..."
+                            className="mt-2 bg-background border-border"
+                          />
+                        )}
                       </div>
                       
                       <div>

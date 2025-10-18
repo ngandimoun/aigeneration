@@ -233,7 +233,7 @@ export function AssetLibraryModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col space-y-4">
+        <div className="flex-1 flex flex-col space-y-4 min-h-0">
           {/* Search and Filters */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -265,7 +265,7 @@ export function AssetLibraryModal({
           </div>
 
           {/* Categories */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hover">
             {categories.map((category) => (
               <Button
                 key={category.id}
@@ -283,7 +283,7 @@ export function AssetLibraryModal({
           </div>
 
           {/* Assets Grid/List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-hover min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -296,7 +296,7 @@ export function AssetLibraryModal({
               </div>
             ) : (
               <div className={viewMode === 'grid' 
-                ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4' 
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
                 : 'space-y-2'
               }>
                 {filteredAssets.map((asset) => {

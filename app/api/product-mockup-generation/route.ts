@@ -215,6 +215,22 @@ export async function POST(request: NextRequest) {
     const brandColors = formData.get('brandColors')?.toString() ? JSON.parse(formData.get('brandColors')?.toString() || '{}') : { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' }
     const metadata = formData.get('metadata')?.toString() ? JSON.parse(formData.get('metadata')?.toString() || '{}') : {}
 
+    // Extract custom field values
+    const custom_art_direction = formData.get('custom_art_direction')?.toString() || null
+    const custom_composition = formData.get('custom_composition')?.toString() || null
+    const custom_object_count = formData.get('custom_object_count')?.toString() || null
+    const custom_shadow = formData.get('custom_shadow')?.toString() || null
+    const custom_font = formData.get('custom_font')?.toString() || null
+    const custom_weight = formData.get('custom_weight')?.toString() || null
+    const custom_text_effects = formData.get('custom_text_effects')?.toString() || null
+    const custom_text_case = formData.get('custom_text_case')?.toString() || null
+    const custom_highlight_style = formData.get('custom_highlight_style')?.toString() || null
+    const custom_accent_element = formData.get('custom_accent_element')?.toString() || null
+    const custom_motion_accent = formData.get('custom_motion_accent')?.toString() || null
+    const custom_layout_mode = formData.get('custom_layout_mode')?.toString() || null
+    const custom_product_count = formData.get('custom_product_count')?.toString() || null
+    const custom_platform = formData.get('custom_platform')?.toString() || null
+
     // Handle product photos upload
     const productPhotosPaths: string[] = []
     const productPhotos: File[] = []
@@ -418,8 +434,7 @@ export async function POST(request: NextRequest) {
       numImages: 1, // Generate product mockup
       model: model as any,
       hasImages: inputImageUrls.length > 0,
-      imageUrls: inputImageUrls,
-      logoImagePath: logoImagePath || undefined
+      imageUrls: inputImageUrls
     })
 
     const endTime = Date.now()
@@ -592,7 +607,23 @@ export async function POST(request: NextRequest) {
           generation_id: generationId,
           full_prompt: fullPrompt,
           settings: validatedData,
-          variations: variationsMetadata
+          variations: variationsMetadata,
+          custom_fields: {
+            art_direction: custom_art_direction || undefined,
+            composition: custom_composition || undefined,
+            object_count: custom_object_count || undefined,
+            shadow: custom_shadow || undefined,
+            font: custom_font || undefined,
+            weight: custom_weight || undefined,
+            text_effects: custom_text_effects || undefined,
+            text_case: custom_text_case || undefined,
+            highlight_style: custom_highlight_style || undefined,
+            accent_element: custom_accent_element || undefined,
+            motion_accent: custom_motion_accent || undefined,
+            layout_mode: custom_layout_mode || undefined,
+            product_count: custom_product_count || undefined,
+            platform: custom_platform || undefined
+          }
         },
         metadata: {
           generationTimestamp,

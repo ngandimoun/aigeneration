@@ -60,7 +60,6 @@ import { toast } from "sonner"
 import { useAuth } from "@/components/auth/auth-provider"
 import { GenerationLoading } from "@/components/ui/generation-loading"
 import { GenerationError } from "@/components/ui/generation-error"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface AvatarPersonaGeneratorInterfaceProps {
   onClose: () => void
@@ -1464,6 +1463,25 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   const [outfitPalette, setOutfitPalette] = useState<string>("")
   const [accessories, setAccessories] = useState<string[]>([])
   
+  // Custom field states
+  const [customEthnicity, setCustomEthnicity] = useState("")
+  const [customRole, setCustomRole] = useState("")
+  const [customAgeRange, setCustomAgeRange] = useState("")
+  const [customGenderExpression, setCustomGenderExpression] = useState("")
+  const [customArtDirection, setCustomArtDirection] = useState("")
+  const [customVisualInfluence, setCustomVisualInfluence] = useState("")
+  const [customLightingPreset, setCustomLightingPreset] = useState("")
+  const [customBackgroundEnvironment, setCustomBackgroundEnvironment] = useState("")
+  const [customMoodContext, setCustomMoodContext] = useState("")
+  const [customBodyType, setCustomBodyType] = useState("")
+  const [customSkinTone, setCustomSkinTone] = useState("")
+  const [customHairStyle, setCustomHairStyle] = useState("")
+  const [customHairColor, setCustomHairColor] = useState("")
+  const [customEyeColor, setCustomEyeColor] = useState("")
+  const [customEyeShape, setCustomEyeShape] = useState("")
+  const [customOutfitCategory, setCustomOutfitCategory] = useState("")
+  const [customAccessories, setCustomAccessories] = useState("")
+  
   // Reference Images
   const [referenceImages, setReferenceImages] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
@@ -1786,6 +1804,25 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       formData.append('logoPlacement', JSON.stringify(logoPlacement))
       formData.append('logoDescription', logoDescription)
       
+      // Add custom field values if provided
+      if (customEthnicity) formData.append('custom_ethnicity', customEthnicity)
+      if (customRole) formData.append('custom_role', customRole)
+      if (customAgeRange) formData.append('custom_age_range', customAgeRange)
+      if (customGenderExpression) formData.append('custom_gender_expression', customGenderExpression)
+      if (customArtDirection) formData.append('custom_art_direction', customArtDirection)
+      if (customVisualInfluence) formData.append('custom_visual_influence', customVisualInfluence)
+      if (customLightingPreset) formData.append('custom_lighting_preset', customLightingPreset)
+      if (customBackgroundEnvironment) formData.append('custom_background_environment', customBackgroundEnvironment)
+      if (customMoodContext) formData.append('custom_mood_context', customMoodContext)
+      if (customBodyType) formData.append('custom_body_type', customBodyType)
+      if (customSkinTone) formData.append('custom_skin_tone', customSkinTone)
+      if (customHairStyle) formData.append('custom_hair_style', customHairStyle)
+      if (customHairColor) formData.append('custom_hair_color', customHairColor)
+      if (customEyeColor) formData.append('custom_eye_color', customEyeColor)
+      if (customEyeShape) formData.append('custom_eye_shape', customEyeShape)
+      if (customOutfitCategory) formData.append('custom_outfit_category', customOutfitCategory)
+      if (customAccessories) formData.append('custom_accessories', customAccessories)
+      
       // Add reference images
       referenceImages.forEach((file, index) => {
         formData.append(`referenceImage_${index}`, file)
@@ -1923,8 +1960,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {ethnicity === 'custom' && (
+                <Input
+                  value={customEthnicity}
+                  onChange={(e) => setCustomEthnicity(e.target.value)}
+                  placeholder="Enter custom ethnicity..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             {/* Role/Archetype */}
@@ -1952,8 +2003,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {roleArchetype === 'custom' && (
+                <Input
+                  value={customRole}
+                  onChange={(e) => setCustomRole(e.target.value)}
+                  placeholder="Enter custom role..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -1980,8 +2045,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {ageRange === 'custom' && (
+                <Input
+                  value={customAgeRange}
+                  onChange={(e) => setCustomAgeRange(e.target.value)}
+                  placeholder="Enter custom age range..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             {/* Gender Expression */}
@@ -2008,6 +2087,14 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   ))}
                 </SelectContent>
               </Select>
+              {genderExpression === 'Custom' && (
+                <Input
+                  value={customGenderExpression}
+                  onChange={(e) => setCustomGenderExpression(e.target.value)}
+                  placeholder="Enter custom gender expression..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -2115,8 +2202,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   <span className="text-sm">Clay / Toy Style</span>
                 </div>
               </SelectItem>
+              <SelectItem value="custom">
+                <div className="flex items-center gap-2">
+                  <span>✏️</span>
+                  <span>Custom</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
+          {artDirection === 'custom' && (
+            <Input
+              value={customArtDirection}
+              onChange={(e) => setCustomArtDirection(e.target.value)}
+              placeholder="Enter custom art direction..."
+              className="h-8 text-xs mt-2"
+            />
+          )}
         </div>
 
         {/* Visual Influence Field */}
@@ -2165,8 +2266,27 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="custom">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-muted rounded border flex items-center justify-center text-xs">
+                    ✏️
+                  </div>
+                  <div>
+                    <div className="font-medium">Custom</div>
+                    <div className="text-xs text-muted-foreground">Enter custom visual influence</div>
+                  </div>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
+          {visualInfluence === 'custom' && (
+            <Input
+              value={customVisualInfluence}
+              onChange={(e) => setCustomVisualInfluence(e.target.value)}
+              placeholder="Enter custom visual influence..."
+              className="h-8 text-xs mt-2"
+            />
+          )}
         </div>
 
         {/* Lighting Presets Field */}
@@ -2215,8 +2335,27 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="custom">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-200 to-orange-300 rounded border flex items-center justify-center text-xs">
+                    ✏️
+                  </div>
+                  <div>
+                    <div className="font-medium">Custom</div>
+                    <div className="text-xs text-muted-foreground">Enter custom lighting preset</div>
+                  </div>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
+          {lightingPreset === 'custom' && (
+            <Input
+              value={customLightingPreset}
+              onChange={(e) => setCustomLightingPreset(e.target.value)}
+              placeholder="Enter custom lighting preset..."
+              className="h-8 text-xs mt-2"
+            />
+          )}
         </div>
 
         {/* Background Environment Field */}
@@ -2265,8 +2404,27 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="custom">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-200 to-blue-300 rounded border flex items-center justify-center text-xs">
+                    ✏️
+                  </div>
+                  <div>
+                    <div className="font-medium">Custom</div>
+                    <div className="text-xs text-muted-foreground">Enter custom background environment</div>
+                  </div>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
+          {backgroundEnvironment === 'custom' && (
+            <Input
+              value={customBackgroundEnvironment}
+              onChange={(e) => setCustomBackgroundEnvironment(e.target.value)}
+              placeholder="Enter custom background environment..."
+              className="h-8 text-xs mt-2"
+            />
+          )}
         </div>
 
         {/* Mood Context Field */}
@@ -2315,8 +2473,27 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="custom">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-200 to-pink-300 rounded border flex items-center justify-center text-xs">
+                    ✏️
+                  </div>
+                  <div>
+                    <div className="font-medium">Custom</div>
+                    <div className="text-xs text-muted-foreground">Enter custom mood context</div>
+                  </div>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
+          {moodContext === 'custom' && (
+            <Input
+              value={customMoodContext}
+              onChange={(e) => setCustomMoodContext(e.target.value)}
+              placeholder="Enter custom mood context..."
+              className="h-8 text-xs mt-2"
+            />
+          )}
         </div>
         </div>
 
@@ -2352,6 +2529,14 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                   ))}
                 </SelectContent>
               </Select>
+              {bodyType === 'Custom' && (
+                <Input
+                  value={customBodyType}
+                  onChange={(e) => setCustomBodyType(e.target.value)}
+                  placeholder="Enter custom body type..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             {/* Skin Tone */}
@@ -2379,8 +2564,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {skinTone === 'custom' && (
+                <Input
+                  value={customSkinTone}
+                  onChange={(e) => setCustomSkinTone(e.target.value)}
+                  placeholder="Enter custom skin tone..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -2417,8 +2616,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </SelectItem>
                     ))
                   }
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {hairStyle === 'custom' && (
+                <Input
+                  value={customHairStyle}
+                  onChange={(e) => setCustomHairStyle(e.target.value)}
+                  placeholder="Enter custom hair style..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             {/* Hair Color */}
@@ -2446,8 +2659,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {hairColor === 'custom' && (
+                <Input
+                  value={customHairColor}
+                  onChange={(e) => setCustomHairColor(e.target.value)}
+                  placeholder="Enter custom hair color..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -2477,8 +2704,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {eyeColor === 'custom' && (
+                <Input
+                  value={customEyeColor}
+                  onChange={(e) => setCustomEyeColor(e.target.value)}
+                  placeholder="Enter custom eye color..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             {/* Eye Shape */}
@@ -2503,8 +2744,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {eyeShape === 'custom' && (
+                <Input
+                  value={customEyeShape}
+                  onChange={(e) => setCustomEyeShape(e.target.value)}
+                  placeholder="Enter custom eye shape..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -2531,8 +2786,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {outfitCategory === 'custom' && (
+                <Input
+                  value={customOutfitCategory}
+                  onChange={(e) => setCustomOutfitCategory(e.target.value)}
+                  placeholder="Enter custom outfit category..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
 
             {/* Accessories */}
@@ -2554,8 +2823,22 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <span>✏️</span>
+                      <span>Custom</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {accessories.length > 0 && accessories[0] === 'custom' && (
+                <Input
+                  value={customAccessories}
+                  onChange={(e) => setCustomAccessories(e.target.value)}
+                  placeholder="Enter custom accessories..."
+                  className="h-8 text-xs mt-2"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -2806,8 +3089,6 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
         </div>
       </div>
 
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="avatars_personas" userId={user?.id || ''} className="mt-8" />
     </TooltipProvider>
   )
 }
