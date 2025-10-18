@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { mutate } from 'swr'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -39,10 +40,11 @@ import {
   FileAudio,
   ExternalLink
 } from "lucide-react"
+import { OPENAI_VOICES, type OpenAIVoice } from "@/lib/openai/text-to-speech"
 import { useToast} from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
-import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { buildOpenAIInstructions } from "@/lib/utils/openai-voice-instructions-builder"
 import { PreviousGenerations } from "@/components/ui/previous-generations"
 
 interface VoiceoverGeneratorInterfaceProps {
@@ -50,21 +52,6 @@ interface VoiceoverGeneratorInterfaceProps {
   projectTitle?: string
 }
 
-interface DreamCutVoice {
-  voice_id: string
-  name: string
-  description: string
-  category: string
-  language: string
-  gender: string
-  age: string
-  accent: string
-  tone: string
-  mood: string
-  style: string
-  preview_url?: string
-  created_at: string
-}
 
 interface VoiceoverPreview {
   id: string
@@ -152,38 +139,209 @@ const EMOTION_OPTIONS = [
   { value: "gentle", label: "Gentle", icon: "🕊️" }
 ]
 
-// ElevenLabs API Output Format Options
-const OUTPUT_FORMAT_OPTIONS = [
-  { value: "mp3_22050_32", label: "🎵 MP3 22.05kHz 32kbps" },
-  { value: "mp3_44100_32", label: "🎵 MP3 44.1kHz 32kbps" },
-  { value: "mp3_44100_64", label: "🎵 MP3 44.1kHz 64kbps" },
-  { value: "mp3_44100_96", label: "🎵 MP3 44.1kHz 96kbps" },
-  { value: "mp3_44100_128", label: "⭐ MP3 44.1kHz 128kbps (Recommended)" },
-  { value: "mp3_44100_192", label: "💎 MP3 44.1kHz 192kbps (Creator+)" },
-  { value: "pcm_8000", label: "🔊 PCM 8kHz" },
-  { value: "pcm_16000", label: "🔊 PCM 16kHz" },
-  { value: "pcm_22050", label: "🔊 PCM 22.05kHz" },
-  { value: "pcm_24000", label: "🔊 PCM 24kHz" },
-  { value: "pcm_44100", label: "💎 PCM 44.1kHz (Pro+)" },
-  { value: "pcm_48000", label: "💎 PCM 48kHz (Pro+)" },
-  { value: "ulaw_8000", label: "📞 μ-law 8kHz (Twilio)" },
-  { value: "alaw_8000", label: "📞 A-law 8kHz" },
-  { value: "opus_48000_32", label: "🎧 Opus 48kHz 32kbps" },
-  { value: "opus_48000_64", label: "🎧 Opus 48kHz 64kbps" },
-  { value: "opus_48000_96", label: "🎧 Opus 48kHz 96kbps" },
-  { value: "opus_48000_128", label: "🎧 Opus 48kHz 128kbps" },
-  { value: "opus_48000_192", label: "🎧 Opus 48kHz 192kbps" }
+// Voice Identity Options
+const GENDER_OPTIONS = [
+  "👨 Male",
+  "👩 Female", 
+  "⚧️ Androgynous",
+  "🌈 Non-binary",
+  "🤖 Robotic",
+  "👹 Creature",
+  "👶 Child-like",
+  "👴 Elderly",
+  "🎧 ASMR Whisper"
 ]
 
-
-// Streaming Latency Optimization Options
-const LATENCY_OPTIONS = [
-  { value: 0, label: "⚙️ Default (No optimization)" },
-  { value: 1, label: "⚡ Normal optimization (~50% improvement)" },
-  { value: 2, label: "🚀 Strong optimization (~75% improvement)" },
-  { value: 3, label: "🔥 Max optimization" },
-  { value: 4, label: "💥 Max optimization + No text normalizer" }
+const AGE_OPTIONS = [
+  "👶 Child",
+  "🧒 Teen",
+  "👨 Young Adult", 
+  "👩 Mid-aged",
+  "👴 Senior"
 ]
+
+const ACCENT_OPTIONS = [
+  "🇺🇸 Neutral American",
+  "🇬🇧 British (RP)",
+  "🇬🇧 British (Cockney)",
+  "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish",
+  "🇮🇪 Irish",
+  "🇦🇺 Australian",
+  "🇨🇦 Canadian",
+  "🇺🇸 Southern US",
+  "🇺🇸 New York",
+  "🇺🇸 California",
+  "🇺🇸 Texas",
+  "🇮🇳 Indian",
+  "🇿🇦 South African",
+  "🇳🇿 New Zealand",
+  "🇫🇷 French",
+  "🇩🇪 German",
+  "🇮🇹 Italian",
+  "🇪🇸 Spanish",
+  "🇷🇺 Russian",
+  "🇯🇵 Japanese",
+  "🇨🇳 Chinese",
+  "🇰🇷 Korean",
+  "🇸🇦 Arabic",
+  "🇧🇷 Brazilian Portuguese",
+  "🇲🇽 Mexican Spanish",
+  "🇦🇷 Argentine Spanish",
+  "🌍 No Accent (Neutral)"
+]
+
+const TONE_OPTIONS = [
+  "🔥 Warm",
+  "📢 Deep", 
+  "🌊 Smooth",
+  "🗣️ Raspy",
+  "☀️ Light",
+  "💨 Breathy",
+  "🔧 Metallic",
+  "📻 Resonant",
+  "❄️ Crisp",
+  "🍯 Mellow",
+  "⚡ Sharp",
+  "🌸 Soft",
+  "💎 Rich",
+  "💧 Clear",
+  "🎤 Husky",
+  "🦋 Velvety",
+  "🏔️ Gravelly",
+  "🕸️ Silky",
+  "🧊 Brittle",
+  "🎧 ASMR Whisper",
+  "🧘 Meditation Tone",
+  "😴 Sleepy Voice"
+]
+
+const PACING_OPTIONS = [
+  "🐌 Slow",
+  "💬 Conversational",
+  "🏃 Fast", 
+  "📏 Measured",
+  "🎭 Erratic"
+]
+
+const FIDELITY_OPTIONS = [
+  "🎙️ Studio",
+  "📺 Broadcast",
+  "📻 Vintage",
+  "📞 Phone",
+  "🤖 Robotic",
+  "💎 High Definition",
+  "💼 Professional",
+  "🏠 Consumer",
+  "🎙️ Podcast Quality",
+  "📻 Radio Quality",
+  "📺 TV Quality",
+  "📱 Streaming Quality",
+  "🎧 ASMR Quality",
+  "🧘 Meditation Quality",
+  "📻 Lo-fi",
+  "💎 Hi-fi"
+]
+
+// Emotional DNA Options
+const MOOD_OPTIONS = [
+  { value: "calm", label: "Calm", icon: "🌿" },
+  { value: "energetic", label: "Energetic", icon: "⚡" },
+  { value: "sad", label: "Sad", icon: "💧" },
+  { value: "dramatic", label: "Dramatic", icon: "🔥" },
+  { value: "playful", label: "Playful", icon: "🎈" },
+  { value: "confident", label: "Confident", icon: "💪" },
+  { value: "mysterious", label: "Mysterious", icon: "🌑" },
+  { value: "hopeful", label: "Hopeful", icon: "🌅" },
+  { value: "relaxed", label: "Relaxed", icon: "🧘" },
+  { value: "sleepy", label: "Sleepy", icon: "😴" },
+  { value: "soothing", label: "Soothing", icon: "🕊️" },
+  { value: "meditative", label: "Meditative", icon: "🧘‍♀️" },
+  { value: "whisper", label: "Whisper", icon: "🤫" },
+  { value: "intimate", label: "Intimate", icon: "💕" },
+  { value: "professional", label: "Professional", icon: "👔" },
+  { value: "friendly", label: "Friendly", icon: "😊" },
+  { value: "authoritative", label: "Authoritative", icon: "👑" },
+  { value: "gentle", label: "Gentle", icon: "🕊️" }
+]
+
+const ROLE_OPTIONS = [
+  "🦸 Hero",
+  "😈 Villain",
+  "🧙 Mentor",
+  "📖 Narrator",
+  "👨‍🏫 Teacher",
+  "📢 Announcer",
+  "🤖 AI Guide",
+  "🤝 Sidekick",
+  "🦸‍♂️ Protagonist",
+  "🦹 Antagonist",
+  "👥 Supporting Character",
+  "👤 Background Character",
+  "📞 Customer Service Rep",
+  "💬 Virtual Assistant",
+  "🎙️ Podcast Host",
+  "📺 News Reporter",
+  "🎬 Documentary Narrator",
+  "📢 Commercial Voice",
+  "📚 Audiobook Reader",
+  "💻 E-learning Instructor",
+  "📻 Radio DJ",
+  "📚 Storyteller",
+  "🧘 Meditation Guide",
+  "🎧 ASMR Artist",
+  "😴 Sleep Storyteller",
+  "🧘 Relaxation Coach"
+]
+
+const STYLE_OPTIONS = [
+  "🌿 Natural",
+  "🎬 Cinematic",
+  "🎭 Theatrical",
+  "😏 Sarcastic",
+  "💭 Dreamy",
+  "🤫 Whispered",
+  "👑 Commanding",
+  "💬 Conversational",
+  "👔 Formal",
+  "😊 Casual",
+  "🎭 Dramatic",
+  "📏 Monotone",
+  "🎪 Expressive",
+  "🌸 Subtle",
+  "🎪 Over-the-top",
+  "💕 Intimate",
+  "💼 Professional",
+  "😊 Friendly",
+  "👑 Authoritative",
+  "🕊️ Gentle",
+  "🎧 ASMR Style",
+  "🧘 Meditation Style",
+  "😴 Sleep Story Style",
+  "🌊 Relaxation Style"
+]
+
+const AUDIO_QUALITY_OPTIONS = [
+  "🎙️ Studio-grade",
+  "🎬 Cinematic Mix",
+  "📻 Lo-fi",
+  "📞 Phone",
+  "📼 Vintage Tape",
+  "💎 High Definition",
+  "💼 Professional",
+  "📺 Broadcast Quality",
+  "🎙️ Podcast Quality",
+  "📻 Radio Quality",
+  "📺 TV Quality",
+  "📱 Streaming Quality",
+  "🎧 ASMR Quality",
+  "🧘 Meditation Quality",
+  "😴 Sleep Quality",
+  "🌊 Relaxation Quality",
+  "🏠 Consumer Grade",
+  "💎 Hi-fi",
+  "🔊 Lossless"
+]
+
 
 export function VoiceoverGeneratorInterface({ onClose, projectTitle }: VoiceoverGeneratorInterfaceProps) {
   const { toast } = useToast()
@@ -192,27 +350,30 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   // Voiceover Configuration
   const [prompt, setPrompt] = useState("")
   const [language, setLanguage] = useState("English")
-  const [selectedVoice, setSelectedVoice] = useState<DreamCutVoice | null>(null)
-  
-  // ElevenLabs Voice Settings (mapped to actual API parameters)
-  const [stability, setStability] = useState([50]) // 0-100 mapped to 0-1
-  const [similarityBoost, setSimilarityBoost] = useState([75]) // 0-100 mapped to 0-1
-  const [style, setStyle] = useState([0]) // 0-100 mapped to 0-1
-  const [useSpeakerBoost, setUseSpeakerBoost] = useState(true)
-  
-  // Additional ElevenLabs API parameters
-  const [outputFormat, setOutputFormat] = useState("mp3_44100_128")
-  const [optimizeStreamingLatency, setOptimizeStreamingLatency] = useState(0)
-  const [enableLogging, setEnableLogging] = useState(true)
-  const [modelId] = useState("eleven_v3") // Hardcoded to eleven_v3
+  const [selectedVoice, setSelectedVoice] = useState<OpenAIVoice | null>(null)
   
   
-  const [emotion, setEmotion] = useState("")
   const [useCase, setUseCase] = useState("")
   
-  // DreamCut Voice Library
-  const [dreamCutVoices, setDreamCutVoices] = useState<DreamCutVoice[]>([])
-  const [loadingVoices, setLoadingVoices] = useState(true)
+  // New Voice Identity states
+  const [gender, setGender] = useState("")
+  const [perceivedAge, setPerceivedAge] = useState("")
+  const [accent, setAccent] = useState("")
+  const [tone, setTone] = useState("")
+  const [pitchLevel, setPitchLevel] = useState([50])
+  const [pacing, setPacing] = useState("")
+  const [fidelity, setFidelity] = useState("")
+  
+  // New Emotional DNA states
+  const [moodContext, setMoodContext] = useState("")
+  const [emotionalWeight, setEmotionalWeight] = useState([50])
+  const [characterRole, setCharacterRole] = useState("")
+  const [performanceStyle, setPerformanceStyle] = useState("")
+  
+  // Voice Preview Audio
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
+
   
   // Preview & Fine-tuning
   const [isGenerating, setIsGenerating] = useState(false)
@@ -226,29 +387,32 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
   const [description, setDescription] = useState("")
   const [selectedArtifact, setSelectedArtifact] = useState("")
 
-  // Load DreamCut voices on component mount
-  useEffect(() => {
-    const loadDreamCutVoices = async () => {
-      try {
-        const response = await fetch('/api/voice-creation')
-        if (response.ok) {
-          const data = await response.json()
-          setDreamCutVoices(data.voiceCreations || [])
-        }
-      } catch (error) {
-        console.error('Failed to load DreamCut voices:', error)
-        toast({
-          title: "Failed to load voices",
-          description: "Could not load your DreamCut voice library.",
-          variant: "destructive"
-        })
-      } finally {
-        setLoadingVoices(false)
-      }
-    }
 
-    loadDreamCutVoices()
-  }, [toast])
+  // Smart behavior logic for voice parameters
+  const [smartMessage, setSmartMessage] = useState("")
+  
+  useEffect(() => {
+    let message = ""
+    
+    if (gender === "Robotic" || gender === "Creature") {
+      message = "Robotic/Creature voice selected — accent options disabled, modulation depth available."
+    } else if (gender === "ASMR Whisper" || tone === "ASMR Whisper") {
+      message = "ASMR whisper detected — soft speaking mode, enhanced audio processing for relaxation."
+    } else if (fidelity === "Broadcast") {
+      message = "Broadcast audio quality selected — room reverb toggle available."
+    } else if (moodContext === "playful") {
+      message = "Playful mood selected — pitch and pacing automatically raised."
+    } else if (performanceStyle === "theatrical") {
+      message = "Theatrical delivery style selected — natural dynamic range applied."
+    } else if (characterRole === "ASMR Artist") {
+      message = "ASMR content detected — whisper mode recommended, background sounds available."
+    } else if (fidelity === "ASMR Quality" || fidelity === "Meditation Quality") {
+      message = "ASMR/Meditation audio quality selected — enhanced binaural audio, whisper-friendly processing."
+    }
+    
+    setSmartMessage(message)
+  }, [gender, fidelity, moodContext, performanceStyle, characterRole, tone])
+
 
   const handleGenerateVoiceover = async () => {
     if (!prompt.trim()) {
@@ -260,61 +424,91 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
       return
     }
 
+    if (!selectedVoice?.id) {
+      toast({
+        title: "Voice selection required",
+        description: "Please select an OpenAI voice.",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsGenerating(true)
     try {
-      // Collect all creative fields
-      const allFields = {
-        title: title || `Voiceover_${Date.now()}`,
-        description,
-        language,
-        voice_id: selectedVoice?.voice_id,
-        emotion,
-        use_case: useCase,
-        model_id: modelId,
-        stability: stability[0] / 100,
-        similarity_boost: similarityBoost[0] / 100,
-        style: style[0] / 100,
-        use_speaker_boost: useSpeakerBoost,
-        output_format: outputFormat,
-        optimize_streaming_latency: optimizeStreamingLatency,
-        enable_logging: enableLogging
-      }
+      console.log('🎤 [VOICEOVER] Starting voiceover generation...')
+      console.log('📝 [VOICEOVER] Selected voice:', selectedVoice?.name)
+      console.log('🆔 [VOICEOVER] Voice ID being used:', selectedVoice?.id)
+      console.log('📝 [VOICEOVER] Text length:', prompt.length)
 
-      // Filter to only filled fields
-      const filledFields = filterFilledFields(allFields)
-
-      // Call ElevenLabs API to generate voiceover with proper parameter mapping
-      const elevenLabsResponse = await fetch('/api/elevenlabs/text-to-voice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: prompt,
-          voice_id: selectedVoice?.voice_id || "default",
-          model_id: modelId,
-          language_code: language === "English" ? "en" : language.toLowerCase(),
-          voice_settings: {
-            stability: stability[0] / 100, // Convert 0-100 to 0-1
-            similarity_boost: similarityBoost[0] / 100, // Convert 0-100 to 0-1
-            style: style[0] / 100, // Convert 0-100 to 0-1
-            use_speaker_boost: useSpeakerBoost
-          },
-          output_format: outputFormat,
-          optimize_streaming_latency: optimizeStreamingLatency,
-          enable_logging: enableLogging
-        })
+      // Build instructions from UI parameters
+      const instructions = buildOpenAIInstructions({
+        gender,
+        age: perceivedAge,
+        accent,
+        tone,
+        pitch: pitchLevel[0],
+        pacing,
+        mood: moodContext,
+        emotionalWeight: emotionalWeight[0],
+        role: characterRole,
+        style: performanceStyle,
+        useCase,
+        language
       })
 
-      if (!elevenLabsResponse.ok) {
-        throw new Error('ElevenLabs API call failed')
+      console.log('✨ [VOICEOVER] Generated instructions:', instructions.substring(0, 200) + '...')
+
+      // Prepare voiceover data
+      const voiceoverData = {
+        title: title || `${selectedVoice?.name || 'Voiceover'} - ${new Date().toLocaleString()}`,
+        description: description || `Voiceover generated with ${selectedVoice?.name}`,
+        prompt: prompt.trim(), // Use original prompt
+        language: language,
+        voice_id: selectedVoice?.id,
+        use_case: useCase,
+        content: {
+          original_prompt: prompt, // User's original input
+          instructions: instructions, // OpenAI instructions
+          voice_identity: {
+            gender,
+            age: perceivedAge,
+            accent,
+            tone,
+            pitch: pitchLevel[0],
+            pacing,
+            fidelity
+          },
+          emotional_dna: {
+            mood: moodContext,
+            emotional_weight: emotionalWeight[0],
+            role: characterRole,
+            style: performanceStyle
+          }
+        }
       }
 
-      const audioBlob = await elevenLabsResponse.blob()
-      const audioUrl = URL.createObjectURL(audioBlob)
-      
-      // Create preview object
+      console.log('🌐 [VOICEOVER] Calling /api/voiceovers...')
+
+      // Call our voiceover generation API
+      const response = await fetch('/api/voiceovers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(voiceoverData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ [VOICEOVER] API error:', errorData)
+        throw new Error(errorData.error || 'Voiceover generation failed')
+      }
+
+      const result = await response.json()
+      console.log('✅ [VOICEOVER] Generation successful:', result)
+
+      // Create preview object from the generated voiceover
       const preview: VoiceoverPreview = {
-        id: `voiceover_${Date.now()}`,
-        audio_base_64: audioUrl,
+        id: result.voiceover.id,
+        audio_base_64: result.voiceover.generated_audio_path,
         media_type: "audio/mpeg",
         duration_secs: 5.2, // This would be calculated from actual audio
         language: language,
@@ -325,14 +519,18 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
       setSelectedPreview(preview.id)
       
       toast({
-        title: "Voiceover generated!",
-        description: "Your voiceover is ready for review."
+        title: "Voiceover generated successfully!",
+        description: `Your voiceover has been saved to your library.`
       })
+
+      // Refresh the library to show the new voiceover
+      mutate('/api/voiceovers')
+
     } catch (error) {
-      console.error('Voiceover generation failed:', error)
+      console.error('❌ [VOICEOVER] Generation failed:', error)
       toast({
         title: "Generation failed",
-        description: "Please try again or check your ElevenLabs API configuration.",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -353,105 +551,70 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
     }
   }
 
-  const handleSaveVoiceover = async () => {
-    if (!prompt.trim()) {
-      toast({
-        title: "Prompt required",
-        description: "Please enter a prompt describing the voiceover you want to create.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    // Generate voiceover first
-    setIsGenerating(true)
-    try {
-      // Call ElevenLabs API to generate voiceover with proper parameter mapping
-      const elevenLabsResponse = await fetch('/api/elevenlabs/text-to-voice', {
+  const handlePlayVoicePreview = (voiceId: string) => {
+    if (playingVoiceId === voiceId) {
+      // Pause current voice
+      voiceAudioRef.current?.pause()
+      setPlayingVoiceId(null)
+    } else {
+      // Stop any currently playing voice
+      if (playingVoiceId) {
+        voiceAudioRef.current?.pause()
+      }
+      
+      // Play new voice
+      setPlayingVoiceId(voiceId)
+      
+      // Generate a sample audio for preview using OpenAI TTS
+      const sampleText = "Hello, this is a preview of my voice. I can speak naturally and clearly."
+      
+      fetch('/api/openai/text-to-speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: prompt,
-          voice_id: selectedVoice?.voice_id || "default",
-          model_id: modelId,
-          language_code: language === "English" ? "en" : language.toLowerCase(),
-          voice_settings: {
-            stability: stability[0] / 100, // Convert 0-100 to 0-1
-            similarity_boost: similarityBoost[0] / 100, // Convert 0-100 to 0-1
-            style: style[0] / 100, // Convert 0-100 to 0-1
-            use_speaker_boost: useSpeakerBoost
-          },
-          output_format: outputFormat,
-          optimize_streaming_latency: optimizeStreamingLatency,
-          enable_logging: enableLogging
+          text: sampleText,
+          voice: voiceId,
+          response_format: 'mp3'
         })
       })
-
-      if (!elevenLabsResponse.ok) {
-        throw new Error('ElevenLabs API call failed')
-      }
-
-      const audioBlob = await elevenLabsResponse.blob()
-      const audioUrl = URL.createObjectURL(audioBlob)
-      
-      const voiceoverData = {
-        title: title || `Voiceover_${Date.now()}`,
-        description,
-        prompt,
-        language,
-        voice_id: selectedVoice?.voice_id,
-        emotion,
-        use_case: useCase,
-        audio_url: audioUrl,
-        content: {
-          dreamcut_voice: selectedVoice,
-          elevenlabs_settings: {
-            stability: stability[0] / 100,
-            similarity_boost: similarityBoost[0] / 100,
-            style: style[0] / 100,
-            use_speaker_boost: useSpeakerBoost,
-            model_id: modelId,
-            output_format: outputFormat,
-            optimize_streaming_latency: optimizeStreamingLatency,
-            enable_logging: enableLogging
-          }
-        },
-        metadata: {
-          generated_at: new Date().toISOString(),
-          model_used: modelId,
-          dreamcut_voice_name: selectedVoice?.name,
-          output_format: outputFormat,
-          api_version: "v1"
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
-      }
-
-      // API call to save voiceover
-      const response = await fetch('/api/voiceovers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(voiceoverData)
+        return response.blob()
       })
-
-      if (response.ok) {
-        toast({
-          title: "Voiceover generated successfully!",
-          description: `Voiceover '${title || 'Unnamed Voiceover'}' has been generated and saved to your library.`
+      .then(blob => {
+        const audioUrl = URL.createObjectURL(blob)
+        const audio = new Audio(audioUrl)
+        voiceAudioRef.current = audio
+        
+        audio.play().catch(error => {
+          console.error('Error playing voice preview:', error)
+          setPlayingVoiceId(null)
         })
-        onClose()
-      } else {
-        throw new Error('Failed to save voiceover')
-      }
-    } catch (error) {
-      console.error('Voiceover generation failed:', error)
-      toast({
-        title: "Generation failed",
-        description: "Please try again or check your ElevenLabs API configuration.",
-        variant: "destructive"
+        
+        audio.onended = () => {
+          setPlayingVoiceId(null)
+          URL.revokeObjectURL(audioUrl)
+        }
+        audio.onerror = () => {
+          console.error('Audio playback error')
+          setPlayingVoiceId(null)
+          URL.revokeObjectURL(audioUrl)
+        }
       })
-    } finally {
-      setIsGenerating(false)
+      .catch(error => {
+        console.error('Error generating voice preview:', error)
+        setPlayingVoiceId(null)
+        toast({
+          title: "Preview failed",
+          description: "Could not generate voice preview. Please try again.",
+          variant: "destructive"
+        })
+      })
     }
   }
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-1">
@@ -461,7 +624,7 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div>
               <h2 className="text-xs font-bold">Voiceover Studio</h2>
-              <p className="text-[10px] text-muted-foreground">Generate high-quality voiceovers using your DreamCut voice library and ElevenLabs AI.</p>
+              <p className="text-[10px] text-muted-foreground">Generate high-quality voiceovers using OpenAI's GPT-4o-mini-TTS with natural language instructions.</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-5 w-5 shrink-0">
@@ -625,48 +788,48 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs">🎤 DreamCut Voice Library</Label>
-                    {loadingVoices ? (
-                      <div className="flex items-center justify-center p-2">
-                        <Sparkles className="h-3 w-3 mr-2 animate-spin" />
-                        <span className="text-xs">Loading voices...</span>
-                      </div>
-                    ) : (
-                      <Select 
-                        value={selectedVoice?.voice_id || undefined} 
-                        onValueChange={(value) => {
-                          if (value === "no-voices") return
-                          const voice = dreamCutVoices.find(v => v.voice_id === value)
-                          setSelectedVoice(voice || null)
-                        }}
-                      >
-                        <SelectTrigger className="h-7 text-xs">
-                          <SelectValue placeholder="Select a voice from your library" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dreamCutVoices.length === 0 ? (
-                            <SelectItem value="no-voices" disabled>
-                              No voices found. Create voices first in Voice Creation.
-                            </SelectItem>
-                          ) : (
-                            dreamCutVoices.map((voice) => (
-                              <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-3 w-3" />
-                                  <div>
-                                    <div className="font-medium text-xs">{voice.name}</div>
-                                    <div className="text-[10px] text-muted-foreground">
-                                      {voice.gender} • {voice.language} • {voice.mood}
-                                    </div>
-                                  </div>
+                    <Label className="text-xs">🎤 OpenAI Voice</Label>
+                    <Select 
+                      value={selectedVoice?.id || undefined} 
+                      onValueChange={(value) => {
+                        const voice = OPENAI_VOICES.find(v => v.id === value)
+                        console.log('🎤 [OPENAI VOICE SELECTED]', {
+                          name: voice?.name,
+                          id: voice?.id,
+                          description: voice?.description
+                        })
+                        setSelectedVoice(voice || null)
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select an OpenAI voice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPENAI_VOICES.map((voice) => (
+                          <SelectItem 
+                            key={voice.id} 
+                            value={voice.id}
+                            className="cursor-pointer hover:bg-accent/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                <Mic className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-xs truncate">
+                                  {voice.name}
                                 </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
+                                <div className="text-[10px] text-muted-foreground truncate">
+                                  {voice.description}
+                                </div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
                 </div>
 
                 {/* Selected Voice Preview */}
@@ -675,39 +838,32 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                     <CardContent className="p-2">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary" />
+                          <Mic className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-xs">{selectedVoice.name}</h4>
                           <p className="text-[10px] text-muted-foreground">{selectedVoice.description}</p>
                           <div className="flex gap-1 mt-1">
                             <Badge variant="secondary" className="text-[10px]">
-                              {selectedVoice.gender}
+                              OpenAI TTS
                             </Badge>
-                            <Badge variant="secondary" className="text-[10px]">
-                              {selectedVoice.language}
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px]">
-                              {selectedVoice.mood}
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px]">
-                              {selectedVoice.style}
+                            <Badge variant="outline" className="text-[10px]">
+                              {selectedVoice.id}
                             </Badge>
                           </div>
                         </div>
-                        {selectedVoice.preview_url && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 w-6"
-                            onClick={() => {
-                              const audio = new Audio(selectedVoice.preview_url)
-                              audio.play()
-                            }}
-                          >
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6"
+                          onClick={() => handlePlayVoicePreview(selectedVoice.id)}
+                        >
+                          {playingVoiceId === selectedVoice.id ? (
+                            <Pause className="h-3 w-3" />
+                          ) : (
                             <Play className="h-3 w-3" />
-                          </Button>
-                        )}
+                          )}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -715,6 +871,8 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
               </div>
             </CardContent>
           </Card>
+
+
 
           {/* Voice Settings Section */}
           <Card>
@@ -724,187 +882,252 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                 ⚙️ Voice Settings
               </CardTitle>
               <CardDescription className="text-[10px]">
-                Fine-tune the voice characteristics for your voiceover using ElevenLabs parameters.
+                Fine-tune the voice characteristics for your voiceover using advanced parameters.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 p-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">📊 Stability: {stability[0]}%</Label>
-                  <Slider
-                    value={stability}
-                    onValueChange={setStability}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Variable</span>
-                    <span>Stable</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Controls voice consistency and variation</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">🎯 Similarity Boost: {similarityBoost[0]}%</Label>
-                  <Slider
-                    value={similarityBoost}
-                    onValueChange={setSimilarityBoost}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Less Similar</span>
-                    <span>More Similar</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">How closely the voice matches the original</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">🎭 Style: {style[0]}%</Label>
-                  <Slider
-                    value={style}
-                    onValueChange={setStyle}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Neutral</span>
-                    <span>Exaggerated</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Exaggeration of the speaking style</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">🔊 Speaker Boost</Label>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="speaker-boost"
-                      checked={useSpeakerBoost}
-                      onCheckedChange={setUseSpeakerBoost}
-                      className="scale-75"
-                    />
-                    <Label htmlFor="speaker-boost" className="text-xs">
-                      {useSpeakerBoost ? "Enabled" : "Disabled"}
-                    </Label>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Enhances the similarity to the original speaker</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">😊 Emotion</Label>
-                  <Select value={emotion} onValueChange={setEmotion}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select emotion" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EMOTION_OPTIONS.map((emotionOption) => (
-                        <SelectItem key={emotionOption.value} value={emotionOption.value}>
-                          <div className="flex items-center gap-2">
-                            <span>{emotionOption.icon}</span>
-                            {emotionOption.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">🎯 Use Case</Label>
-                  <Select value={useCase} onValueChange={setUseCase}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select use case" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VOICEOVER_USE_CASES.map((useCaseOption) => (
-                        <SelectItem key={useCaseOption} value={useCaseOption.replace(/^[^\s]+\s/, '').toLowerCase()}>
-                          {useCaseOption}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-              </div>
-
-              {/* Advanced ElevenLabs API Settings */}
-              <Separator />
+            <CardContent className="space-y-4 p-3">
+              
+              {/* Voice Identity Parameters */}
               <div className="space-y-3">
-                <h4 className="text-xs font-medium">Advanced ElevenLabs Settings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">🤖 Model</Label>
-                    <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                      <span className="text-xs font-medium">Eleven v3</span>
-                      <Badge variant="secondary" className="text-[10px]">Fixed</Badge>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">Using the latest Eleven v3 model for optimal quality</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">📁 Output Format</Label>
-                    <Select value={outputFormat} onValueChange={setOutputFormat}>
+                <h4 className="text-xs font-medium flex items-center gap-2">
+                  <Mic className="h-3 w-3" />
+                  🎤 Voice Identity Parameters
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">👤 Gender / Timbre Base</Label>
+                    <Select value={gender} onValueChange={setGender}>
                       <SelectTrigger className="h-7 text-xs">
-                        <SelectValue />
+                        <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
-                        {OUTPUT_FORMAT_OPTIONS.map((format) => (
-                          <SelectItem key={format.value} value={format.value}>
-                            {format.label}
+                        {GENDER_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option.replace(/^[^\s]+\s/, '').toLowerCase()}>
+                            {option}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs">⚡ Streaming Latency Optimization</Label>
+                  <div className="space-y-1">
+                    <Label className="text-xs">🎂 Perceived Age</Label>
+                    <Select value={perceivedAge} onValueChange={setPerceivedAge}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select age" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AGE_OPTIONS.map((age) => (
+                          <SelectItem key={age} value={age.toLowerCase()}>
+                            {age}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">🗣️ Accent / Region</Label>
                     <Select 
-                      value={optimizeStreamingLatency.toString()} 
-                      onValueChange={(value) => setOptimizeStreamingLatency(parseInt(value))}
+                      value={accent} 
+                      onValueChange={setAccent}
+                      disabled={gender === "robotic" || gender === "creature"}
                     >
                       <SelectTrigger className="h-7 text-xs">
-                        <SelectValue />
+                        <SelectValue placeholder="Select accent" />
                       </SelectTrigger>
                       <SelectContent>
-                        {LATENCY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value.toString()}>
-                            {option.label}
+                        {ACCENT_OPTIONS.map((accentOption) => (
+                          <SelectItem key={accentOption} value={accentOption.toLowerCase()}>
+                            {accentOption}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs">📝 Request Logging</Label>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="enable-logging"
-                        checked={enableLogging}
-                        onCheckedChange={setEnableLogging}
-                        className="scale-75"
-                      />
-                      <Label htmlFor="enable-logging" className="text-xs">
-                        {enableLogging ? "Enabled" : "Disabled"}
-                      </Label>
+                  <div className="space-y-1">
+                    <Label className="text-xs">🎵 Tone / Timbre</Label>
+                    <Select value={tone} onValueChange={setTone}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select tone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TONE_OPTIONS.map((toneOption) => (
+                          <SelectItem key={toneOption} value={toneOption.toLowerCase()}>
+                            {toneOption}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">📈 Pitch Level: {pitchLevel[0]}</Label>
+                    <Slider
+                      value={pitchLevel}
+                      onValueChange={setPitchLevel}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Low</span>
+                      <span>High</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      {enableLogging ? "Request history will be saved" : "Zero retention mode (Enterprise only)"}
-                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">⏱️ Pacing / Rhythm</Label>
+                    <Select value={pacing} onValueChange={setPacing}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select pacing" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PACING_OPTIONS.map((pacingOption) => (
+                          <SelectItem key={pacingOption} value={pacingOption.toLowerCase()}>
+                            {pacingOption}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1 md:col-span-2">
+                    <Label className="text-xs">🔍 Audio Quality</Label>
+                    <Select value={fidelity} onValueChange={setFidelity}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select audio quality" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FIDELITY_OPTIONS.map((fidelityOption) => (
+                          <SelectItem key={fidelityOption} value={fidelityOption.toLowerCase()}>
+                            {fidelityOption}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Emotional DNA Parameters */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-medium flex items-center gap-2">
+                  <Heart className="h-3 w-3" />
+                  💝 Emotional DNA Parameters
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">😊 Mood Context</Label>
+                    <Select value={moodContext} onValueChange={setMoodContext}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select mood" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MOOD_OPTIONS.map((mood) => (
+                          <SelectItem key={mood.value} value={mood.value}>
+                            <span className="text-xs">{mood.icon}</span> {mood.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">⚖️ Emotional Weight: {emotionalWeight[0]}</Label>
+                    <Slider
+                      value={emotionalWeight}
+                      onValueChange={setEmotionalWeight}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Subtle</span>
+                      <span>Expressive</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">🎭 Voice Character</Label>
+                    <Select value={characterRole} onValueChange={setCharacterRole}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select character" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map((role) => (
+                          <SelectItem key={role} value={role.toLowerCase()}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">🎪 Delivery Style</Label>
+                    <Select value={performanceStyle} onValueChange={setPerformanceStyle}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select delivery style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STYLE_OPTIONS.map((styleOption) => (
+                          <SelectItem key={styleOption} value={styleOption.toLowerCase()}>
+                            {styleOption}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Additional Voice Settings */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-medium flex items-center gap-2">
+                  <Settings className="h-3 w-3" />
+                  🎛️ Additional Voice Settings
+                </h4>
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">🎯 Content Type</Label>
+                    <Select value={useCase} onValueChange={setUseCase}>
+                      <SelectTrigger className="h-7 text-xs">
+                        <SelectValue placeholder="Select content type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VOICEOVER_USE_CASES.map((useCaseOption) => (
+                          <SelectItem key={useCaseOption} value={useCaseOption.replace(/^[^\s]+\s/, '').toLowerCase()}>
+                            {useCaseOption}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-
+          {/* Smart Message */}
+          {smartMessage && (
+            <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+              <CardContent className="p-2">
+                <div className="flex items-start gap-2">
+                  <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <p className="text-xs text-blue-800 dark:text-blue-200">{smartMessage}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Action Buttons */}
           <Card className="border shadow-md bg-white dark:bg-gray-900">
@@ -918,7 +1141,7 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
                   Cancel
                 </Button>
                 <Button 
-                  onClick={handleSaveVoiceover} 
+                  onClick={handleGenerateVoiceover} 
                   disabled={!prompt.trim() || isGenerating} 
                   className="h-10 text-sm font-semibold min-w-[120px] bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >

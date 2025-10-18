@@ -9,7 +9,7 @@ import { VideoGeneratorInterface } from "@/components/video-generator-interface"
 import { ExplainerGeneratorInterface } from "@/components/explainer-generator-interface"
 import { ExplainerVideoLibrary } from "@/components/explainer-video-library"
 import { UGCAdsGeneratorInterface } from "@/components/ugc-ads-generator-interface"
-import { ProductMotionGeneratorInterface } from "@/components/product-motion-generator-interface"
+import { DiverseMotionGeneratorInterface } from "@/components/diverse-motion-generator-interface"
 import { ProductMockupGeneratorInterface } from "@/components/product-mockup-generator-interface"
 import { ChartsInfographicsGeneratorInterface } from "@/components/charts-infographics-generator-interface"
 import { ConceptWorldsGeneratorInterface } from "@/components/concept-worlds-generator-interface"
@@ -18,6 +18,7 @@ import { VoiceoverGeneratorInterface } from "@/components/voiceover-generator-in
 import { SoundFxInterface } from "@/components/sound-fx-interface"
 import { TalkingAvatarsGeneratorInterface } from "@/components/talking-avatars-generator-interface"
 import { MusicJingleGeneratorInterface } from "@/components/music-jingle-generator-interface"
+import { MusicVideoGeneratorInterface } from "@/components/music-video-generator-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
 import { AvatarsForm } from "@/components/forms/avatars-form"
 import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
@@ -67,6 +68,9 @@ export function GeneratorPanel() {
   // États locaux pour l'interface de génération de musique
   const [showMusicJingleGenerator, setShowMusicJingleGenerator] = useState(false)
   
+  // États locaux pour l'interface de génération de vidéos musicales
+  const [showMusicVideoGenerator, setShowMusicVideoGenerator] = useState(false)
+  
   // États locaux pour l'interface de création de voiceovers
   const [showVoiceover, setShowVoiceover] = useState(false)
   
@@ -82,7 +86,7 @@ export function GeneratorPanel() {
   const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics', 'comics']
   
   // Sections qui supportent la génération vidéo
-  const videoGenerationSections = ['explainers', 'social-cuts', 'cinematic-clips', 'product-motion', 'ugc-ads']
+  const videoGenerationSections = ['explainers', 'social-cuts', 'cinematic-clips', 'diverse-motion', 'ugc-ads']
   
   // Sections qui supportent la création de voix
   const voiceCreationSections = ['voice-creation']
@@ -96,8 +100,11 @@ export function GeneratorPanel() {
   // Sections qui supportent la génération de musique
   const musicJingleSections = ['music-jingles']
   
+  // Sections qui supportent la génération de vidéos musicales
+  const musicVideoSections = ['music-videos']
+  
   // Sections qui supportent les nouveaux formulaires
-  const newFormSections = ['ugc-ads', 'product-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound', 'add-watermark', 'video-translate']
+  const newFormSections = ['ugc-ads', 'diverse-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound', 'add-watermark', 'video-translate']
   
   // Sections qui supportent la génération de talking avatars
   const talkingAvatarsSections = ['talking-avatars']
@@ -176,6 +183,13 @@ export function GeneratorPanel() {
     }
   }, [selectedSection, showMusicJingleGenerator])
 
+  // Fermer l'interface de génération de vidéos musicales quand on change de section
+  useEffect(() => {
+    if (showMusicVideoGenerator && selectedSection !== 'music-videos') {
+      setShowMusicVideoGenerator(false)
+    }
+  }, [selectedSection, showMusicVideoGenerator])
+
   // Fermer l'interface de génération de talking avatars quand on change de section
   useEffect(() => {
     if (showTalkingAvatars && selectedSection !== 'talking-avatars') {
@@ -186,6 +200,9 @@ export function GeneratorPanel() {
 
   useEffect(() => {
     // Effect for section changes
+    if (selectedSection === 'music-videos') {
+      setShowMusicVideoGenerator(true)
+    }
   }, [selectedSection])
 
   // Fonctions pour gérer l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
@@ -205,7 +222,7 @@ export function GeneratorPanel() {
       setSelectedVideoProject(artifact)
       setVideoGeneratorSection(selectedSection)
       setShowVideoGenerator(true)
-    } else if (selectedSection === 'product-motion') {
+    } else if (selectedSection === 'diverse-motion') {
       // For product-motion section, show project details in MainContent AND open generator
       // setSelectedArtifact removed
       setSelectedVideoProject(artifact)
@@ -243,7 +260,7 @@ export function GeneratorPanel() {
     setShowVideoGenerator(false)
     setSelectedVideoProject(null)
     setVideoGeneratorSection(null)
-    if (selectedSection === 'explainers' || selectedSection === 'ugc-ads' || selectedSection === 'product-motion') {
+    if (selectedSection === 'explainers' || selectedSection === 'ugc-ads' || selectedSection === 'diverse-motion') {
       // setSelectedArtifact removed
     }
   }
@@ -286,7 +303,7 @@ export function GeneratorPanel() {
           return "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600"
         case 'ugc-ads':
           return "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600"
-        case 'product-motion':
+        case 'diverse-motion':
           return "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600"
         case 'talking-avatars':
           return "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600"
@@ -305,7 +322,7 @@ export function GeneratorPanel() {
         case 'comics': return 'New Comic'
         case 'explainers': return 'New Explainer'
         case 'ugc-ads': return 'New Ad'
-        case 'product-motion': return 'New Motion'
+        case 'diverse-motion': return 'New Motion'
         case 'talking-avatars': return 'New Avatar'
         case 'add-subtitles': return 'New Subtitle'
         case 'add-watermark': return 'New Watermark'
@@ -353,10 +370,10 @@ export function GeneratorPanel() {
             setSelectedVideoProject({ title: 'New UGC Ad', image: '', description: '' })
             setVideoGeneratorSection('ugc-ads')
             setShowVideoGenerator(true)
-          } else if (selectedSection === 'product-motion') {
+          } else if (selectedSection === 'diverse-motion') {
             // Créer un projet temporaire pour ouvrir le générateur Product in Motion
             setSelectedVideoProject({ title: 'New Product Motion', image: '', description: '' })
-            setVideoGeneratorSection('product-motion')
+            setVideoGeneratorSection('diverse-motion')
             setShowVideoGenerator(true)
           } else if (selectedSection === 'talking-avatars') {
             // Créer un projet temporaire pour ouvrir le générateur Talking Avatars
@@ -428,7 +445,7 @@ export function GeneratorPanel() {
             onCancel={() => setShowProjectForm(false)}
           />
         )
-      case 'product-motion':
+      case 'diverse-motion':
         return (
           <ProductMotionForm
             onSave={async () => {}}
@@ -689,8 +706,8 @@ export function GeneratorPanel() {
               onClose={handleCloseVideoGenerator}
               projectTitle={selectedVideoProject.title}
             />
-          ) : selectedSection === 'product-motion' ? (
-            <ProductMotionGeneratorInterface 
+          ) : selectedSection === 'diverse-motion' ? (
+            <DiverseMotionGeneratorInterface 
               onClose={handleCloseVideoGenerator}
               projectTitle={selectedVideoProject.title}
               selectedArtifact={selectedVideoProject as any}
@@ -949,6 +966,11 @@ export function GeneratorPanel() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Music Video Generator Interface */}
+        {showMusicVideoGenerator && (
+          <MusicVideoGeneratorInterface />
         )}
       </div>
     </div>

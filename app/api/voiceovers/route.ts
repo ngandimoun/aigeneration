@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
+import { generateSpeech, isValidVoice } from '@/lib/openai/text-to-speech'
+import { buildOpenAIInstructions } from '@/lib/utils/openai-voice-instructions-builder'
+import { enhanceVoiceInstructions, shouldEnhanceInstructions } from '@/lib/openai/enhance-voice-instructions'
 
 // Cache for 30 seconds
 export const revalidate = 30
@@ -58,6 +61,40 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch voiceovers' }, { status: 500 })
     }
 
+    // Regenerate expired signed URLs (matching voice creation pattern)
+    if (voiceovers && voiceovers.length > 0) {
+      console.log(`🔄 [VOICEOVER GET] Regenerating signed URLs for ${voiceovers.length} voiceovers`)
+      
+      for (const voiceover of voiceovers) {
+        if (voiceover.storage_path) {
+          try {
+            console.log(`🔄 [VOICEOVER GET] Regenerating URL for: ${voiceover.storage_path}`)
+            
+            const { data: signedUrlData, error: urlError } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(voiceover.storage_path, 86400) // 24 hour expiry
+            
+            if (urlError) {
+              console.error(`❌ [VOICEOVER GET] URL generation error for ${voiceover.id}:`, urlError)
+              continue
+            }
+            
+            if (signedUrlData?.signedUrl) {
+              voiceover.generated_audio_path = signedUrlData.signedUrl
+              console.log(`✅ [VOICEOVER GET] Regenerated URL for voiceover ${voiceover.id}:`, signedUrlData.signedUrl.substring(0, 100) + '...')
+            } else {
+              console.error(`❌ [VOICEOVER GET] No signed URL returned for voiceover ${voiceover.id}`)
+            }
+          } catch (urlError) {
+            console.error(`❌ [VOICEOVER GET] Failed to regenerate URL for voiceover ${voiceover.id}:`, urlError)
+            // Continue with other voiceovers even if one fails
+          }
+        } else {
+          console.warn(`⚠️ [VOICEOVER GET] No storage_path for voiceover ${voiceover.id}`)
+        }
+      }
+    }
+
     return NextResponse.json({ voiceovers }, { 
       status: 200,
       headers: {
@@ -106,12 +143,107 @@ export async function POST(request: NextRequest) {
     const elevenLabsSettings = validatedData.content?.elevenlabs_settings || {}
     const dreamcutVoice = validatedData.content?.dreamcut_voice || {}
 
-    // For now, we'll simulate audio generation with placeholder URLs
-    // In a real implementation, you would call ElevenLabs API
-    const generatedAudioUrl = `https://example.com/generated_voiceover_${generationId}.mp3`
-    const generatedStoragePath = `renders/voiceovers/${user.id}/generated/${uuidv4()}-generated_voiceover.mp3`
+    // Validate that we have a voice_id
+    if (!validatedData.voice_id) {
+      return NextResponse.json({ error: 'Voice ID is required' }, { status: 400 })
+    }
 
-    console.log('🎵 Generated audio:', generatedAudioUrl)
+    // Validate OpenAI voice
+    if (!isValidVoice(validatedData.voice_id)) {
+      return NextResponse.json({ 
+        error: 'Invalid voice. Must be one of: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse' 
+      }, { status: 400 })
+    }
+
+    console.log('🎤 [VOICEOVER API] Generating audio with OpenAI TTS...')
+    console.log('📝 [VOICEOVER API] Voice:', validatedData.voice_id)
+    console.log('📝 [VOICEOVER API] Text length:', validatedData.prompt.length)
+
+    // Build instructions from voice parameters
+    const voiceParameters = validatedData.content?.voice_identity || {}
+    const emotionalDNA = validatedData.content?.emotional_dna || {}
+    
+    const voiceParams = {
+      gender: voiceParameters.gender,
+      age: voiceParameters.age,
+      accent: voiceParameters.accent,
+      tone: voiceParameters.tone,
+      pitch: voiceParameters.pitch,
+      pacing: voiceParameters.pacing,
+      mood: emotionalDNA.mood,
+      emotionalWeight: emotionalDNA.emotional_weight,
+      role: emotionalDNA.role,
+      style: emotionalDNA.style,
+      useCase: validatedData.use_case,
+      language: validatedData.language
+    }
+    
+    // Use enhanced instructions if we have meaningful parameters
+    const instructions = shouldEnhanceInstructions(voiceParams)
+      ? await enhanceVoiceInstructions(voiceParams)
+      : buildOpenAIInstructions(voiceParams)
+
+    console.log('📝 [VOICEOVER API] Generated instructions:', instructions.substring(0, 100) + '...')
+
+    // Generate speech using OpenAI TTS
+    const ttsResult = await generateSpeech({
+      text: validatedData.prompt,
+      voice: validatedData.voice_id,
+      instructions,
+      response_format: 'mp3'
+    })
+
+    if (!ttsResult.success) {
+      console.error('❌ [VOICEOVER API] OpenAI TTS failed:', ttsResult.error)
+      return NextResponse.json({ 
+        error: 'Failed to generate audio', 
+        details: ttsResult.error 
+      }, { status: 500 })
+    }
+
+    const audioBuffer = ttsResult.audioBuffer!
+    console.log('✅ [VOICEOVER API] Audio generated, size:', audioBuffer.length, 'bytes')
+
+    // Upload to Supabase Storage
+    const fileName = `${uuidv4()}-voiceover.mp3`
+    const filePath = `renders/voiceovers/${user.id}/generated/${fileName}`
+    
+    console.log('📤 [VOICEOVER API] Uploading to storage:', filePath)
+    console.log('📊 [VOICEOVER API] Buffer size:', audioBuffer.length, 'bytes')
+    
+    const { error: uploadError } = await supabase.storage
+      .from('dreamcut')
+      .upload(filePath, audioBuffer, {
+        contentType: 'audio/mpeg',
+        cacheControl: '3600'
+      })
+
+    if (uploadError) {
+      console.error('❌ [VOICEOVER API] Storage upload failed:', uploadError)
+      return NextResponse.json({ 
+        error: 'Failed to upload audio to storage',
+        details: uploadError.message 
+      }, { status: 500 })
+    }
+
+    console.log('✅ [VOICEOVER API] File uploaded successfully')
+
+    // Get signed URL
+    const { data: signedUrlData } = await supabase.storage
+      .from('dreamcut')
+      .createSignedUrl(filePath, 86400) // 24 hour expiry
+
+    if (!signedUrlData?.signedUrl) {
+      console.error('❌ [VOICEOVER API] Failed to generate signed URL')
+      return NextResponse.json({ 
+        error: 'Failed to generate audio URL' 
+      }, { status: 500 })
+    }
+
+    const generatedAudioUrl = signedUrlData.signedUrl
+    const generatedStoragePath = filePath
+
+    console.log('✅ [VOICEOVER API] Audio uploaded and URL generated:', generatedAudioUrl)
 
     // Create voiceover
     const { data: voiceover, error } = await supabase
@@ -125,26 +257,17 @@ export async function POST(request: NextRequest) {
         // Voice Settings
         voice_id: validatedData.voice_id,
         language: validatedData.language,
-        emotion: validatedData.emotion,
         use_case: validatedData.use_case,
         
-        // ElevenLabs Settings
-        stability: elevenLabsSettings.stability || 0.5,
-        similarity_boost: elevenLabsSettings.similarity_boost || 0.75,
-        style: elevenLabsSettings.style || 0.0,
-        use_speaker_boost: elevenLabsSettings.use_speaker_boost || true,
-        model_id: elevenLabsSettings.model_id || 'eleven_v3',
-        output_format: elevenLabsSettings.output_format || 'mp3_44100_128',
-        optimize_streaming_latency: elevenLabsSettings.optimize_streaming_latency || 0,
-        enable_logging: elevenLabsSettings.enable_logging || true,
+        // OpenAI TTS Settings
+        model_id: 'gpt-4o-mini-tts',
         
         // Generated Content
         generated_audio_path: generatedAudioUrl,
         storage_path: generatedStoragePath,
         
         // Metadata
-        dreamcut_voice_name: dreamcutVoice.name,
-        api_version: 'v1',
+        api_version: 'v2',
         status: 'completed',
         metadata: {
           generationTimestamp,
@@ -154,18 +277,22 @@ export async function POST(request: NextRequest) {
           prompt: validatedData.prompt,
           language: validatedData.language,
           voice_id: validatedData.voice_id,
-          emotion: validatedData.emotion,
           use_case: validatedData.use_case,
-          dreamcut_voice_name: dreamcutVoice.name,
-          generated_via: 'voiceover-generation',
+          generated_via: 'openai-tts-generation',
           ...validatedData.metadata
         },
         content: {
           audio_url: generatedAudioUrl,
           generation_id: generationId,
           full_prompt: validatedData.prompt,
-          dreamcut_voice: dreamcutVoice,
-          elevenlabs_settings: elevenLabsSettings,
+          instructions: instructions,
+          voice_identity: voiceParameters,
+          emotional_dna: emotionalDNA,
+          openai_settings: {
+            model: 'gpt-4o-mini-tts',
+            voice: validatedData.voice_id,
+            response_format: 'mp3'
+          },
           settings: validatedData
         }
       })

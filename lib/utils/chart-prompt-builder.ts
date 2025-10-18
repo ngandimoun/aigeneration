@@ -295,7 +295,13 @@ export function buildEnhancementPrompt(params: ChartPromptParams): string {
       promptParts.push(`3D Depth: ${depthLevel} depth and lighting effects`)
     }
     if (shouldInclude(backgroundTexture)) {
-      promptParts.push(`Background Texture: ${backgroundTexture} texture`)
+      const { TEXTURE_OPTIONS } = require('@/lib/styles/chart-style-map')
+      const textureOption = TEXTURE_OPTIONS[backgroundTexture]
+      if (textureOption) {
+        promptParts.push(`Background Texture: ${backgroundTexture} texture - ${textureOption.description}`)
+      } else {
+        promptParts.push(`Background Texture: ${backgroundTexture} texture`)
+      }
     }
     if (accentShapes) {
       promptParts.push("Add decorative accent shapes that complement the data visualization")
@@ -377,6 +383,23 @@ export function buildEnhancementPrompt(params: ChartPromptParams): string {
     const palette = COLOR_PALETTES[colorPalette]
     if (palette) {
       brandingParts.push(`Color Palette: Use ${colorPalette} palette - ${palette.colors.join(', ')}`)
+    }
+  }
+  
+  // Handle new background options
+  if (shouldInclude(backgroundType)) {
+    const { BACKGROUND_OPTIONS } = require('@/lib/styles/chart-style-map')
+    const backgroundOption = BACKGROUND_OPTIONS[backgroundType]
+    if (backgroundOption) {
+      if (backgroundOption.type === 'solid') {
+        brandingParts.push(`Background: ${backgroundType} solid color background`)
+      } else if (backgroundOption.type === 'gradient') {
+        brandingParts.push(`Background: ${backgroundType} gradient background`)
+      } else if (backgroundOption.type === 'pattern') {
+        brandingParts.push(`Background: ${backgroundType} pattern background`)
+      } else if (backgroundOption.type === 'themed') {
+        brandingParts.push(`Background: ${backgroundType} themed background`)
+      }
     }
   }
   if (brandingParts.length > 0) {

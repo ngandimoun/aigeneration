@@ -8,7 +8,7 @@ const nullToUndefined = z.literal('null').transform(() => undefined);
 
 const createProductMotionSchema = z.object({
   // Product Description & Intent Capture
-  product_category: z.enum(['Product', 'Chart', 'Infographic', 'Logo Animation', 'UI/UX Element']),
+  product_category: z.enum(['Data Visualizations', 'Infographic', 'Logo Animation', 'UI/UX Element', 'Cinematic Videos']),
   product_name: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   prompt: z.string().min(1, "Prompt is required"),
   core_moment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),

@@ -41,7 +41,7 @@ const EXPECTED_FOLDERS_LIST: string[] = [
   'illustrations',
   'music-jingles',
   'product-mockups',
-  'product-motion',
+  'diverse-motion',
   'sound-fx',
   'subtitles',
   'talking-avatars',

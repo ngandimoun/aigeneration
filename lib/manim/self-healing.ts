@@ -1,17 +1,13 @@
-import OpenAI from 'openai';
 import { 
   ManimGenerationOptions, 
-  getVoiceoverSystemPrompt, 
-  getStandardSystemPrompt, 
-  buildUserPrompt, 
-  getFixOnFailPrompt,
   generateSceneName,
   validateManimCode
 } from './claude-prompts';
-import { runManimRender, getManimOutputPath } from '../modal/setup';
+import { executeManimOnModal } from '../modal/setup';
 import { enhancePromptToSpec, type TechnicalSpecification } from './prompt-enhancer';
 import { validateGeneratedCode, getValidationSummary, formatValidationIssues } from './static-validator';
 import { smartFix } from './quick-fixer';
+import { generateManimCode, generateFixedManimCode, type ManimCodeInterpreterConfig } from '../openai/manim-code-interpreter';
 
 export interface GenerationResult {
   success: boolean;
@@ -34,10 +30,7 @@ export interface JobUpdate {
   outputUrl?: string;
 }
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+// Note: OpenAI client is now handled in manim-code-interpreter.ts
 
 // Enhanced error context for AI retry attempts
 function enhanceErrorContext(error: string, stderr: string, attempt: number): string {
@@ -146,14 +139,12 @@ async function updateJobStatus(
   }
 }
 
-// Helper function to generate code from technical specification
+// Helper function to generate code using Code Interpreter
 async function generateCodeFromSpec(
   spec: TechnicalSpecification | string,
   options: ManimGenerationOptions
 ): Promise<{ code: string; sceneName: string }> {
-  const systemPrompt = options.hasVoiceover 
-    ? getVoiceoverSystemPrompt(options)
-    : getStandardSystemPrompt(options);
+  console.log(`💻 Stage 2: Generating Manim code with Code Interpreter...`);
   
   // Convert spec to user prompt
   const userPrompt = typeof spec === 'string' 
@@ -162,75 +153,36 @@ async function generateCodeFromSpec(
 
 ${JSON.stringify(spec, null, 2)}
 
-Follow the specification EXACTLY. Generate complete, working Manim Python code.
-Return ONLY Python code, no markdown, no explanations.`;
+Follow the specification EXACTLY. Generate complete, working Manim Python code.`;
 
-  console.log(`💻 Stage 2: Generating Manim code...`);
+  // Build Code Interpreter config
+  const config: ManimCodeInterpreterConfig = {
+    prompt: userPrompt,
+    hasVoiceover: options.hasVoiceover,
+    voiceStyle: options.voiceStyle,
+    language: options.language,
+    duration: options.duration,
+    aspectRatio: options.aspectRatio,
+    resolution: options.resolution,
+    style: options.style,
+    title: options.title
+  };
+
+  // Generate code using Code Interpreter
+  const result = await generateManimCode(config);
   
-  // Use the new GPT-5 API format
-  let response;
-  try {
-    response = await openai.responses.create({
-      model: "gpt-5",
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      text: {
-        format: {
-          type: "text"
-        },
-        verbosity: "medium"
-      },
-      reasoning: {
-        effort: "medium",
-        summary: "auto"
-      },
-      tools: [],
-      store: true,
-      include: [
-        "reasoning.encrypted_content"
-      ]
-    });
-  } catch (error) {
-    console.log("⚠️ GPT-5 not available, falling back to GPT-4o");
-    response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 6000,
-      top_p: 0.9,
-    });
+  if (!result.success || !result.pythonCode) {
+    throw new Error(result.error || 'Code Interpreter failed to generate code');
   }
 
-  // Handle different response formats
-  let rawCode = '';
-  if (response.choices && response.choices[0]?.message?.content) {
-    rawCode = response.choices[0].message.content.trim();
-  } else if (response.output_text) {
-    rawCode = response.output_text.trim();
-  } else if (response.text && response.text.content) {
-    rawCode = response.text.content.trim();
-  } else if (response.text && typeof response.text === 'string') {
-    rawCode = response.text.trim();
-  } else if (response.content) {
-    rawCode = response.content.trim();
-  }
-  
-  const sceneName = typeof spec === 'object' ? generateSceneName(options.title) : generateSceneName(options.title);
-  
-  // Basic validation
-  const validation = validateManimCode(rawCode);
-  const code = validation.cleanedCode || rawCode;
-
-  return { code, sceneName };
+  return { 
+    code: result.pythonCode, 
+    sceneName: result.sceneName || generateSceneName(options.title)
+  };
 }
 
-// Generate Manim code using OpenAI with full pipeline
-async function generateManimCode(
+// Generate Manim code using Code Interpreter with full pipeline
+async function generateManimCodeWithInterpreter(
   options: ManimGenerationOptions,
   isRetry: boolean = false,
   previousError?: string,
@@ -247,19 +199,24 @@ async function generateManimCode(
       console.log(`✅ Stage 1: Complete - Language: ${technicalSpec.language}, Scenes: ${technicalSpec.scenes.length}`);
     } catch (error) {
       console.error('❌ Stage 1 failed, using direct prompt:', error);
-      technicalSpec = buildUserPrompt(options);
+      technicalSpec = options.prompt; // Use direct prompt instead of buildUserPrompt
     }
   } else {
     // For retries, use fix prompt
-    technicalSpec = getFixOnFailPrompt(previousCode || '', previousError || '');
+    technicalSpec = `Fix this Manim code that failed with error: ${previousError}
+
+Original code:
+${previousCode}
+
+Generate corrected, complete Manim Python code that will run without errors.`;
     console.log(`🔄 Retry attempt: Using fix prompt`);
   }
 
-  // STAGE 2: Generate code from specification
+  // STAGE 2: Generate code from specification using Code Interpreter
   const { code: generatedCode, sceneName } = await generateCodeFromSpec(technicalSpec, options);
   console.log(`✅ Stage 2: Code generated (${generatedCode.length} characters)`);
 
-  // STAGE 2.5: Static validation
+  // STAGE 2.5: Static validation (Code Interpreter should have caught most issues)
   console.log(`🔍 Stage 2.5: Running static validation...`);
   const validationIssues = validateGeneratedCode(generatedCode, options.hasVoiceover ? options.voiceStyle : undefined);
   const summary = getValidationSummary(validationIssues);
@@ -270,7 +227,7 @@ async function generateManimCode(
     console.log(formatValidationIssues(validationIssues));
   }
 
-  // STAGE 3: Quick fix if critical issues found
+  // STAGE 3: Quick fix if critical issues found (should be rare with Code Interpreter)
   let finalCode = generatedCode;
   if (summary.critical > 0) {
     console.log(`🔧 Stage 3: Fixing ${summary.critical} critical issue(s)...`);
@@ -411,8 +368,8 @@ export async function generateManimCodeWithRetry(
         lastError: attempt > 1 ? lastError : undefined
       });
 
-      // Generate code
-      const { code, sceneName } = await generateManimCode(
+      // Generate code using Code Interpreter
+      const { code, sceneName } = await generateManimCodeWithInterpreter(
         options, 
         attempt > 1, 
         attempt > 1 ? lastError : undefined,
@@ -430,12 +387,11 @@ export async function generateManimCodeWithRetry(
 
       console.log(`🎬 Rendering scene: ${sceneName}`);
       
-      // Render with E2B
-      const renderResult = await runManimRender({
+      // Render with Modal
+      const renderResult = await executeManimOnModal({
         code,
         sceneName,
         uploadUrl,
-        verbose: true,
         resolution: options.resolution,
         aspectRatio: options.aspectRatio,
         duration: options.duration,
@@ -577,6 +533,6 @@ export async function handleTTSFailure(
     lastError: 'TTS service failed, rendering without voiceover'
   });
 
-  // Generate without voiceover
+  // Generate without voiceover using Code Interpreter
   return generateManimCodeWithRetry(fallbackOptions, supabase, jobId, uploadUrl, 3);
 }

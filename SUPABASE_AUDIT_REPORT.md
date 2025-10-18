@@ -153,7 +153,7 @@ Verified that all API routes generate correct storage paths:
 | Sound FX | `/api/sound-fx` | `renders/sound-fx/{user_id}/generated/` | ✅ |
 | Explainers | `/api/explainers/generate` | `renders/explainers/{user_id}/{job_id}.mp4` | ✅ |
 | UGC Ads | `/api/ugc-ads` | `renders/ugc-ads/{user_id}/generated/` | ✅ |
-| Product Motion | `/api/product-motion` | `renders/product-motion/{user_id}/generated/` | ✅ |
+| Diverse Motion | `/api/diverse-motion` | `renders/diverse-motion/{user_id}/generated/` | ✅ |
 | Talking Avatars | `/api/talking-avatars/generate` | `renders/talking-avatars/{user_id}/generated/` | ✅ |
 | Subtitles | `/api/subtitles` | `renders/subtitles/{user_id}/generated/` | ✅ |
 | Watermarks | `/api/watermarks` | `renders/watermarks/{user_id}/output/` | ✅ |

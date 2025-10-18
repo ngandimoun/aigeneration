@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     const title = formData.get('title')?.toString() || ''
     const description = formData.get('description')?.toString() || ''
     const prompt = formData.get('prompt')?.toString() || ''
-    const dataSource = formData.get('dataSource')?.toString() || 'text'
+    let dataSource = formData.get('dataSource')?.toString() || 'text'
     const autoDetected = formData.get('autoDetected')?.toString() === 'true'
     const aggregationType = formData.get('aggregationType')?.toString() || 'sum'
     const units = formData.get('units')?.toString() || null
@@ -230,8 +230,29 @@ export async function POST(request: NextRequest) {
       console.log(`📁 Data file received: ${dataFile.name} (${dataFile.type}, ${dataFile.size} bytes)`)
     }
 
+    // Map generic "file" dataSource to actual file type
+    if (dataSource === 'file' && dataFile) {
+      const fileExt = dataFile.name.split('.').pop()?.toLowerCase()
+      const fileTypeMap: Record<string, string> = {
+        'csv': 'csv',
+        'xlsx': 'excel',
+        'xls': 'excel',
+        'json': 'json',
+        'txt': 'text',
+        'pdf': 'pdf',
+        'docx': 'document',
+        'doc': 'document',
+        'xml': 'xml',
+        'html': 'html',
+        'md': 'markdown',
+      }
+      dataSource = fileTypeMap[fileExt || ''] || 'csv'
+      console.log(`📝 Mapped file source to actual type: ${dataSource}`)
+    }
+
     // Handle logo upload
     let logoImagePath: string | null = null
+    let logoImageUrl: string | null = null
     const logoFile = formData.get('logoFile') as File | null
     if (logoFile) {
       // Validate logo image
@@ -256,6 +277,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Failed to upload logo file: ${uploadError.message}` }, { status: 500 })
       }
       logoImagePath = filePath
+
+      // Create signed URL for logo
+      const { data: logoSignedUrlData } = await supabase.storage
+        .from('dreamcut')
+        .createSignedUrl(logoImagePath, 86400) // 24 hour expiry
+      
+      if (logoSignedUrlData?.signedUrl) {
+        logoImageUrl = logoSignedUrlData.signedUrl
+        console.log('✅ Logo signed URL created:', logoImageUrl)
+      } else {
+        console.warn('⚠️ Failed to create signed URL for logo')
+      }
     }
 
     console.log('📝 Chart generation data:', {
@@ -338,6 +371,40 @@ export async function POST(request: NextRequest) {
         `/mnt/data/${dataFile.name}`
       )
       console.log(`📝 Replaced file paths with actual filename: ${dataFile.name}`)
+      
+      // Fix read function based on file extension
+      const fileExt = dataFile.name.split('.').pop()?.toLowerCase()
+      
+      // Map file extensions to pandas read functions
+      const readFunctionMap: Record<string, string> = {
+        'csv': 'pd.read_csv',
+        'json': 'pd.read_json',
+        'xlsx': 'pd.read_excel',
+        'xls': 'pd.read_excel',
+        'txt': 'pd.read_csv',
+        'tsv': 'pd.read_csv',
+        'parquet': 'pd.read_parquet'
+      }
+      
+      // Replace any pandas read function with the correct one
+      if (fileExt && readFunctionMap[fileExt]) {
+        const correctReadFunction = readFunctionMap[fileExt]
+        
+        // Special handling for JSON files - use flexible reader
+        if (fileExt === 'json') {
+          chartCodeResult.pythonCode = chartCodeResult.pythonCode.replace(
+            /pd\.read_json\s*\(/g,
+            'read_json_flexible('
+          )
+          console.log(`📝 Replaced pd.read_json with read_json_flexible for .${fileExt} file`)
+        } else {
+          chartCodeResult.pythonCode = chartCodeResult.pythonCode.replace(
+            /pd\.(read_excel|read_csv|read_parquet)\s*\(/g,
+            `${correctReadFunction}(`
+          )
+          console.log(`📝 Replaced read function with ${correctReadFunction} for .${fileExt} file`)
+        }
+      }
     }
 
     // Phase 2: Execute validated code in Modal
@@ -421,7 +488,7 @@ export async function POST(request: NextRequest) {
       model: 'gpt-image-1',
       hasImages: true,
       imageUrls: [rawChartUrl],
-      logoImagePath: logoImagePath
+      logoImageUrl: logoImageUrl
     })
 
     let enhancedImageUrl: string | undefined

@@ -2,6 +2,10 @@
 -- This migration changes logo_placement from TEXT to JSONB to match Avatar/Persona pattern
 -- and enables proper multi-select logo placement functionality
 
+-- Drop the old check constraint (if it exists) that was designed for TEXT values
+ALTER TABLE charts_infographics 
+DROP CONSTRAINT IF EXISTS charts_infographics_logo_placement_check;
+
 -- First, add a temporary column for the new JSONB data
 ALTER TABLE charts_infographics 
 ADD COLUMN logo_placement_new JSONB;

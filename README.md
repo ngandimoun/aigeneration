@@ -1,42 +1,31 @@
 # DreamCut
 
-DreamCut is a powerful content generation platform that enables users to create various types of digital content including avatars, cinematic clips, comics, concept art, explainers, illustrations, and more. Built with Next.js, TypeScript, and integrated with advanced AI generation capabilities.
+DreamCut is a powerful web application for creating and managing multimedia content, featuring voice generation, charts/infographics creation, and advanced content management capabilities. Built with Next.js, TypeScript, and Supabase, it offers a robust platform for content creators and developers.
 
 ## Features
 
-- 🎨 Multiple Content Types:
-  - Avatars & Talking Avatars
-  - Cinematic Clips
-  - Comics & Illustrations
-  - Concept Worlds
-  - Charts & Infographics
-  - Product Mockups & Motion
-  - Social Media Content
-  - UGC Ads
-  - Voice Creation & Sound FX
-
-- 🔐 Secure Authentication
-- 🎯 Real-time Content Generation
-- 📱 Responsive Design
-- 🚀 High Performance
-- 🎭 Character Variations
-- 📊 Generation History Tracking
+- **Voice Generation**: Create and manage custom voices using ElevenLabs integration
+- **Charts & Infographics**: Generate beautiful visualizations using Manim and custom chart rendering
+- **Content Management**: Comprehensive content creation and management interface
+- **Authentication**: Secure user authentication system
+- **Storage Integration**: Efficient file storage and management
+- **Health System**: Automated system health monitoring and maintenance
 
 ## Prerequisites
 
-Before you begin, ensure you have installed:
-
 - Node.js (v18 or higher)
-- pnpm (recommended) or npm
+- pnpm
+- Python 3.11 or higher (for Manim and chart generation)
+- Supabase CLI (for database management)
 
 ## Environment Setup
 
 1. Clone the repository
-2. Copy the environment example file:
+2. Copy the environment variables template:
    ```bash
    cp env.example .env
    ```
-3. Fill in your environment variables in `.env`
+3. Fill in the required environment variables in `.env`
 
 ## Installation
 
@@ -44,69 +33,54 @@ Before you begin, ensure you have installed:
 # Install dependencies
 pnpm install
 
-# Or using npm
-npm install
+# Install Python dependencies for Modal functions
+pip install -r modal_functions/requirements.txt
+
+# Set up the database
+supabase init
+supabase start
 ```
 
 ## Development
 
-Run the development server:
+To run the development server:
 
 ```bash
 pnpm dev
-
-# Or using npm
-npm run dev
 ```
 
-The application will be available at [http://localhost:3000](http://localhost:3000)
-
-## Building for Production
-
-```bash
-# Build the application
-pnpm build
-
-# Start the production server
-pnpm start
-
-# Or using npm
-npm run build
-npm start
-```
-
-## Project Structure
-
-```
-dreamcut/
-├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   ├── auth/              # Authentication routes
-│   └── content/           # Content pages
-├── components/            # React components
-│   ├── auth/             # Authentication components
-│   ├── forms/            # Generation forms
-│   └── ui/               # UI components
-├── hooks/                # Custom React hooks
-├── lib/                  # Utility functions and configurations
-│   ├── supabase/        # Supabase client setup
-│   └── types/           # TypeScript types
-└── public/              # Static assets
-```
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
 ## Testing
 
+The project uses Jest for testing. To run the tests:
+
 ```bash
-# Run tests
+# Run all tests
 pnpm test
 
 # Run tests in watch mode
 pnpm test:watch
-
-# Or using npm
-npm test
-npm run test:watch
 ```
+
+## Project Structure
+
+- `/app` - Next.js application routes and API endpoints
+- `/components` - React components
+- `/lib` - Core utilities and business logic
+- `/modal_functions` - Python functions for chart generation
+- `/hooks` - Custom React hooks
+- `/public` - Static assets
+- `/styles` - Global styles and CSS modules
+- `/supabase` - Database migrations and configuration
+
+## Key Components
+
+- **Voice Creation Interface**: Manage and create custom voices
+- **Charts Generator**: Create infographics and visualizations
+- **Content Management**: Handle multimedia content
+- **Authentication System**: Secure user access
+- **Health System**: Monitor and maintain system health
 
 ## Contributing
 
@@ -118,4 +92,8 @@ npm run test:watch
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is proprietary software. All rights reserved.
+
+## Support
+
+For support and questions, please open an issue in the repository.

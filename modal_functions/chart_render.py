@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import base64
 import os
+import json
 from io import BytesIO
 
 app = modal.App("chart-generator")
@@ -56,6 +57,41 @@ def generate_chart(request_body: dict) -> dict:
             }
     
     # Create a namespace for execution
+    def read_json_flexible(file_path):
+        """Try multiple methods to read JSON file"""
+        try:
+            # Try standard pandas read_json
+            return pd.read_json(file_path)
+        except:
+            try:
+                # Try reading as JSON Lines (one JSON object per line)
+                return pd.read_json(file_path, lines=True)
+            except:
+                try:
+                    # Try reading with different orient parameters
+                    return pd.read_json(file_path, orient='records')
+                except:
+                    try:
+                        # Try reading as nested JSON
+                        return pd.read_json(file_path, orient='index')
+                    except:
+                        try:
+                            # Try reading with json module and convert to DataFrame
+                            with open(file_path, 'r') as f:
+                                data = json.load(f)
+                                if isinstance(data, list):
+                                    return pd.DataFrame(data)
+                                elif isinstance(data, dict):
+                                    # Try to convert dict to DataFrame
+                                    if all(isinstance(v, (list, dict)) for v in data.values()):
+                                        return pd.DataFrame(data)
+                                    else:
+                                        return pd.DataFrame([data])
+                                else:
+                                    return pd.DataFrame(data)
+                        except Exception as e:
+                            raise ValueError(f"Could not read JSON file {file_path}: {str(e)}")
+
     namespace = {
         'plt': plt,
         'sns': sns,
@@ -63,6 +99,7 @@ def generate_chart(request_body: dict) -> dict:
         'pandas': pd,
         'np': np,
         'numpy': np,
+        'read_json_flexible': read_json_flexible,
     }
     
     try:

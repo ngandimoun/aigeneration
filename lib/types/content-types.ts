@@ -128,6 +128,18 @@ export const CONTENT_TYPE_MAP: Record<string, ContentTypeInfo> = {
     isAudio: true,
     isImage: false
   },
+  'music_videos': {
+    table: 'music_videos',
+    apiRoute: '/api/music-videos',
+    displayName: 'Music Videos',
+    category: 'audios',
+    icon: 'Film',
+    description: 'AI-generated music videos',
+    fileExtension: 'mp4',
+    isVideo: true,
+    isAudio: false,
+    isImage: false
+  },
   'sound_fx': {
     table: 'sound_fx',
     apiRoute: '/api/sound-fx',
@@ -168,11 +180,11 @@ export const CONTENT_TYPE_MAP: Record<string, ContentTypeInfo> = {
   },
   'product_motions': {
     table: 'product_motions',
-    apiRoute: '/api/product-motion',
-    displayName: 'Product in Motion',
+    apiRoute: '/api/diverse-motion',
+    displayName: 'Diverse Motion',
     category: 'motions',
     icon: 'Zap',
-    description: 'Product motion graphics',
+    description: 'Diverse motion graphics',
     fileExtension: 'mp4',
     isVideo: true,
     isAudio: false,

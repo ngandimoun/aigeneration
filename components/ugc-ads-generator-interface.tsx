@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Select,
   SelectContent,
@@ -18,1420 +18,2951 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { Badge } from "@/components/ui/badge"
 import { 
   X, 
-  Sparkles, 
+  Package,
+  Film,
+  Users,
+  Sparkles,
+  Upload,
+  ShoppingBag,
+  MessageCircle,
+  Clock,
+  Settings,
   ChevronDown,
   ChevronRight,
-  Upload,
-  Palette,
-  Camera,
-  Volume2,
-  Settings,
-  Eye,
-  Wand2,
-  Lightbulb,
-  Target,
-  MessageCircle,
-  Mic,
-  Music,
-  Zap,
-  Plus,
-  Minus,
   Loader2,
-  Download,
-  RefreshCw
+  Image,
+  Palette,
+  Music,
+  Camera,
+  Lightbulb
 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
-import { filterFilledFields } from "@/lib/utils/prompt-builder"
-import { PreviousGenerations } from "@/components/ui/previous-generations"
+import { useToast } from "@/hooks/use-toast"
 
 interface UGCAdsGeneratorInterfaceProps {
   onClose: () => void
   projectTitle: string
 }
 
-// Smart DNA Types
-interface BrandDNA {
-  name: string
-  prompt?: string
-  tone: string
-  colorCode: string
-  logo?: string
-}
-
-interface ProductEssence {
-  name: string
-  heroBenefit: string
-  visualFocus: string
-  environment: string
-  materials: string[]
-  transformationType: string
-}
-
-interface StoryDNA {
-  coreAngle: string
-  persona: string
-  emotionTone: number
-  patternInterruptType: string
-  hookFramework: string
-}
-
-interface DialogueDNA {
-  voiceType: string
-  script: string
-  toneOfVoice: string
-  language: string
-  voiceAssetSource: string
-}
-
-interface CameraDNA {
-  rhythm: string
-  movementStyle: string
-  cutFrequency: string
-  endingType: string
-}
-
-interface AudioDNA {
-  soundMode: string
-  soundEmotion: string
-  keySounds: string[]
-}
-
-interface UGCVideoConfig {
-  brandDNA: BrandDNA
-  productEssence: ProductEssence
-  storyDNA: StoryDNA
-  dialogueDNA: DialogueDNA
-  cameraDNA: CameraDNA
-  audioDNA: AudioDNA
-}
+type Mode = 'single' | 'dual' | 'multi'
 
 export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGeneratorInterfaceProps) {
-  const { toast } = useToast()
   const { user } = useAuth()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
   
-  // Main state
-  const [config, setConfig] = useState<UGCVideoConfig>({
-    brandDNA: {
-      name: "",
-      tone: "",
-      colorCode: "",
-      logo: ""
-    },
-    productEssence: {
-      name: "",
-      heroBenefit: "",
-      visualFocus: "",
-      environment: "",
-      materials: [],
-      transformationType: ""
-    },
-    storyDNA: {
-      coreAngle: "",
-      persona: "silent visual story",
-      emotionTone: 50,
-      patternInterruptType: "",
-      hookFramework: ""
-    },
-    dialogueDNA: {
-      voiceType: "",
-      script: "",
-      toneOfVoice: "",
-      language: "en",
-      voiceAssetSource: ""
-    },
-    cameraDNA: {
-      rhythm: "smooth tracking",
-      movementStyle: "push-in",
-      cutFrequency: "medium",
-      endingType: "hero product close-up"
-    },
-    audioDNA: {
-      soundMode: "",
-      soundEmotion: "",
-      keySounds: []
-    }
+  // Refs
+  const productImageInputRef = useRef<HTMLInputElement>(null)
+  const image1InputRef = useRef<HTMLInputElement>(null)
+  const image2InputRef = useRef<HTMLInputElement>(null)
+  const image3InputRef = useRef<HTMLInputElement>(null)
+  const characterImageInputRef = useRef<HTMLInputElement>(null)
+  
+  // Mode Selection
+  const [mode, setMode] = useState<Mode>('single')
+  
+  // Template Selection
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  
+  // Product Image (Mode 1)
+  const [productSource, setProductSource] = useState<'library' | 'upload'>('library')
+  const [productFile, setProductFile] = useState<File | null>(null)
+  const [productPreview, setProductPreview] = useState<string | null>(null)
+  const [productId, setProductId] = useState<string>('')
+  const [containsBoth, setContainsBoth] = useState<boolean>(false)
+  const [imageDescription, setImageDescription] = useState<string>('')
+  
+  // Images for Mode 2 & 3
+  const [images, setImages] = useState<Array<{
+    id: string
+    source: 'library' | 'upload'
+    file?: File
+    preview?: string
+    productId?: string
+    purpose?: string // Mode 3 only
+    containsBoth: boolean
+    description?: string
+  }>>([
+    { id: '1', source: 'library', containsBoth: false },
+    { id: '2', source: 'library', containsBoth: false }
+  ])
+  
+  // Mode 3 specific
+  const [mode3SceneDescription, setMode3SceneDescription] = useState<string>('')
+  
+  // Character Presence
+  const [characterPresence, setCharacterPresence] = useState<'voiceover' | 'show' | 'partial'>('voiceover')
+  
+  // Character Selection (when not voiceover)
+  const [characterSource, setCharacterSource] = useState<'library' | 'upload' | 'describe'>('library')
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>('')
+  const [characterFile, setCharacterFile] = useState<File | null>(null)
+  const [characterPreview, setCharacterPreview] = useState<string | null>(null)
+  const [characterDescription, setCharacterDescription] = useState<string>('')
+  const [partialType, setPartialType] = useState<string>('')
+  
+  // Available avatars
+  const [availableAvatars, setAvailableAvatars] = useState<any[]>([])
+  const [loadingAvatars, setLoadingAvatars] = useState(false)
+  
+  // Script
+  const [script, setScript] = useState<string>('')
+  const [voiceStyle, setVoiceStyle] = useState<string>('')
+  const [toneOfDelivery, setToneOfDelivery] = useState<string>('')
+  const [language, setLanguage] = useState<string>('en')
+  
+  // Duration
+  const [duration, setDuration] = useState<number>(30)
+  
+  // Mode 2 specific state
+  const [twoImageMode, setTwoImageMode] = useState<'start-end' | 'comparison' | 'transformation' | 'flexible'>('start-end')
+  const [sceneScripts, setSceneScripts] = useState<{scene1: string, scene2: string, scene3: string}>({
+    scene1: '',
+    scene2: '',
+    scene3: ''
   })
-
-  // UI State
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [currentMaterial, setCurrentMaterial] = useState("")
-  const [currentKeySound, setCurrentKeySound] = useState("")
-  const [generatedJSON, setGeneratedJSON] = useState<string>("")
-  const [generatedVideo, setGeneratedVideo] = useState<string | null>(null)
   
-  // Product Source State
-  const [useCustomProduct, setUseCustomProduct] = useState(false)
-  const [selectedProductId, setSelectedProductId] = useState<string>("")
+  // Advanced Toggle
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
+  
+  // Available Products
   const [availableProducts, setAvailableProducts] = useState<any[]>([])
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [useCustomProduct, setUseCustomProduct] = useState(false)
+  const [selectedProductId, setSelectedProductId] = useState<string>('')
   const [customProductFile, setCustomProductFile] = useState<File | null>(null)
   const [customProductPreview, setCustomProductPreview] = useState<string | null>(null)
+  
+  // Generation state
+  const [isGenerating, setIsGenerating] = useState(false)
+  
+  // AI Suggestions
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null)
+  
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  
+  // Skeleton loader component
+  const SkeletonLoader = ({ className }: { className?: string }) => (
+    <div className={`animate-pulse bg-muted rounded ${className || 'h-4 w-full'}`} />
+  )
+  
+  // Load products and avatars on mount
+  useEffect(() => {
+    loadAvailableProducts()
+    loadAvailableAvatars()
+  }, [])
+  
+  // Manage image slots based on mode
+  useEffect(() => {
+    if (mode === 'dual' && images.length !== 2) {
+      setImages([
+        { id: '1', source: 'library', containsBoth: false },
+        { id: '2', source: 'library', containsBoth: false }
+      ])
+    } else if (mode === 'multi' && images.length !== 3) {
+      setImages([
+        { id: '1', source: 'library', containsBoth: false, purpose: 'product' },
+        { id: '2', source: 'library', containsBoth: false, purpose: 'product' },
+        { id: '3', source: 'library', containsBoth: false, purpose: 'lifestyle' }
+      ])
+    }
+  }, [mode])
 
-  // Collapsible sections state
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    brandContext: true,
-    productEssence: true,
-    creativeAngle: false,
-    dialogue: false,
-    sound: false,
-    camera: false
-  })
+  // Cleanup object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (productPreview) URL.revokeObjectURL(productPreview)
+      if (characterPreview) URL.revokeObjectURL(characterPreview)
+      images.forEach(img => {
+        if (img.preview) URL.revokeObjectURL(img.preview)
+      })
+    }
+  }, [productPreview, characterPreview, images])
 
-
-  // Load available products
+  // Focus management when switching modes
+  useEffect(() => {
+    // Focus first input when mode changes
+    const firstInput = document.querySelector(`[data-mode="${mode}"] input, [data-mode="${mode}"] textarea`)
+    if (firstInput) {
+      (firstInput as HTMLElement).focus()
+    }
+  }, [mode])
+  
   const loadAvailableProducts = async () => {
     setLoadingProducts(true)
     try {
       const response = await fetch('/api/product-mockups')
-      console.log('📦 API Response status:', response.status)
-      
       if (response.ok) {
-        const contentType = response.headers.get('content-type')
-        console.log('📦 Content-Type:', contentType)
-        
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json()
-          console.log('📦 Products loaded:', data)
-          setAvailableProducts(data.productMockups || [])
-        } else {
-          console.error('❌ Response is not JSON, might be HTML (auth issue)')
-          setAvailableProducts([])
-        }
-      } else {
-        console.error('❌ Failed to load products:', response.status, response.statusText)
-        setAvailableProducts([])
+        const data = await response.json()
+        setAvailableProducts(data.productMockups || data || [])
       }
     } catch (error) {
-      console.error('❌ Error loading products:', error)
-      setAvailableProducts([])
+      console.error('Error loading products:', error)
     } finally {
       setLoadingProducts(false)
     }
   }
-
-  // Load products on component mount
-  useEffect(() => {
-    loadAvailableProducts()
-  }, [])
-
-  // Smart auto-fill logic
-  useEffect(() => {
-    // Auto-detect 2D→3D pattern
-    if (config.storyDNA.coreAngle.toLowerCase().includes("drawing to real") || 
-        config.storyDNA.coreAngle.toLowerCase().includes("2d to 3d")) {
-      setConfig(prev => ({
-        ...prev,
-        productEssence: {
-          ...prev.productEssence,
-          transformationType: "2D→3D"
-        },
-        storyDNA: {
-          ...prev.storyDNA,
-          hookFramework: "Transformation"
-        }
-      }))
-    }
-
-    // Auto-set luxury brand styling
-    if (config.brandDNA.tone === "Luxury") {
-      setConfig(prev => ({
-        ...prev,
-        productEssence: {
-          ...prev.productEssence,
-          environment: "Studio White"
-        },
-        cameraDNA: {
-          ...prev.cameraDNA,
-          rhythm: "smooth tracking",
-          movementStyle: "dolly"
-        }
-      }))
-    }
-  }, [config.brandDNA.tone, config.storyDNA.coreAngle])
-
-  // Smart field handlers
-  const updateConfig = (section: keyof UGCVideoConfig, field: string, value: any) => {
-    setConfig(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
+  
+  const loadAvailableAvatars = async () => {
+    setLoadingAvatars(true)
+    try {
+      const response = await fetch('/api/avatars')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableAvatars(data.avatars || data || [])
       }
-    }))
-  }
-
-  const addMaterial = () => {
-    if (currentMaterial.trim()) {
-      setConfig(prev => ({
-        ...prev,
-        productEssence: {
-          ...prev.productEssence,
-          materials: [...prev.productEssence.materials, currentMaterial.trim()]
-        }
-      }))
-      setCurrentMaterial("")
+    } catch (error) {
+      console.error('Error loading avatars:', error)
+    } finally {
+      setLoadingAvatars(false)
     }
   }
-
-  const removeMaterial = (index: number) => {
-    setConfig(prev => ({
-      ...prev,
-      productEssence: {
-        ...prev.productEssence,
-        materials: prev.productEssence.materials.filter((_, i) => i !== index)
-      }
-    }))
-  }
-
-  const addKeySound = () => {
-    if (currentKeySound.trim()) {
-      setConfig(prev => ({
-        ...prev,
-        audioDNA: {
-          ...prev.audioDNA,
-          keySounds: [...prev.audioDNA.keySounds, currentKeySound.trim()]
-        }
-      }))
-      setCurrentKeySound("")
-    }
-  }
-
-  const removeKeySound = (index: number) => {
-    setConfig(prev => ({
-      ...prev,
-      audioDNA: {
-        ...prev.audioDNA,
-        keySounds: prev.audioDNA.keySounds.filter((_, i) => i !== index)
-      }
-    }))
-  }
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }))
-  }
-
-  // Handle custom product file upload
-  const handleCustomProductUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setCustomProductFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setCustomProductPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  // Generate JSON output
-  const generateJSON = () => {
-    const output = {
-      description: `${config.brandDNA.name} ${config.productEssence.name}: ${config.storyDNA.coreAngle}`,
-      style: "cinematic, minimal, pattern-interrupt",
-      camera: {
-        type: config.productEssence.visualFocus.toLowerCase().replace(" ", "_"),
-        movement: config.cameraDNA.movementStyle,
-        rhythm: config.cameraDNA.rhythm
-      },
-      lighting: config.brandDNA.tone === "Luxury" ? "glossy controlled" : "natural",
-      environment: {
-        location: config.productEssence.environment.toLowerCase().replace(" ", "_"),
-        props: config.productEssence.environment === "Home Kitchen" ? ["countertop", "steam reflection"] : []
-      },
-      elements: [
-        config.productEssence.name,
-        ...config.productEssence.materials
-      ],
-      motion: {
-        type: config.productEssence.transformationType,
-        pattern: config.storyDNA.patternInterruptType
-      },
-      audio: {
-        mode: config.audioDNA.soundMode,
-        emotion: config.audioDNA.soundEmotion,
-        sfx: config.audioDNA.keySounds
-      },
-      dialogue: config.storyDNA.persona !== "silent visual story" ? {
-        type: config.dialogueDNA.voiceType,
-        script: config.dialogueDNA.script,
-        tone: config.dialogueDNA.toneOfVoice
-      } : null,
-      ending: config.cameraDNA.endingType,
-      text: "none",
-      keywords: [
-        config.brandDNA.name,
-        config.productEssence.name,
-        config.storyDNA.hookFramework,
-        ...config.productEssence.materials
-      ]
+  
+  const handleCharacterImageUpload = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload an image smaller than 10MB.",
+        variant: "destructive"
+      })
+      return
     }
     
-    setGeneratedJSON(JSON.stringify(output, null, 2))
+    try {
+      setCharacterFile(file)
+      setCharacterPreview(URL.createObjectURL(file))
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load image preview",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleProductSelect = async (productId: string) => {
+    setSelectedProductId(productId)
+    
+    // Fetch product details and show preview
+    try {
+      const response = await fetch(`/api/product-mockups/${productId}`)
+      if (response.ok) {
+        const product = await response.json()
+        if (product.image_url) {
+          setCustomProductPreview(product.image_url)
+        }
+        
+        // Generate AI suggestions based on product
+        generateAISuggestions(product)
+      }
+    } catch (error) {
+      console.error('Error fetching product details:', error)
+    }
+  }
+
+  const generateAISuggestions = (product: any) => {
+    // Mock AI suggestions based on product type
+    const suggestions = {
+      voiceStyle: 'casual-friendly',
+      duration: 30,
+      environment: 'home',
+      script: `I've been using this ${product.title || 'product'} and I have to say...`
+    }
+    
+    setAiSuggestions(suggestions)
+    setShowSuggestions(true)
+  }
+
+  const applySuggestions = () => {
+    if (aiSuggestions) {
+      setVoiceStyle(aiSuggestions.voiceStyle)
+      setDuration(aiSuggestions.duration)
+      if (aiSuggestions.script) {
+        setScript(aiSuggestions.script)
+      }
+      setShowSuggestions(false)
+      
+      toast({
+        title: "Suggestions Applied",
+        description: "AI suggestions have been applied to your ad settings.",
+      })
+    }
+  }
+
+  // Validation function
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+    
+    // Check for required product image
+    if (mode === 'single') {
+      if (!productPreview && !customProductPreview && !selectedProductId) {
+        errors.productImage = 'Please select or upload a product image'
+      }
+    } else {
+      // Check for required images in dual/multi mode
+      const requiredImageCount = mode === 'dual' ? 2 : 3
+      for (let i = 0; i < requiredImageCount; i++) {
+        if (!images[i]?.preview && !images[i]?.productId) {
+          errors[`image${i + 1}`] = `Please select or upload image ${i + 1}`
+        }
+      }
+    }
+    
+    // Check for required script
+    if (!script.trim()) {
+      errors.script = 'Please enter a script for your ad'
+    }
+    
+    // Check for required scene description in multi mode
+    if (mode === 'multi' && !mode3SceneDescription.trim()) {
+      errors.sceneDescription = 'Please describe the scene for your multi-story ad'
+    }
+    
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+  
+  // Template handler
+  const handleTemplateChange = (templateValue: string) => {
+    setSelectedTemplate(templateValue)
+    
+    const templates: Record<string, any> = {
+      'product-review': {
+        duration: 60,
+        voiceStyle: 'casual-friendly',
+        script: 'Hey everyone! Today I\'m reviewing this amazing product...'
+      },
+      'unboxing': {
+        duration: 30,
+        voiceStyle: 'excited-energetic',
+        script: 'Let\'s unbox this together! I\'m so excited to show you what\'s inside...'
+      },
+      'before-after': {
+        duration: 30,
+        voiceStyle: 'confident-bold',
+        script: 'Watch this transformation! Before using this product vs after...'
+      },
+      'tutorial': {
+        duration: 120,
+        voiceStyle: 'professional-clear',
+        script: 'In this tutorial, I\'ll show you step by step how to use this product...'
+      },
+      'comparison': {
+        duration: 60,
+        voiceStyle: 'professional-clear',
+        script: 'Let\'s compare these options and see which one works best...'
+      },
+      'transformation': {
+        duration: 30,
+        voiceStyle: 'passionate-warm',
+        script: 'You won\'t believe the difference! This product completely transformed...'
+      },
+      'professional-demo': {
+        duration: 60,
+        voiceStyle: 'professional-clear',
+        script: 'Welcome to this professional demonstration of our product features...'
+      },
+      'lifestyle': {
+        duration: 30,
+        voiceStyle: 'sincere-heartfelt',
+        script: 'This product has become part of my daily routine...'
+      }
+    }
+    
+    const template = templates[templateValue]
+    if (template) {
+      setDuration(template.duration)
+      setVoiceStyle(template.voiceStyle)
+      setScript(template.script)
+      
+      toast({
+        title: "Template Applied",
+        description: `"${templateValue.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}" settings loaded.`
+      })
+    }
+  }
+
+  // Validation functions
+  const validateMode1 = () => {
+    const errors: string[] = []
+    
+    // Check if product image is provided
+    if (!useCustomProduct && !selectedProductId) {
+      errors.push("Please select a product from your library or upload a custom product image")
+    }
+    if (useCustomProduct && !customProductFile) {
+      errors.push("Please upload a product image")
+    }
+    
+    // Check if script is provided
+    if (!script.trim()) {
+      errors.push("Please provide a script for your ad")
+    }
+    
+    // Check character requirements if not voiceover
+    if (characterPresence === 'show') {
+      if (characterSource === 'library' && !selectedAvatarId) {
+        errors.push("Please select an avatar from your library")
+      }
+      if (characterSource === 'upload' && !characterFile) {
+        errors.push("Please upload a character image")
+      }
+      if (characterSource === 'describe' && !characterDescription.trim()) {
+        errors.push("Please describe your character")
+      }
+    }
+    
+    if (characterPresence === 'partial' && !partialType) {
+      errors.push("Please select a partial presence type")
+    }
+    
+    return errors
+  }
+
+  const validateMode2 = () => {
+    const errors: string[] = []
+    
+    // Check if both images are provided
+    if (images.length < 2) {
+      errors.push("Please provide 2 images for dual visual control")
+    }
+    
+    // Check if at least one scene script is provided
+    if (!sceneScripts.scene1.trim() && !sceneScripts.scene3.trim()) {
+      errors.push("Please provide at least Scene 1 or Scene 3 script")
+    }
+    
+    // Check character requirements if not voiceover
+    if (characterPresence === 'show') {
+      if (characterSource === 'library' && !selectedAvatarId) {
+        errors.push("Please select an avatar from your library")
+      }
+      if (characterSource === 'upload' && !characterFile) {
+        errors.push("Please upload a character image")
+      }
+      if (characterSource === 'describe' && !characterDescription.trim()) {
+        errors.push("Please describe your character")
+      }
+    }
+    
+    if (characterPresence === 'partial' && !partialType) {
+      errors.push("Please select a partial presence type")
+    }
+    
+    return errors
+  }
+
+  const validateMode3 = () => {
+    const errors: string[] = []
+    
+    // Check if all 3 images are provided
+    if (images.length < 3) {
+      errors.push("Please provide 3 images for multi-story mode")
+    }
+    
+    // Check scene description
+    if (!mode3SceneDescription.trim()) {
+      errors.push("Please provide a scene description")
+    }
+    
+    // Check script
+    if (!script.trim()) {
+      errors.push("Please provide a script for your ad")
+    }
+    
+    // Check character requirements if not voiceover
+    if (characterPresence === 'show') {
+      if (characterSource === 'library' && !selectedAvatarId) {
+        errors.push("Please select an avatar from your library")
+      }
+      if (characterSource === 'upload' && !characterFile) {
+        errors.push("Please upload a character image")
+      }
+      if (characterSource === 'describe' && !characterDescription.trim()) {
+        errors.push("Please describe your character")
+      }
+    }
+    
+    if (characterPresence === 'partial' && !partialType) {
+      errors.push("Please select a partial presence type")
+    }
+    
+    return errors
   }
 
   const handleGenerate = async () => {
-    if (!config.brandDNA.name || !config.brandDNA.prompt) {
+    // Clear previous validation errors
+    setValidationErrors({})
+    
+    // Validate form
+    if (!validateForm()) {
       toast({
-        title: "Required Fields Missing",
-        description: "Please fill in Brand Name and Prompt.",
+        title: "Validation Error",
+        description: "Please fix the errors below before generating your ad.",
         variant: "destructive"
       })
       return
     }
-
-    // Check product source
-    if (!useCustomProduct && !selectedProductId) {
-      toast({
-        title: "Product Source Required",
-        description: "Please select a product or upload a custom image.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (useCustomProduct && !customProductFile) {
-      toast({
-        title: "Custom Image Required",
-        description: "Please upload a custom product image.",
-        variant: "destructive"
-      })
-      return
-    }
-
+    
     setIsGenerating(true)
     
     try {
-      // Generate JSON output first
-      generateJSON()
-      
-      // Collect all creative fields
-      const allFields = {
-        // Brand DNA
-        brand_name: config.brandDNA.name,
-        brand_tone: config.brandDNA.tone,
-        brand_color_code: config.brandDNA.colorCode,
-        brand_logo: config.brandDNA.logo,
-        
-        // Product Essence
-        product_name: config.productEssence.name,
-        product_hero_benefit: config.productEssence.heroBenefit,
-        product_visual_focus: config.productEssence.visualFocus,
-        product_environment: config.productEssence.environment,
-        product_materials: config.productEssence.materials,
-        product_transformation_type: config.productEssence.transformationType,
-        
-        // Story DNA
-        story_core_angle: config.storyDNA.coreAngle,
-        story_persona: config.storyDNA.persona,
-        story_emotion_tone: config.storyDNA.emotionTone,
-        story_pattern_interrupt_type: config.storyDNA.patternInterruptType,
-        story_hook_framework: config.storyDNA.hookFramework,
-        
-        // Dialogue DNA
-        dialogue_voice_type: config.dialogueDNA.voiceType,
-        dialogue_script: config.dialogueDNA.script,
-        dialogue_tone_of_voice: config.dialogueDNA.toneOfVoice,
-        dialogue_language: config.dialogueDNA.language,
-        dialogue_voice_asset_source: config.dialogueDNA.voiceAssetSource,
-        
-        // Camera DNA
-        camera_rhythm: config.cameraDNA.rhythm,
-        camera_movement_style: config.cameraDNA.movementStyle,
-        camera_cut_frequency: config.cameraDNA.cutFrequency,
-        camera_ending_type: config.cameraDNA.endingType,
-        
-        // Audio DNA
-        audio_sound_mode: config.audioDNA.soundMode,
-        audio_sound_emotion: config.audioDNA.soundEmotion,
-        audio_key_sounds: config.audioDNA.keySounds,
-        
-        // Product Source
-        use_custom_product: useCustomProduct,
-        selected_product_id: selectedProductId,
-        custom_product_image: customProductFile,
-        generated_json: generatedJSON
-      }
-
-      // Filter to only filled fields
-      const filledFields = filterFilledFields(allFields)
-
-      // Create FormData for API call
       const formData = new FormData()
       
-      // Add original prompt
-      formData.append('brand_prompt', config.brandDNA.prompt || '')
+      // Add mode-specific data
+      formData.append('mode', mode)
+      formData.append('template', selectedTemplate)
+      formData.append('script', script)
+      formData.append('voiceStyle', voiceStyle)
+      formData.append('toneOfDelivery', toneOfDelivery)
+      formData.append('language', language)
+      formData.append('duration', duration.toString())
+      formData.append('characterPresence', characterPresence)
       
-      // Brand DNA
-      formData.append('brand_name', config.brandDNA.name)
-      if (config.brandDNA.tone) formData.append('brand_tone', config.brandDNA.tone)
-      if (config.brandDNA.colorCode) formData.append('brand_color_code', config.brandDNA.colorCode)
-      if (config.brandDNA.logo) formData.append('brand_logo', config.brandDNA.logo)
+      // Add character data if not voiceover
+      if (characterPresence !== 'voiceover') {
+        formData.append('characterSource', characterSource)
+        if (characterSource === 'library') {
+          formData.append('selectedAvatarId', selectedAvatarId)
+        } else if (characterSource === 'upload' && characterFile) {
+          formData.append('characterFile', characterFile)
+        } else if (characterSource === 'describe') {
+          formData.append('characterDescription', characterDescription)
+        }
+        if (characterPresence === 'partial') {
+          formData.append('partialType', partialType)
+          if (partialType === 'custom') {
+            formData.append('characterDescription', characterDescription)
+          }
+        }
+      }
       
-      // Product Essence
-      if (config.productEssence.name) formData.append('product_name', config.productEssence.name)
-      if (config.productEssence.heroBenefit) formData.append('product_hero_benefit', config.productEssence.heroBenefit)
-      if (config.productEssence.visualFocus) formData.append('product_visual_focus', config.productEssence.visualFocus)
-      if (config.productEssence.environment) formData.append('product_environment', config.productEssence.environment)
-      if (config.productEssence.materials.length > 0) formData.append('product_materials', JSON.stringify(config.productEssence.materials))
-      if (config.productEssence.transformationType) formData.append('product_transformation_type', config.productEssence.transformationType)
-      
-      // Story DNA
-      if (config.storyDNA.coreAngle) formData.append('story_core_angle', config.storyDNA.coreAngle)
-      if (config.storyDNA.persona) formData.append('story_persona', config.storyDNA.persona)
-      formData.append('story_emotion_tone', config.storyDNA.emotionTone.toString())
-      if (config.storyDNA.patternInterruptType) formData.append('story_pattern_interrupt_type', config.storyDNA.patternInterruptType)
-      if (config.storyDNA.hookFramework) formData.append('story_hook_framework', config.storyDNA.hookFramework)
-      
-      // Dialogue DNA
-      if (config.dialogueDNA.voiceType) formData.append('dialogue_voice_type', config.dialogueDNA.voiceType)
-      if (config.dialogueDNA.script) formData.append('dialogue_script', config.dialogueDNA.script)
-      if (config.dialogueDNA.toneOfVoice) formData.append('dialogue_tone_of_voice', config.dialogueDNA.toneOfVoice)
-      if (config.dialogueDNA.language) formData.append('dialogue_language', config.dialogueDNA.language)
-      if (config.dialogueDNA.voiceAssetSource) formData.append('dialogue_voice_asset_source', config.dialogueDNA.voiceAssetSource)
-      
-      // Camera DNA
-      if (config.cameraDNA.rhythm) formData.append('camera_rhythm', config.cameraDNA.rhythm)
-      if (config.cameraDNA.movementStyle) formData.append('camera_movement_style', config.cameraDNA.movementStyle)
-      if (config.cameraDNA.cutFrequency) formData.append('camera_cut_frequency', config.cameraDNA.cutFrequency)
-      if (config.cameraDNA.endingType) formData.append('camera_ending_type', config.cameraDNA.endingType)
-      
-      // Audio DNA
-      if (config.audioDNA.soundMode) formData.append('audio_sound_mode', config.audioDNA.soundMode)
-      if (config.audioDNA.soundEmotion) formData.append('audio_sound_emotion', config.audioDNA.soundEmotion)
-      if (config.audioDNA.keySounds.length > 0) formData.append('audio_key_sounds', JSON.stringify(config.audioDNA.keySounds))
-      
-      // Product Source
-      formData.append('use_custom_product', useCustomProduct.toString())
-      if (selectedProductId) formData.append('selected_product_id', selectedProductId)
-      if (customProductFile) formData.append('custom_product_image', customProductFile)
-      
-      // Generated JSON
-      if (generatedJSON) formData.append('generated_json', generatedJSON)
+      // Add mode-specific data
+      if (mode === 'single') {
+        if (useCustomProduct && customProductFile) {
+          formData.append('productFile', customProductFile)
+        } else {
+          formData.append('selectedProductId', selectedProductId)
+        }
+      } else if (mode === 'dual') {
+        formData.append('twoImageMode', twoImageMode)
+        formData.append('sceneScripts', JSON.stringify(sceneScripts))
+        images.forEach((img, index) => {
+          if (img.file) {
+            formData.append(`image${index + 1}`, img.file)
+          }
+          formData.append(`image${index + 1}Source`, img.source)
+          formData.append(`image${index + 1}ContainsBoth`, img.containsBoth.toString())
+          formData.append(`image${index + 1}Description`, img.description || '')
+        })
+      } else if (mode === 'multi') {
+        formData.append('sceneDescription', mode3SceneDescription)
+        images.forEach((img, index) => {
+          if (img.file) {
+            formData.append(`image${index + 1}`, img.file)
+          }
+          formData.append(`image${index + 1}Source`, img.source)
+          formData.append(`image${index + 1}Purpose`, img.purpose || '')
+          formData.append(`image${index + 1}ContainsBoth`, img.containsBoth.toString())
+          formData.append(`image${index + 1}Description`, img.description || '')
+        })
+      }
       
       // Call API
       const response = await fetch('/api/ugc-ads', {
         method: 'POST',
-        body: formData,
+        body: formData
       })
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate UGC ad')
+        throw new Error('Failed to generate UGC ad')
       }
       
       const result = await response.json()
       
-      // Simulate generated video for display
-      setGeneratedVideo("https://example.com/generated-video.mp4")
-      
       toast({
-        title: "UGC Ad Generated!",
-        description: "Your UGC ad has been successfully generated and saved.",
+        title: "Success!",
+        description: "Your UGC ad has been generated successfully!",
       })
+      
+      // Handle success (redirect, show result, etc.)
+      console.log('Generated UGC ad:', result)
       
     } catch (error) {
       console.error('Error generating UGC ad:', error)
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        title: "Error",
+        description: "Failed to generate UGC ad. Please try again.",
         variant: "destructive"
       })
     } finally {
       setIsGenerating(false)
     }
   }
-
-
-  const isDialogueVisible = config.storyDNA.persona !== "silent visual story"
+  
+  // Image upload handler
+  const handleProductImageUpload = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload an image smaller than 10MB.",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    try {
+      setCustomProductFile(file)
+      setProductPreview(URL.createObjectURL(file))
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load image preview",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  // Script read time estimation
+  const estimateReadTime = (text: string): number => {
+    const words = text.trim().split(/\s+/).length
+    const wordsPerSecond = 2.5
+    return Math.ceil(words / wordsPerSecond)
+  }
+  
+  // Mode 2 image management
+  const updateImageSlot = (index: number, updates: Partial<typeof images[0]>) => {
+    setImages(prev => {
+      const newImages = [...prev]
+      newImages[index] = { ...newImages[index], ...updates }
+      return newImages
+    })
+  }
+  
+  const handleImageUpload = (index: number, file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload an image smaller than 10MB.",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    updateImageSlot(index, {
+      file,
+      preview: URL.createObjectURL(file)
+    })
+  }
+  
+  const handleImageProductSelect = (index: number, productId: string) => {
+    updateImageSlot(index, { productId })
+  }
+  
+  const getModeDescription = () => {
+    switch (mode) {
+      case 'single':
+        return 'Perfect for product reviews, demos, and unboxing. Focus on one product with optional character presence. Up to 2 minutes.'
+      case 'dual':
+        return 'Use 2 images for cinematic transitions, before/after reveals, product comparisons, or start/end frame control. Up to 2 minutes.'
+      case 'multi':
+        return 'Use up to 3 images for product bundles, tutorials, or complex narratives. Control character design, lighting, and environment. Up to 2 minutes.'
+      default:
+        return ''
+    }
+  }
 
   return (
-    <div className="bg-background border border-border rounded-lg p-4 space-y-6 max-h-[80vh] overflow-hidden flex flex-col">
-      <div className="flex-1 overflow-y-auto scrollbar-hover space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            🎬 UGC Ads Generator
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {projectTitle}
-          </p>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
-          <X className="h-3 w-3" />
-        </Button>
-      </div>
-
-      {/* 1️⃣ Brand Context */}
-      <div className="space-y-4">
-        <Collapsible 
-          open={expandedSections.brandContext} 
-          onOpenChange={() => toggleSection('brandContext')}
-        >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="h-4 w-4" />
-              <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Brand Context</span>
-            </div>
-            {expandedSections.brandContext ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-blue-600 dark:text-blue-400">🏷️ Brand Name</label>
-            <Input
-              value={config.brandDNA.name}
-              onChange={(e) => updateConfig('brandDNA', 'name', e.target.value)}
-              placeholder="SMEG, LEGO, DreamCut Beauty"
-              className="text-xs h-8"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-green-600 dark:text-green-400">✏️ Prompt</label>
-            <Textarea
-              value={config.brandDNA.prompt || ""}
-              onChange={(e) => updateConfig('brandDNA', 'prompt', e.target.value)}
-              placeholder="Describe your UGC ad concept..."
-              className="min-h-[60px] text-xs resize-none"
-            />
-          </div>
-          
-          {/* Product Source Section */}
-          <div className="space-y-3 p-3 bg-gradient-to-r from-indigo-50/30 to-purple-50/30 dark:from-indigo-950/10 dark:to-purple-950/10 rounded-md border border-indigo-200/30 dark:border-indigo-800/30">
-            <label className="text-xs font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-              📦 Product Source
-              <span className="text-xs text-muted-foreground">*</span>
-            </label>
-            
-            {/* Source Selection Buttons */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={`h-8 px-3 text-xs font-medium transition-all duration-200 flex-1 ${
-                  !useCustomProduct 
-                    ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-sm' 
-                    : 'bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setUseCustomProduct(false)}
-              >
-                <Target className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Use Product</span>
-                <span className="sm:hidden">Product</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={`h-8 px-3 text-xs font-medium transition-all duration-200 flex-1 ${
-                  useCustomProduct 
-                    ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shadow-sm' 
-                    : 'bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setUseCustomProduct(true)}
-              >
-                <Upload className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Upload Image</span>
-                <span className="sm:hidden">Upload</span>
-              </Button>
-            </div>
-
-            {/* Product Selection */}
-            {!useCustomProduct ? (
-              <div className="space-y-2">
-                <div className="relative">
-                  <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                    <SelectTrigger className="w-full h-8 text-xs bg-white dark:bg-gray-900 border border-indigo-200 dark:border-indigo-800 focus:border-indigo-400 dark:focus:border-indigo-600 transition-colors">
-                      <SelectValue placeholder={loadingProducts ? "🔄 Loading..." : "📦 Select product"}>
-                        {selectedProductId && (() => {
-                          const selectedProduct = availableProducts.find(p => p.id === selectedProductId)
-                          if (selectedProduct) {
-                            const productImage = selectedProduct.content?.images?.[0] || selectedProduct.image || null
-                            return (
-                              <div className="flex items-center gap-2 w-full">
-                                <div className="w-5 h-5 rounded-sm overflow-hidden bg-muted flex-shrink-0">
-                                  {productImage ? (
-                                    <img 
-                                      src={productImage} 
-                                      alt={selectedProduct.title}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/50">
-                                      <span className="text-xs">📦</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="truncate">{selectedProduct.title}</span>
-                              </div>
-                            )
-                          }
-                          return "📦 Select product"
-                        })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48">
-                      {availableProducts.length > 0 ? (
-                        availableProducts.map((product) => {
-                          // Extract image from content.images or use a default
-                          const productImage = product.content?.images?.[0] || product.image || null
-                          return (
-                            <SelectItem key={product.id} value={product.id} className="text-xs py-2">
-                              <div className="flex items-center gap-3 w-full">
-                                <div className="w-8 h-8 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                  {productImage ? (
-                                    <img 
-                                      src={productImage} 
-                                      alt={product.title}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/50">
-                                      <span className="text-xs">📦</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <span className="font-medium truncate">{product.title}</span>
-                                  {product.description && (
-                                    <span className="text-xs text-muted-foreground truncate">
-                                      {product.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </SelectItem>
-                          )
-                        })
-                      ) : (
-                        <SelectItem value="no-products" disabled className="text-xs py-2">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <span>📭</span>
-                            No products available
-                          </div>
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {loadingProducts && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                      <Loader2 className="h-3 w-3 animate-spin text-indigo-500" />
-                    </div>
-                  )}
-                </div>
-                
-                {availableProducts.length === 0 && !loadingProducts && (
-                  <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-xs">
-                    <p className="text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                      <span>💡</span>
-                      No products found in your library. Try uploading a custom image instead.
-                    </p>
-                  </div>
-                )}
-                
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {/* Upload Area */}
-                <div className="relative">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCustomProductUpload}
-                    className="hidden"
-                  />
-                  
-                  {!customProductFile ? (
-                    <div 
-                      className="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-md p-3 text-center cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 transition-colors bg-purple-50/30 dark:bg-purple-950/10"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center">
-                          <Upload className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                            Click to upload
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            PNG, JPG, GIF
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
-                        <div className="flex items-center gap-2">
-                          <span className="text-green-600 dark:text-green-400">📁</span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium text-green-700 dark:text-green-300 truncate">
-                              {customProductFile.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {(customProductFile.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"
-                          onClick={() => {
-                            setCustomProductFile(null)
-                            setCustomProductPreview(null)
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = ''
-                            }
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      
-                      {customProductPreview && (
-                        <div className="relative w-full h-20 border border-purple-200 dark:border-purple-800 rounded-md overflow-hidden bg-white dark:bg-gray-900">
-                          <img
-                            src={customProductPreview}
-                            alt="Product preview"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute bottom-1 left-1 right-1">
-                            <p className="text-xs text-white font-medium bg-black/50 backdrop-blur-sm rounded px-1 py-0.5">
-                              Preview
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {!customProductFile && (
-                  <div className="p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
-                    <p className="text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                      <span>💡</span>
-                      Upload high-quality image for best results
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-purple-600 dark:text-purple-400">🎨 Tone of Brand</label>
-            <Select value={config.brandDNA.tone} onValueChange={(value) => updateConfig('brandDNA', 'tone', value)}>
-              <SelectTrigger className="w-full h-8 text-xs">
-                <SelectValue placeholder="Select brand tone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Modern" className="text-xs">🏢 Modern</SelectItem>
-                <SelectItem value="Playful" className="text-xs">🎮 Playful</SelectItem>
-                <SelectItem value="Luxury" className="text-xs">💎 Luxury</SelectItem>
-                <SelectItem value="Techy" className="text-xs">⚡ Techy</SelectItem>
-                <SelectItem value="Wholesome" className="text-xs">🌱 Wholesome</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-        </CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      {/* 2️⃣ Product Essence */}
-      <div className="space-y-4">
-        <Collapsible 
-          open={expandedSections.productEssence} 
-          onOpenChange={() => toggleSection('productEssence')}
-        >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Product Essence</span>
-            </div>
-            {expandedSections.productEssence ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-          
-           <div className="space-y-2">
-             <label className="text-xs font-medium text-orange-600 dark:text-orange-400">⭐ Hero Benefit / Moment</label>
-             <div className="space-y-2">
-               <Select onValueChange={(value) => updateConfig('productEssence', 'heroBenefit', value)}>
-                 <SelectTrigger className="w-full h-8 text-xs">
-                   <SelectValue placeholder="Choose a common benefit or write custom" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="Transforms from clear to red when heated" className="text-xs">🔥 Transforms from clear to red when heated</SelectItem>
-                   <SelectItem value="Changes color based on temperature" className="text-xs">🌡️ Changes color based on temperature</SelectItem>
-                   <SelectItem value="Self-cleaning technology" className="text-xs">🧽 Self-cleaning technology</SelectItem>
-                   <SelectItem value="One-touch operation" className="text-xs">👆 One-touch operation</SelectItem>
-                   <SelectItem value="Instant results in seconds" className="text-xs">⚡ Instant results in seconds</SelectItem>
-                   <SelectItem value="Waterproof and durable" className="text-xs">💧 Waterproof and durable</SelectItem>
-                   <SelectItem value="Wireless charging capability" className="text-xs">🔋 Wireless charging capability</SelectItem>
-                   <SelectItem value="Voice-activated control" className="text-xs">🎤 Voice-activated control</SelectItem>
-                   <SelectItem value="Automatic shut-off safety" className="text-xs">🛡️ Automatic shut-off safety</SelectItem>
-                   <SelectItem value="Multi-function versatility" className="text-xs">🔧 Multi-function versatility</SelectItem>
-                 </SelectContent>
-               </Select>
-               <Textarea
-                 value={config.productEssence.heroBenefit}
-                 onChange={(e) => updateConfig('productEssence', 'heroBenefit', e.target.value)}
-                 placeholder="Or write your custom hero benefit..."
-                 className="min-h-[60px] text-xs resize-none"
-               />
-             </div>
-           </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-cyan-600 dark:text-cyan-400">👁️ Visual Focus</label>
-              <Select value={config.productEssence.visualFocus} onValueChange={(value) => updateConfig('productEssence', 'visualFocus', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select focus" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Macro Detail" className="text-xs">🔍 Macro Detail</SelectItem>
-                  <SelectItem value="Lifestyle in Context" className="text-xs">🏠 Lifestyle in Context</SelectItem>
-                  <SelectItem value="Full Product Reveal" className="text-xs">📦 Full Product Reveal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-teal-600 dark:text-teal-400">🌍 Environment</label>
-              <Select value={config.productEssence.environment} onValueChange={(value) => updateConfig('productEssence', 'environment', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select environment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Studio White" className="text-xs">🎬 Studio White</SelectItem>
-                  <SelectItem value="Home Kitchen" className="text-xs">🏠 Home Kitchen</SelectItem>
-                  <SelectItem value="Outdoor" className="text-xs">🌳 Outdoor</SelectItem>
-                  <SelectItem value="Fantasy Sky" className="text-xs">☁️ Fantasy Sky</SelectItem>
-                  <SelectItem value="Paper Page" className="text-xs">📄 Paper Page</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-           <div className="space-y-2">
-             <label className="text-xs font-medium text-indigo-600 dark:text-indigo-400">🎨 Material / Texture Emphasis</label>
-             <div className="space-y-2">
-               <Select onValueChange={(value) => {
-                 setCurrentMaterial(value)
-                 addMaterial()
-               }}>
-                 <SelectTrigger className="w-full h-8 text-xs">
-                   <SelectValue placeholder="Choose common materials or add custom" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="Glass" className="text-xs">🪟 Glass</SelectItem>
-                   <SelectItem value="Metal" className="text-xs">⚙️ Metal</SelectItem>
-                   <SelectItem value="Liquid" className="text-xs">💧 Liquid</SelectItem>
-                   <SelectItem value="Smoke" className="text-xs">💨 Smoke</SelectItem>
-                   <SelectItem value="Wood" className="text-xs">🪵 Wood</SelectItem>
-                   <SelectItem value="Plastic" className="text-xs">🧱 Plastic</SelectItem>
-                   <SelectItem value="Fabric" className="text-xs">🧵 Fabric</SelectItem>
-                   <SelectItem value="Ceramic" className="text-xs">🏺 Ceramic</SelectItem>
-                   <SelectItem value="Leather" className="text-xs">👜 Leather</SelectItem>
-                   <SelectItem value="Crystal" className="text-xs">💎 Crystal</SelectItem>
-                   <SelectItem value="Steam" className="text-xs">♨️ Steam</SelectItem>
-                   <SelectItem value="Foam" className="text-xs">🧼 Foam</SelectItem>
-                 </SelectContent>
-               </Select>
-               <div className="flex gap-2 mb-2">
-                 <Input
-                   value={currentMaterial}
-                   onChange={(e) => setCurrentMaterial(e.target.value)}
-                   placeholder="Or type custom material..."
-                   className="text-xs h-8"
-                   onKeyPress={(e) => e.key === 'Enter' && addMaterial()}
-                 />
-                 <Button onClick={addMaterial} size="sm" className="h-8 w-8">
-                   <Plus className="h-3 w-3" />
-                 </Button>
-               </div>
-             </div>
-             <div className="flex flex-wrap gap-2">
-               {config.productEssence.materials.map((material, index) => (
-                 <Badge key={index} variant="secondary" className="cursor-pointer text-xs" onClick={() => removeMaterial(index)}>
-                   {material} ×
-                 </Badge>
-               ))}
-             </div>
-           </div>
-          
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-pink-600 dark:text-pink-400">✨ Transformation Type</label>
-            <Select value={config.productEssence.transformationType} onValueChange={(value) => updateConfig('productEssence', 'transformationType', value)}>
-              <SelectTrigger className="w-full h-8 text-xs">
-                <SelectValue placeholder="Select transformation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Reveal" className="text-xs">🎭 Reveal</SelectItem>
-                <SelectItem value="Color Morph" className="text-xs">🌈 Color Morph</SelectItem>
-                <SelectItem value="Assemble" className="text-xs">🔧 Assemble</SelectItem>
-                <SelectItem value="Grow" className="text-xs">🌱 Grow</SelectItem>
-                <SelectItem value="Materialize" className="text-xs">✨ Materialize</SelectItem>
-                <SelectItem value="2D→3D" className="text-xs">📐 2D→3D</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      {/* 3️⃣ Creative Angle */}
-      <div className="space-y-4">
-        <Collapsible 
-          open={expandedSections.creativeAngle} 
-          onOpenChange={() => toggleSection('creativeAngle')}
-        >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-sm font-medium text-violet-600 dark:text-violet-400">Creative Angle</span>
-            </div>
-            {expandedSections.creativeAngle ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-           <div className="space-y-2">
-             <label className="text-xs font-medium text-rose-600 dark:text-rose-400">🎯 Core Angle</label>
-             <div className="space-y-2">
-               <Select onValueChange={(value) => updateConfig('storyDNA', 'coreAngle', value)}>
-                 <SelectTrigger className="w-full h-8 text-xs">
-                   <SelectValue placeholder="Choose a common angle or write custom" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="From transparency to color" className="text-xs">🌈 From transparency to color</SelectItem>
-                   <SelectItem value="From drawing to real life" className="text-xs">🎨 From drawing to real life</SelectItem>
-                   <SelectItem value="From chaos to order" className="text-xs">🌀 From chaos to order</SelectItem>
-                   <SelectItem value="From broken to fixed" className="text-xs">🔧 From broken to fixed</SelectItem>
-                   <SelectItem value="From empty to full" className="text-xs">📦 From empty to full</SelectItem>
-                   <SelectItem value="From cold to hot" className="text-xs">🔥 From cold to hot</SelectItem>
-                   <SelectItem value="From dark to light" className="text-xs">💡 From dark to light</SelectItem>
-                   <SelectItem value="From old to new" className="text-xs">🆕 From old to new</SelectItem>
-                   <SelectItem value="From simple to complex" className="text-xs">🧩 From simple to complex</SelectItem>
-                   <SelectItem value="From invisible to visible" className="text-xs">👁️ From invisible to visible</SelectItem>
-                   <SelectItem value="From flat to 3D" className="text-xs">📐 From flat to 3D</SelectItem>
-                   <SelectItem value="From static to dynamic" className="text-xs">⚡ From static to dynamic</SelectItem>
-                 </SelectContent>
-               </Select>
-               <Textarea
-                 value={config.storyDNA.coreAngle}
-                 onChange={(e) => updateConfig('storyDNA', 'coreAngle', e.target.value)}
-                 placeholder="Or write your custom core angle..."
-                 className="min-h-[60px] text-xs resize-none"
-               />
-             </div>
-           </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">👤 Persona</label>
-              <Select value={config.storyDNA.persona} onValueChange={(value) => updateConfig('storyDNA', 'persona', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select persona" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Creator on camera" className="text-xs">🎥 Creator on camera</SelectItem>
-                  <SelectItem value="Narrator voice" className="text-xs">🎙️ Narrator voice</SelectItem>
-                  <SelectItem value="Silent visual story" className="text-xs">🤫 Silent visual story</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-yellow-600 dark:text-yellow-400">⚡ Pattern Interrupt Type</label>
-              <Select value={config.storyDNA.patternInterruptType} onValueChange={(value) => updateConfig('storyDNA', 'patternInterruptType', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select interrupt" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Unexpected Motion" className="text-xs">🎬 Unexpected Motion</SelectItem>
-                  <SelectItem value="Visual Twist" className="text-xs">🌀 Visual Twist</SelectItem>
-                  <SelectItem value="Sound Cue" className="text-xs">🔊 Sound Cue</SelectItem>
-                  <SelectItem value="Cut Timing" className="text-xs">✂️ Cut Timing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-lime-600 dark:text-lime-400">🔗 Hook Framework Link</label>
-              <Select value={config.storyDNA.hookFramework} onValueChange={(value) => updateConfig('storyDNA', 'hookFramework', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select framework" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Transformation" className="text-xs">🔄 Transformation</SelectItem>
-                  <SelectItem value="Reveal" className="text-xs">🎭 Reveal</SelectItem>
-                  <SelectItem value="Cause & Effect" className="text-xs">⚡ Cause & Effect</SelectItem>
-                  <SelectItem value="Story in Motion" className="text-xs">🎬 Story in Motion</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      {/* 4️⃣ Dialogue / Voice (Conditional) */}
-      <div className="space-y-4">
-        <Collapsible 
-          open={expandedSections.dialogue} 
-          onOpenChange={() => toggleSection('dialogue')}
-        >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">🎤 Dialogue / Voice</span>
-            </div>
-            {expandedSections.dialogue ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-          {isDialogueVisible ? (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-cyan-600 dark:text-cyan-400">🗣️ Voice Type</label>
-              <Select value={config.dialogueDNA.voiceType} onValueChange={(value) => updateConfig('dialogueDNA', 'voiceType', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select voice type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Creator on camera" className="text-xs">🎥 Creator on camera</SelectItem>
-                  <SelectItem value="Voiceover narration" className="text-xs">🎙️ Voiceover narration</SelectItem>
-                  <SelectItem value="Off-screen reaction" className="text-xs">😮 Off-screen reaction</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-foreground">Tone of Voice</label>
-              <Select value={config.dialogueDNA.toneOfVoice} onValueChange={(value) => updateConfig('dialogueDNA', 'toneOfVoice', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select tone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Casual" className="text-xs">😊 Casual</SelectItem>
-                  <SelectItem value="Excited" className="text-xs">🎉 Excited</SelectItem>
-                  <SelectItem value="Soft & Confident" className="text-xs">💪 Soft & Confident</SelectItem>
-                  <SelectItem value="Mystical" className="text-xs">✨ Mystical</SelectItem>
-                  <SelectItem value="Professional" className="text-xs">👔 Professional</SelectItem>
-                  <SelectItem value="Friendly" className="text-xs">🤝 Friendly</SelectItem>
-                  <SelectItem value="Energetic" className="text-xs">⚡ Energetic</SelectItem>
-                  <SelectItem value="Calm" className="text-xs">🧘 Calm</SelectItem>
-                  <SelectItem value="Authoritative" className="text-xs">👑 Authoritative</SelectItem>
-                  <SelectItem value="Playful" className="text-xs">🎮 Playful</SelectItem>
-                  <SelectItem value="Warm" className="text-xs">🔥 Warm</SelectItem>
-                  <SelectItem value="Cool" className="text-xs">❄️ Cool</SelectItem>
-                  <SelectItem value="Dramatic" className="text-xs">🎭 Dramatic</SelectItem>
-                  <SelectItem value="Sincere" className="text-xs">💝 Sincere</SelectItem>
-                  <SelectItem value="Humorous" className="text-xs">😄 Humorous</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-emerald-600 dark:text-emerald-400">📝 Script Input</label>
-            <Textarea
-              value={config.dialogueDNA.script}
-              onChange={(e) => updateConfig('dialogueDNA', 'script', e.target.value)}
-              placeholder="I never believed a kettle could do this..."
-              className="min-h-[60px] text-xs resize-none"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-indigo-600 dark:text-indigo-400">🌍 Language</label>
-              <Select value={config.dialogueDNA.language} onValueChange={(value) => updateConfig('dialogueDNA', 'language', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en" className="text-xs">🇺🇸 English</SelectItem>
-                  <SelectItem value="es" className="text-xs">🇪🇸 Spanish</SelectItem>
-                  <SelectItem value="fr" className="text-xs">🇫🇷 French</SelectItem>
-                  <SelectItem value="de" className="text-xs">🇩🇪 German</SelectItem>
-                  <SelectItem value="it" className="text-xs">🇮🇹 Italian</SelectItem>
-                  <SelectItem value="pt" className="text-xs">🇵🇹 Portuguese</SelectItem>
-                  <SelectItem value="ru" className="text-xs">🇷🇺 Russian</SelectItem>
-                  <SelectItem value="ja" className="text-xs">🇯🇵 Japanese</SelectItem>
-                  <SelectItem value="ko" className="text-xs">🇰🇷 Korean</SelectItem>
-                  <SelectItem value="zh" className="text-xs">🇨🇳 Chinese</SelectItem>
-                  <SelectItem value="ar" className="text-xs">🇸🇦 Arabic</SelectItem>
-                  <SelectItem value="hi" className="text-xs">🇮🇳 Hindi</SelectItem>
-                  <SelectItem value="nl" className="text-xs">🇳🇱 Dutch</SelectItem>
-                  <SelectItem value="sv" className="text-xs">🇸🇪 Swedish</SelectItem>
-                  <SelectItem value="no" className="text-xs">🇳🇴 Norwegian</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-          </div>
-            </>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-xs text-muted-foreground">
-                Select a persona other than "Silent visual story" to configure dialogue settings.
-              </p>
-            </div>
-          )}
-        </CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      {/* 6️⃣ Sound / Atmosphere */}
-      <div className="space-y-4">
-        <Collapsible 
-          open={expandedSections.sound} 
-          onOpenChange={() => toggleSection('sound')}
-        >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-green-600 dark:text-green-400">🎵 Sound / Atmosphere</span>
-            </div>
-            {expandedSections.sound ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-teal-600 dark:text-teal-400">🔊 Sound Mode</label>
-              <Select value={config.audioDNA.soundMode} onValueChange={(value) => updateConfig('audioDNA', 'soundMode', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select sound mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Realistic SFX" className="text-xs">🎵 Realistic SFX</SelectItem>
-                  <SelectItem value="Music-Driven" className="text-xs">🎶 Music-Driven</SelectItem>
-                  <SelectItem value="Silence + Impact" className="text-xs">🤫 Silence + Impact</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-pink-600 dark:text-pink-400">💫 Sound Emotion</label>
-              <Select value={config.audioDNA.soundEmotion} onValueChange={(value) => updateConfig('audioDNA', 'soundEmotion', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select emotion" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Warm" className="text-xs">🔥 Warm</SelectItem>
-                  <SelectItem value="Cool" className="text-xs">❄️ Cool</SelectItem>
-                  <SelectItem value="Mystical" className="text-xs">✨ Mystical</SelectItem>
-                  <SelectItem value="Punchy" className="text-xs">💥 Punchy</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-           <div className="space-y-2">
-             <label className="text-xs font-medium text-orange-600 dark:text-orange-400">🎶 Key Sounds / FX</label>
-             <div className="space-y-2">
-               <Select onValueChange={(value) => {
-                 setCurrentKeySound(value)
-                 addKeySound()
-               }}>
-                 <SelectTrigger className="w-full h-8 text-xs">
-                   <SelectValue placeholder="Choose common sounds or add custom" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="Steam hiss" className="text-xs">♨️ Steam hiss</SelectItem>
-                   <SelectItem value="Click ignition" className="text-xs">⚡ Click ignition</SelectItem>
-                   <SelectItem value="Spark" className="text-xs">✨ Spark</SelectItem>
-                   <SelectItem value="Fire crackle" className="text-xs">🔥 Fire crackle</SelectItem>
-                   <SelectItem value="Water splash" className="text-xs">💧 Water splash</SelectItem>
-                   <SelectItem value="Metal clink" className="text-xs">⚙️ Metal clink</SelectItem>
-                   <SelectItem value="Glass tinkle" className="text-xs">🪟 Glass tinkle</SelectItem>
-                   <SelectItem value="Whoosh" className="text-xs">💨 Whoosh</SelectItem>
-                   <SelectItem value="Pop" className="text-xs">💥 Pop</SelectItem>
-                   <SelectItem value="Sizzle" className="text-xs">🍳 Sizzle</SelectItem>
-                   <SelectItem value="Bubble" className="text-xs">🫧 Bubble</SelectItem>
-                   <SelectItem value="Hum" className="text-xs">🔊 Hum</SelectItem>
-                   <SelectItem value="Beep" className="text-xs">📱 Beep</SelectItem>
-                   <SelectItem value="Chime" className="text-xs">🔔 Chime</SelectItem>
-                   <SelectItem value="Thud" className="text-xs">💥 Thud</SelectItem>
-                 </SelectContent>
-               </Select>
-               <div className="flex gap-2 mb-2">
-                 <Input
-                   value={currentKeySound}
-                   onChange={(e) => setCurrentKeySound(e.target.value)}
-                   placeholder="Or type custom sound..."
-                   className="text-xs h-8"
-                   onKeyPress={(e) => e.key === 'Enter' && addKeySound()}
-                 />
-                 <Button onClick={addKeySound} size="sm" className="h-8 w-8">
-                   <Plus className="h-3 w-3" />
-                 </Button>
-               </div>
-             </div>
-             <div className="flex flex-wrap gap-2">
-               {config.audioDNA.keySounds.map((sound, index) => (
-                 <Badge key={index} variant="secondary" className="cursor-pointer text-xs" onClick={() => removeKeySound(index)}>
-                   {sound} ×
-                 </Badge>
-               ))}
-             </div>
-           </div>
-        </CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      {/* 5️⃣ Camera & Motion Intelligence (Collapsible) */}
-      <div className="space-y-4">
-        <Collapsible 
-          open={expandedSections.camera} 
-          onOpenChange={() => toggleSection('camera')}
-        >
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-2 h-auto">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-red-600 dark:text-red-400">📹 Camera & Motion Intelligence</span>
-            </div>
-            {expandedSections.camera ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-violet-600 dark:text-violet-400">🎬 Camera Rhythm</label>
-              <Select value={config.cameraDNA.rhythm} onValueChange={(value) => updateConfig('cameraDNA', 'rhythm', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select rhythm" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="smooth tracking" className="text-xs">🎬 Smooth tracking</SelectItem>
-                  <SelectItem value="dynamic cuts" className="text-xs">⚡ Dynamic cuts</SelectItem>
-                  <SelectItem value="handheld" className="text-xs">📱 Handheld</SelectItem>
-                  <SelectItem value="cinematic" className="text-xs">🎭 Cinematic</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-amber-600 dark:text-amber-400">🎯 Key Movement Style</label>
-              <Select value={config.cameraDNA.movementStyle} onValueChange={(value) => updateConfig('cameraDNA', 'movementStyle', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select movement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="push-in" className="text-xs">➡️ Push-in</SelectItem>
-                  <SelectItem value="dolly" className="text-xs">🎬 Dolly</SelectItem>
-                  <SelectItem value="arc" className="text-xs">🌙 Arc</SelectItem>
-                  <SelectItem value="handheld" className="text-xs">📱 Handheld</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-cyan-600 dark:text-cyan-400">✂️ Cut Frequency</label>
-              <Select value={config.cameraDNA.cutFrequency} onValueChange={(value) => updateConfig('cameraDNA', 'cutFrequency', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="slow" className="text-xs">🐌 Slow</SelectItem>
-                  <SelectItem value="medium" className="text-xs">⚖️ Medium</SelectItem>
-                  <SelectItem value="fast" className="text-xs">⚡ Fast</SelectItem>
-                  <SelectItem value="dynamic" className="text-xs">🎬 Dynamic</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-emerald-600 dark:text-emerald-400">🏁 Ending Type</label>
-              <Select value={config.cameraDNA.endingType} onValueChange={(value) => updateConfig('cameraDNA', 'endingType', value)}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select ending" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hero product close-up" className="text-xs">🎯 Hero Product Close-Up</SelectItem>
-                  <SelectItem value="brand reveal" className="text-xs">🏷️ Brand Reveal</SelectItem>
-                  <SelectItem value="call to action" className="text-xs">📢 Call to Action</SelectItem>
-                  <SelectItem value="fade out" className="text-xs">🌅 Fade Out</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      {/* Generated Video */}
-      {generatedVideo && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-purple-600 dark:text-purple-400">🎥 Generated UGC Ad</h4>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => setGeneratedVideo(null)}
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Clear
-              </Button>
-            </div>
-          </div>
-          <div className="relative">
-            <video 
-              src={generatedVideo} 
-              controls
-              className="w-full h-48 object-cover rounded-md"
-            />
-            <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity rounded-md flex items-center justify-center gap-2">
-              <Button variant="secondary" size="sm" className="text-xs h-6">
-                <Eye className="h-3 w-3 mr-1" />
-                View
-              </Button>
-              <Button variant="secondary" size="sm" className="text-xs h-6">
-                <Download className="h-3 w-3 mr-1" />
-                Download
-              </Button>
-            </div>
+    <div className="bg-background border border-border rounded-lg p-4 space-y-4 h-full overflow-hidden flex flex-col relative">
+      {/* Disabled overlay during generation */}
+      {isGenerating && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-purple-600" />
+            <p className="text-sm font-medium text-foreground">Generating your UGC ad...</p>
+            <p className="text-xs text-muted-foreground mt-1">This may take a few moments</p>
           </div>
         </div>
       )}
+      
+      <div className="flex-1 overflow-y-auto scrollbar-hover">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              🎬 UGC Ads Generator
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {projectTitle}
+            </p>
+          </div>
+          <Button 
+            type="button"
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose} 
+            className="h-6 w-6 shrink-0"
+            aria-label="Close UGC Ads Generator"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
 
+        {/* Mode Selection Tabs */}
+        <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)} className="w-full mb-4">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="single" className="text-xs py-2 px-2 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
+              <Package className="h-3 w-3 mr-1" />
+              Single Product
+            </TabsTrigger>
+            <TabsTrigger value="dual" className="text-xs py-2 px-2 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
+              <Film className="h-3 w-3 mr-1" />
+              Dual Visual
+            </TabsTrigger>
+            <TabsTrigger value="multi" className="text-xs py-2 px-2 data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/30">
+              <Users className="h-3 w-3 mr-1" />
+              Multi-Story
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Mode Description */}
+          <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <p className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2">
+              <Sparkles className="h-3 w-3" />
+              {getModeDescription()}
+            </p>
+          </div>
+
+          {/* Mode 1: Single Product Showcase */}
+          <TabsContent value="single" className="space-y-4 mt-4" data-mode="single">
+            {/* Template Selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Sparkles className="h-3 w-3 text-purple-600" />
+                Quick Start Template (Optional)
+              </label>
+              <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Choose a template to get started quickly..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="product-review">
+                    <div className="flex items-center gap-2">
+                      <span>⭐</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Product Review</span>
+                        <span className="text-[10px] text-muted-foreground">Honest review & recommendation</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="unboxing">
+                    <div className="flex items-center gap-2">
+                      <span>📦</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Unboxing</span>
+                        <span className="text-[10px] text-muted-foreground">First impressions & reveal</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="before-after">
+                    <div className="flex items-center gap-2">
+                      <span>🔄</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Before/After</span>
+                        <span className="text-[10px] text-muted-foreground">Show the transformation</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="tutorial">
+                    <div className="flex items-center gap-2">
+                      <span>📚</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Tutorial</span>
+                        <span className="text-[10px] text-muted-foreground">Step-by-step guide</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="comparison">
+                    <div className="flex items-center gap-2">
+                      <span>⚖️</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Comparison</span>
+                        <span className="text-[10px] text-muted-foreground">Compare features & benefits</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="transformation">
+                    <div className="flex items-center gap-2">
+                      <span>✨</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Transformation</span>
+                        <span className="text-[10px] text-muted-foreground">Dramatic change reveal</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="professional-demo">
+                    <div className="flex items-center gap-2">
+                      <span>💼</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Professional Demo</span>
+                        <span className="text-[10px] text-muted-foreground">Detailed product showcase</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="lifestyle">
+                    <div className="flex items-center gap-2">
+                      <span>🎨</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Lifestyle</span>
+                        <span className="text-[10px] text-muted-foreground">Product in daily life</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Product Image Section */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <ShoppingBag className="h-3 w-3 text-purple-600" />
+                Product Image <span className="text-red-500">*</span>
+              </label>
+              
+              {/* Source Toggle */}
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setProductSource('library')
+                    setUseCustomProduct(false)
+                  }}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    productSource === 'library'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  From Product Library
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setProductSource('upload')
+                    setUseCustomProduct(true)
+                  }}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    productSource === 'upload'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  Upload Image
+                </Button>
+              </div>
+
+              {/* Library Selection */}
+              {productSource === 'library' && (
+                <div className="space-y-2">
+                  {loadingProducts ? (
+                    <div className="space-y-2">
+                      <SkeletonLoader className="h-8 w-full" />
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading products...
+                      </div>
+                    </div>
+                  ) : (
+                    <Select value={selectedProductId} onValueChange={handleProductSelect}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select a product..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableProducts.length === 0 ? (
+                          <SelectItem value="none" disabled>No products available</SelectItem>
+                        ) : (
+                          availableProducts.map((product) => (
+                            <SelectItem key={product.id} value={product.id} className="text-xs">
+                              {product.title || product.name || 'Untitled Product'}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
+
+              {/* Upload */}
+              {productSource === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    ref={productImageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleProductImageUpload(file)
+                    }}
+                  />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => productImageInputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload product image"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Image
+                        </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {(productPreview || customProductPreview) && (
+                <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                  <img
+                    src={productPreview ?? customProductPreview ?? ''}
+                    alt={selectedProductId ? `Product preview for ${availableProducts.find(p => p.id === selectedProductId)?.title || 'selected product'}` : 'Uploaded product image preview'}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Validation Error */}
+              {validationErrors.productImage && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.productImage}
+                </div>
+              )}
+
+              {/* AI Smart Suggestions */}
+              {showSuggestions && aiSuggestions && (
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <h4 className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Lightbulb className="h-3 w-3 text-purple-600" />
+                    💡 AI Suggestions
+                  </h4>
+                  <ul className="text-[10px] text-muted-foreground space-y-1 mb-3">
+                    <li>Voice Style: {aiSuggestions.voiceStyle}</li>
+                    <li>Duration: {aiSuggestions.duration}s</li>
+                    <li>Environment: {aiSuggestions.environment}</li>
+                  </ul>
+                  <Button 
+                    type="button"
+                    onClick={applySuggestions}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                  >
+                    Apply All
+                  </Button>
+                </div>
+              )}
+
+              {/* Contains Both Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contains-both"
+                  checked={containsBoth}
+                  onCheckedChange={(checked) => setContainsBoth(checked as boolean)}
+                />
+                <label
+                  htmlFor="contains-both"
+                  className="text-xs text-muted-foreground cursor-pointer"
+                >
+                  This image contains both character and product
+                </label>
+              </div>
+
+              {/* Optional Description */}
+              <Input
+                placeholder="Describe the product or how to use this image (optional)..."
+                value={imageDescription}
+                onChange={(e) => setImageDescription(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+
+            {/* Character Presence Section */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Users className="h-3 w-3 text-purple-600" />
+                Character Presence (Optional)
+              </label>
+              
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('voiceover')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'voiceover'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  🎙️ Voiceover Only
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('show')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'show'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  👤 Show Character
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('partial')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'partial'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  ✋ Partial Presence
+                </Button>
+              </div>
+            </div>
+
+            {/* Character Selection (when not voiceover) */}
+            {characterPresence !== 'voiceover' && (
+              <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-3 w-3 text-purple-600" />
+                  {characterPresence === 'show' ? 'Choose Your Character' : 'Partial Presence Type'}
+                </label>
+
+                {characterPresence === 'show' ? (
+                  <>
+                    {/* Character Source Toggle */}
+                    <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCharacterSource('library')}
+                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                          characterSource === 'library'
+                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        From Avatar Library
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCharacterSource('upload')}
+                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                          characterSource === 'upload'
+                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        Upload Image
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCharacterSource('describe')}
+                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                          characterSource === 'describe'
+                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        Describe Character
+                      </Button>
+                    </div>
+
+                    {/* Avatar Library Selection */}
+                    {characterSource === 'library' && (
+                      loadingAvatars ? (
+                        <div className="space-y-2">
+                          <SkeletonLoader className="h-8 w-full" />
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Loading avatars...
+                          </div>
+                        </div>
+                      ) : (
+                        <Select value={selectedAvatarId} onValueChange={setSelectedAvatarId}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select an avatar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableAvatars.length === 0 ? (
+                              <SelectItem value="none" disabled>No avatars available</SelectItem>
+                            ) : (
+                              availableAvatars.map((avatar) => (
+                                <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
+                                  {avatar.title || avatar.name || 'Untitled Avatar'}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )
+                    )}
+
+                    {/* Character Upload */}
+                    {characterSource === 'upload' && (
+                      <div className="space-y-2">
+                        <input
+                          ref={characterImageInputRef}
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleCharacterImageUpload(file)
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => characterImageInputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload character image"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Character Image
+                        </Button>
+                        <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                      </div>
+                    )}
+
+                    {/* Character Description */}
+                    {characterSource === 'describe' && (
+                      <Textarea
+                        placeholder="Describe your character... e.g., 'A friendly 25-year-old woman with curly brown hair, wearing casual clothes, smiling warmly'"
+                        value={characterDescription}
+                        onChange={(e) => setCharacterDescription(e.target.value)}
+                        rows={3}
+                        className="resize-none text-xs"
+                      />
+                    )}
+
+                    {/* Character Preview */}
+                    {characterPreview && (
+                      <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                        <img
+                          src={characterPreview}
+                          alt={selectedAvatarId ? `Character preview for ${availableAvatars.find(a => a.id === selectedAvatarId)?.name || 'selected character'}` : 'Uploaded character image preview'}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Partial Presence Options */
+                  <Select value={partialType} onValueChange={setPartialType}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="What part of the character should appear?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hands">✋ Hands Only</SelectItem>
+                      <SelectItem value="face">👤 Face Close-up</SelectItem>
+                      <SelectItem value="feet">🦶 Feet/Legs</SelectItem>
+                      <SelectItem value="silhouette">👥 Silhouette</SelectItem>
+                      <SelectItem value="custom">🎨 Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Custom Partial Description */}
+                {characterPresence === 'partial' && partialType === 'custom' && (
+                  <Textarea
+                    placeholder="Describe the partial presence... e.g., 'Just the hands holding the product, or a silhouette in the background'"
+                    value={characterDescription}
+                    onChange={(e) => setCharacterDescription(e.target.value)}
+                    rows={2}
+                    className="resize-none text-xs"
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Character Selection (when not voiceover) */}
+            {characterPresence !== 'voiceover' && (
+              <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-3 w-3 text-purple-600" />
+                  {characterPresence === 'show' ? 'Choose Your Character' : 'Partial Presence Type'}
+                </label>
+
+                {characterPresence === 'show' ? (
+                  <>
+                    {/* Character Source Toggle */}
+                    <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCharacterSource('library')}
+                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                          characterSource === 'library'
+                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        From Avatar Library
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCharacterSource('upload')}
+                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                          characterSource === 'upload'
+                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        Upload Image
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCharacterSource('describe')}
+                        className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                          characterSource === 'describe'
+                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        Describe Character
+                      </Button>
+                    </div>
+
+                    {/* Avatar Library Selection */}
+                    {characterSource === 'library' && (
+                      loadingAvatars ? (
+                        <div className="space-y-2">
+                          <SkeletonLoader className="h-8 w-full" />
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Loading avatars...
+                          </div>
+                        </div>
+                      ) : (
+                        <Select value={selectedAvatarId} onValueChange={setSelectedAvatarId}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select an avatar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableAvatars.length === 0 ? (
+                              <SelectItem value="none" disabled>No avatars available</SelectItem>
+                            ) : (
+                              availableAvatars.map((avatar) => (
+                                <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
+                                  {avatar.title || avatar.name || 'Untitled Avatar'}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )
+                    )}
+
+                    {/* Character Upload */}
+                    {characterSource === 'upload' && (
+                      <div className="space-y-2">
+                        <input
+                          ref={characterImageInputRef}
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleCharacterImageUpload(file)
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => characterImageInputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload character image"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Character Image
+                        </Button>
+                        <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                      </div>
+                    )}
+
+                    {/* Character Description */}
+                    {characterSource === 'describe' && (
+                      <Textarea
+                        placeholder="Describe your character... e.g., 'A friendly 25-year-old woman with curly brown hair, wearing casual clothes, smiling warmly'"
+                        value={characterDescription}
+                        onChange={(e) => setCharacterDescription(e.target.value)}
+                        rows={3}
+                        className="resize-none text-xs"
+                      />
+                    )}
+
+                    {/* Character Preview */}
+                    {characterPreview && (
+                      <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                        <img
+                          src={characterPreview}
+                          alt={selectedAvatarId ? `Character preview for ${availableAvatars.find(a => a.id === selectedAvatarId)?.name || 'selected character'}` : 'Uploaded character image preview'}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Partial Presence Options */
+                  <Select value={partialType} onValueChange={setPartialType}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="What part of the character should appear?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hands">✋ Hands Only</SelectItem>
+                      <SelectItem value="face">👤 Face Close-up</SelectItem>
+                      <SelectItem value="feet">🦶 Feet/Legs</SelectItem>
+                      <SelectItem value="silhouette">👥 Silhouette</SelectItem>
+                      <SelectItem value="custom">🎨 Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Custom Partial Description */}
+                {characterPresence === 'partial' && partialType === 'custom' && (
+                  <Textarea
+                    placeholder="Describe the partial presence... e.g., 'Just the hands holding the product, or a silhouette in the background'"
+                    value={characterDescription}
+                    onChange={(e) => setCharacterDescription(e.target.value)}
+                    rows={2}
+                    className="resize-none text-xs"
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Script Section */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <MessageCircle className="h-3 w-3 text-purple-600" />
+                Script / Voice <span className="text-red-500">*</span>
+              </label>
+              
+              <Textarea
+                placeholder="Write your script here... What will be said in the ad?"
+                value={script}
+                onChange={(e) => setScript(e.target.value)}
+                rows={4}
+                className="resize-none text-xs"
+              />
+              
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>{script.length} characters</span>
+                <span>
+                  Estimated read time: {estimateReadTime(script)}s
+                  {estimateReadTime(script) > duration && script.length > 0 && (
+                    <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Voice Configuration */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">Voice Style</label>
+                  <Select value={voiceStyle} onValueChange={setVoiceStyle}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select style..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="casual-friendly" className="text-xs">😊 Casual & Friendly</SelectItem>
+                      <SelectItem value="excited-energetic" className="text-xs">🎉 Excited & Energetic</SelectItem>
+                      <SelectItem value="confident-bold" className="text-xs">💪 Confident & Bold</SelectItem>
+                      <SelectItem value="calm-soothing" className="text-xs">🧘 Calm & Soothing</SelectItem>
+                      <SelectItem value="professional-clear" className="text-xs">👔 Professional & Clear</SelectItem>
+                      <SelectItem value="passionate-warm" className="text-xs">🔥 Passionate & Warm</SelectItem>
+                      <SelectItem value="cool-minimalist" className="text-xs">❄️ Cool & Minimalist</SelectItem>
+                      <SelectItem value="dramatic-theatrical" className="text-xs">🎭 Dramatic & Theatrical</SelectItem>
+                      <SelectItem value="sincere-heartfelt" className="text-xs">💝 Sincere & Heartfelt</SelectItem>
+                      <SelectItem value="playful-humorous" className="text-xs">😄 Playful & Humorous</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">Tone of Delivery</label>
+                  <Select value={toneOfDelivery} onValueChange={setToneOfDelivery}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select tone..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="natural" className="text-xs">Natural & Conversational</SelectItem>
+                      <SelectItem value="slow" className="text-xs">Slow & Emphasised</SelectItem>
+                      <SelectItem value="fast" className="text-xs">Fast & Punchy</SelectItem>
+                      <SelectItem value="whisper" className="text-xs">Whisper & Intimate</SelectItem>
+                      <SelectItem value="loud" className="text-xs">Loud & Commanding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">Language</label>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select language..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en" className="text-xs">English</SelectItem>
+                      <SelectItem value="es" className="text-xs">Spanish</SelectItem>
+                      <SelectItem value="fr" className="text-xs">French</SelectItem>
+                      <SelectItem value="de" className="text-xs">German</SelectItem>
+                      <SelectItem value="it" className="text-xs">Italian</SelectItem>
+                      <SelectItem value="pt" className="text-xs">Portuguese</SelectItem>
+                      <SelectItem value="zh" className="text-xs">Chinese</SelectItem>
+                      <SelectItem value="ja" className="text-xs">Japanese</SelectItem>
+                      <SelectItem value="ko" className="text-xs">Korean</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Duration Presets */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Clock className="h-3 w-3 text-purple-600" />
+                Video Duration
+              </label>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={duration === 15 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(15)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">⚡ 15s Quick</span>
+                  <span className="sm:hidden">⚡ 15s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 30 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(30)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">📱 30s Social</span>
+                  <span className="sm:hidden">📱 30s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 60 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(60)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">🎬 60s Standard</span>
+                  <span className="sm:hidden">🎬 60s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 120 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(120)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">🎥 120s Full</span>
+                  <span className="sm:hidden">🎥 120s</span>
+                </Button>
+              </div>
+              
+              <p className="text-[10px] text-muted-foreground">
+                {duration === 15 && '⚡ Perfect for TikTok and Instagram Reels'}
+                {duration === 30 && '📱 Ideal for social media feeds'}
+                {duration === 60 && '🎬 Standard YouTube and Facebook ads'}
+                {duration === 120 && '🎥 Full-length product demonstrations'}
+              </p>
+            </div>
+
+             {/* Advanced Fields (Collapsible) */}
+             <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+               <CollapsibleTrigger asChild>
+                 <Button variant="ghost" className="w-full justify-between h-8 text-xs">
+                   <span className="flex items-center gap-2">
+                     <Settings className="h-3 w-3" />
+                     Advanced Creative Controls
+                   </span>
+                   {showAdvanced ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                 </Button>
+               </CollapsibleTrigger>
+               
+               <CollapsibleContent className="space-y-4 mt-3">
+                 {/* Brand DNA */}
+                 <div className="p-3 bg-purple-50/50 dark:bg-purple-950/10 rounded-lg border border-purple-200 dark:border-purple-800">
+                   <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                     <Palette className="h-3 w-3 text-purple-600" />
+                     Brand DNA
+                   </label>
+                   <div className="space-y-2">
+                     <Input placeholder="Brand name (optional)" className="h-8 text-xs" />
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Brand tone..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="professional">Professional & Trustworthy</SelectItem>
+                         <SelectItem value="friendly">Friendly & Approachable</SelectItem>
+                         <SelectItem value="luxury">Luxury & Premium</SelectItem>
+                         <SelectItem value="playful">Playful & Fun</SelectItem>
+                         <SelectItem value="minimalist">Minimalist & Clean</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <Input placeholder="Brand color (hex code, optional)" className="h-8 text-xs" />
+                   </div>
+                 </div>
+
+                 {/* Product Essence */}
+                 <div className="p-3 bg-pink-50/50 dark:bg-pink-950/10 rounded-lg border border-pink-200 dark:border-pink-800">
+                   <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                     <Package className="h-3 w-3 text-pink-600" />
+                     Product Essence
+                   </label>
+                   <div className="space-y-2">
+                     <Textarea placeholder="Hero benefit - what makes this product special?" rows={2} className="resize-none text-xs" />
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Visual focus..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="product">Product Close-up</SelectItem>
+                         <SelectItem value="lifestyle">Lifestyle Context</SelectItem>
+                         <SelectItem value="comparison">Before/After</SelectItem>
+                         <SelectItem value="process">Usage Process</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Environment..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="home">Home Setting</SelectItem>
+                         <SelectItem value="office">Office/Work</SelectItem>
+                         <SelectItem value="outdoor">Outdoor</SelectItem>
+                         <SelectItem value="studio">Studio/Neutral</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </div>
+
+                 {/* Creative Angle */}
+                 <div className="p-3 bg-blue-50/50 dark:bg-blue-950/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                   <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                     <Lightbulb className="h-3 w-3 text-blue-600" />
+                     Creative Angle
+                   </label>
+                   <div className="space-y-2">
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Core angle..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="problem-solution">Problem & Solution</SelectItem>
+                         <SelectItem value="transformation">Transformation Story</SelectItem>
+                         <SelectItem value="social-proof">Social Proof</SelectItem>
+                         <SelectItem value="urgency">Urgency & Scarcity</SelectItem>
+                         <SelectItem value="emotional">Emotional Connection</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <Input placeholder="Pattern interrupt - unexpected element" className="h-8 text-xs" />
+                     <Textarea placeholder="Hook framework - opening line" rows={2} className="resize-none text-xs" />
+                   </div>
+                 </div>
+
+                 {/* Camera DNA */}
+                 <div className="p-3 bg-green-50/50 dark:bg-green-950/10 rounded-lg border border-green-200 dark:border-green-800">
+                   <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                     <Camera className="h-3 w-3 text-green-600" />
+                     Camera DNA
+                   </label>
+                   <div className="space-y-2">
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Rhythm..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="fast">Fast & Dynamic</SelectItem>
+                         <SelectItem value="medium">Medium Pace</SelectItem>
+                         <SelectItem value="slow">Slow & Cinematic</SelectItem>
+                         <SelectItem value="varied">Varied Rhythm</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Movement..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="static">Static Shots</SelectItem>
+                         <SelectItem value="pan">Pan & Tilt</SelectItem>
+                         <SelectItem value="zoom">Zoom In/Out</SelectItem>
+                         <SelectItem value="tracking">Tracking Movement</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Cut frequency..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="slow">Slow Cuts (2-3s)</SelectItem>
+                         <SelectItem value="medium">Medium Cuts (1-2s)</SelectItem>
+                         <SelectItem value="fast">Fast Cuts (&lt;1s)</SelectItem>
+                         <SelectItem value="mixed">Mixed Pacing</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Ending..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="fade">Fade Out</SelectItem>
+                         <SelectItem value="cut">Hard Cut</SelectItem>
+                         <SelectItem value="zoom">Zoom to Logo</SelectItem>
+                         <SelectItem value="hold">Hold Final Frame</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </div>
+
+                 {/* Audio DNA */}
+                 <div className="p-3 bg-orange-50/50 dark:bg-orange-950/10 rounded-lg border border-orange-200 dark:border-orange-800">
+                   <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                     <Music className="h-3 w-3 text-orange-600" />
+                     Audio DNA
+                   </label>
+                   <div className="space-y-2">
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Music mood..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="upbeat">Upbeat & Energetic</SelectItem>
+                         <SelectItem value="calm">Calm & Relaxing</SelectItem>
+                         <SelectItem value="dramatic">Dramatic & Intense</SelectItem>
+                         <SelectItem value="playful">Playful & Fun</SelectItem>
+                         <SelectItem value="corporate">Corporate & Professional</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <div className="space-y-1">
+                       <label className="text-[10px] font-medium text-muted-foreground">Sound Effects</label>
+                       <div className="flex flex-wrap gap-1">
+                         {['Click', 'Whoosh', 'Pop', 'Chime', 'Applause', 'Custom'].map((effect) => (
+                           <Button key={effect} variant="outline" size="sm" className="h-6 text-[10px] px-2">
+                             {effect}
+                           </Button>
+                         ))}
+                       </div>
+                     </div>
+                     <Select>
+                       <SelectTrigger className="h-8 text-xs">
+                         <SelectValue placeholder="Sound mode..." />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="voice-over">Voice Over Music</SelectItem>
+                         <SelectItem value="music-only">Music Only</SelectItem>
+                         <SelectItem value="ambient">Ambient Sounds</SelectItem>
+                         <SelectItem value="mixed">Mixed Audio</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </div>
+               </CollapsibleContent>
+             </Collapsible>
+           </TabsContent>
+
+          {/* Mode 2: Dual Visual Control */}
+          <TabsContent value="dual" className="space-y-4 mt-4" data-mode="dual">
+            {/* 2-Image Mode Selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Film className="h-3 w-3 text-purple-600" />
+                2-Image Mode <span className="text-red-500">*</span>
+              </label>
+              <Select value={twoImageMode} onValueChange={(v) => setTwoImageMode(v as typeof twoImageMode)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="How should we use these 2 images?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="start-end">
+                    <div className="flex items-center gap-2">
+                      <span>🎬</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Start & End Frame Control</span>
+                        <span className="text-[10px] text-muted-foreground">Smooth AI transition between frames</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="comparison">
+                    <div className="flex items-center gap-2">
+                      <span>⚖️</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Product Comparison</span>
+                        <span className="text-[10px] text-muted-foreground">Side-by-side or sequential</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="transformation">
+                    <div className="flex items-center gap-2">
+                      <span>🔄</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Before & After Transformation</span>
+                        <span className="text-[10px] text-muted-foreground">Visual metamorphosis</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="flexible">
+                    <div className="flex items-center gap-2">
+                      <span>✨</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-xs">Flexible (Product + Reference)</span>
+                        <span className="text-[10px] text-muted-foreground">One product, one style reference</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Image 1 */}
+            <div className="space-y-2 p-3 bg-purple-50/50 dark:bg-purple-950/10 rounded-lg border border-purple-200 dark:border-purple-800">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <ShoppingBag className="h-3 w-3 text-purple-600" />
+                Image 1 {twoImageMode === 'start-end' ? '(Start Frame)' : twoImageMode === 'transformation' ? '(Before)' : ''} <span className="text-red-500">*</span>
+              </label>
+              
+              {/* Source Toggle */}
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(0, { source: 'library' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[0]?.source === 'library'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  From Library
+                </Button>
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(0, { source: 'upload' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[0]?.source === 'upload'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  Upload
+                </Button>
+              </div>
+
+              {/* Library Selection */}
+              {images[0]?.source === 'library' && (
+                <Select value={images[0]?.productId || ''} onValueChange={(v) => handleImageProductSelect(0, v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select a product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingProducts ? (
+                      <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                    ) : availableProducts.length === 0 ? (
+                      <SelectItem value="none" disabled>No products available</SelectItem>
+                    ) : (
+                      availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id} className="text-xs">
+                          {product.title || product.name || 'Untitled Product'}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Upload */}
+              {images[0]?.source === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    ref={image1InputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageUpload(0, file)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                          onClick={() => image1InputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload image 1"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Image 1
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {images[0]?.preview && (
+                <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                  <img
+                    src={images[0].preview}
+                    alt={`Image 1 preview - ${images[0]?.purpose || 'product visual'}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Contains Both Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contains-both-1"
+                  checked={images[0]?.containsBoth || false}
+                  onCheckedChange={(checked) => updateImageSlot(0, { containsBoth: checked as boolean })}
+                />
+                <label htmlFor="contains-both-1" className="text-xs text-muted-foreground cursor-pointer">
+                  This image contains both character and product
+                </label>
+              </div>
+
+              {/* Optional Description */}
+              <Input
+                placeholder="Describe this image or how to use it (optional)..."
+                value={images[0]?.description || ''}
+                onChange={(e) => updateImageSlot(0, { description: e.target.value })}
+                className="h-8 text-xs"
+              />
+              
+              {/* Validation Error */}
+              {validationErrors.image1 && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.image1}
+                </div>
+              )}
+            </div>
+
+            {/* Image 2 */}
+            <div className="space-y-2 p-3 bg-pink-50/50 dark:bg-pink-950/10 rounded-lg border border-pink-200 dark:border-pink-800">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <ShoppingBag className="h-3 w-3 text-pink-600" />
+                Image 2 {twoImageMode === 'start-end' ? '(End Frame)' : twoImageMode === 'transformation' ? '(After)' : ''} <span className="text-red-500">*</span>
+              </label>
+              
+              {/* Source Toggle */}
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(1, { source: 'library' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[1]?.source === 'library'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  From Library
+                </Button>
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(1, { source: 'upload' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[1]?.source === 'upload'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  Upload
+                </Button>
+              </div>
+
+              {/* Library Selection */}
+              {images[1]?.source === 'library' && (
+                <Select value={images[1]?.productId || ''} onValueChange={(v) => handleImageProductSelect(1, v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select a product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingProducts ? (
+                      <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                    ) : availableProducts.length === 0 ? (
+                      <SelectItem value="none" disabled>No products available</SelectItem>
+                    ) : (
+                      availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id} className="text-xs">
+                          {product.title || product.name || 'Untitled Product'}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Upload */}
+              {images[1]?.source === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    ref={image2InputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageUpload(1, file)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                          onClick={() => image2InputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload image 2"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Image 2
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {images[1]?.preview && (
+                <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                  <img
+                    src={images[1].preview}
+                    alt={`Image 2 preview - ${images[1]?.purpose || 'product visual'}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Contains Both Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contains-both-2"
+                  checked={images[1]?.containsBoth || false}
+                  onCheckedChange={(checked) => updateImageSlot(1, { containsBoth: checked as boolean })}
+                />
+                <label htmlFor="contains-both-2" className="text-xs text-muted-foreground cursor-pointer">
+                  This image contains both character and product
+                </label>
+              </div>
+
+              {/* Optional Description */}
+              <Input
+                placeholder="Describe this image or how to use it (optional)..."
+                value={images[1]?.description || ''}
+                onChange={(e) => updateImageSlot(1, { description: e.target.value })}
+                className="h-8 text-xs"
+              />
+              
+              {/* Validation Error */}
+              {validationErrors.image2 && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.image2}
+                </div>
+              )}
+            </div>
+
+            {/* Scene-Based Script Input */}
+            <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <MessageCircle className="h-3 w-3 text-purple-600" />
+                Scene-Based Script <span className="text-red-500">*</span>
+              </label>
+
+              {/* Scene 1 */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-purple-700 dark:text-purple-300">
+                  Scene 1: Opening {twoImageMode === 'start-end' ? '(Start Frame)' : twoImageMode === 'transformation' ? '(Before)' : '(Image 1)'}
+                </label>
+                <Textarea
+                  placeholder="What's said during the first image..."
+                  value={sceneScripts.scene1}
+                  onChange={(e) => setSceneScripts(prev => ({ ...prev, scene1: e.target.value }))}
+                  rows={2}
+                  className="resize-none text-xs"
+                />
+              </div>
+
+              {/* Scene 2 - Transition */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-pink-700 dark:text-pink-300">
+                  Scene 2: Transition (AI Generated)
+                </label>
+                <Textarea
+                  placeholder="Optional: What's said during the transition..."
+                  value={sceneScripts.scene2}
+                  onChange={(e) => setSceneScripts(prev => ({ ...prev, scene2: e.target.value }))}
+                  rows={2}
+                  className="resize-none text-xs"
+                />
+              </div>
+
+              {/* Scene 3 */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-purple-700 dark:text-purple-300">
+                  Scene 3: Closing {twoImageMode === 'start-end' ? '(End Frame)' : twoImageMode === 'transformation' ? '(After)' : '(Image 2)'}
+                </label>
+                <Textarea
+                  placeholder="What's said during the second image..."
+                  value={sceneScripts.scene3}
+                  onChange={(e) => setSceneScripts(prev => ({ ...prev, scene3: e.target.value }))}
+                  rows={2}
+                  className="resize-none text-xs"
+                />
+              </div>
+
+              <div className="text-[10px] text-muted-foreground">
+                Total estimated read time: {estimateReadTime(sceneScripts.scene1 + sceneScripts.scene2 + sceneScripts.scene3)}s
+                {estimateReadTime(sceneScripts.scene1 + sceneScripts.scene2 + sceneScripts.scene3) > duration && (
+                  <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                )}
+              </div>
+            </div>
+
+            {/* Voice Configuration */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground">Voice Style</label>
+                <Select value={voiceStyle} onValueChange={setVoiceStyle}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select style..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="casual-friendly" className="text-xs">😊 Casual & Friendly</SelectItem>
+                    <SelectItem value="excited-energetic" className="text-xs">🎉 Excited & Energetic</SelectItem>
+                    <SelectItem value="confident-bold" className="text-xs">💪 Confident & Bold</SelectItem>
+                    <SelectItem value="calm-soothing" className="text-xs">🧘 Calm & Soothing</SelectItem>
+                    <SelectItem value="professional-clear" className="text-xs">👔 Professional & Clear</SelectItem>
+                    <SelectItem value="passionate-warm" className="text-xs">🔥 Passionate & Warm</SelectItem>
+                    <SelectItem value="cool-minimalist" className="text-xs">❄️ Cool & Minimalist</SelectItem>
+                    <SelectItem value="dramatic-theatrical" className="text-xs">🎭 Dramatic & Theatrical</SelectItem>
+                    <SelectItem value="sincere-heartfelt" className="text-xs">💝 Sincere & Heartfelt</SelectItem>
+                    <SelectItem value="playful-humorous" className="text-xs">😄 Playful & Humorous</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground">Tone of Delivery</label>
+                <Select value={toneOfDelivery} onValueChange={setToneOfDelivery}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select tone..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="natural" className="text-xs">Natural & Conversational</SelectItem>
+                    <SelectItem value="slow" className="text-xs">Slow & Emphasised</SelectItem>
+                    <SelectItem value="fast" className="text-xs">Fast & Punchy</SelectItem>
+                    <SelectItem value="whisper" className="text-xs">Whisper & Intimate</SelectItem>
+                    <SelectItem value="loud" className="text-xs">Loud & Commanding</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground">Language</label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select language..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en" className="text-xs">English</SelectItem>
+                    <SelectItem value="es" className="text-xs">Spanish</SelectItem>
+                    <SelectItem value="fr" className="text-xs">French</SelectItem>
+                    <SelectItem value="de" className="text-xs">German</SelectItem>
+                    <SelectItem value="it" className="text-xs">Italian</SelectItem>
+                    <SelectItem value="pt" className="text-xs">Portuguese</SelectItem>
+                    <SelectItem value="zh" className="text-xs">Chinese</SelectItem>
+                    <SelectItem value="ja" className="text-xs">Japanese</SelectItem>
+                    <SelectItem value="ko" className="text-xs">Korean</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Duration Presets */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Clock className="h-3 w-3 text-purple-600" />
+                Video Duration
+              </label>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={duration === 15 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(15)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">⚡ 15s Quick</span>
+                  <span className="sm:hidden">⚡ 15s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 30 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(30)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">📱 30s Social</span>
+                  <span className="sm:hidden">📱 30s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 60 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(60)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">🎬 60s Standard</span>
+                  <span className="sm:hidden">🎬 60s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 120 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(120)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">🎥 120s Full</span>
+                  <span className="sm:hidden">🎥 120s</span>
+                </Button>
+              </div>
+              
+              <p className="text-[10px] text-muted-foreground">
+                {duration === 15 && '⚡ Perfect for TikTok and Instagram Reels'}
+                {duration === 30 && '📱 Ideal for social media feeds'}
+                {duration === 60 && '🎬 Standard YouTube and Facebook ads'}
+                {duration === 120 && '🎥 Full-length product demonstrations'}
+              </p>
+            </div>
+
+            {/* Character Presence (Optional) */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Users className="h-3 w-3 text-purple-600" />
+                Character Presence (Optional)
+              </label>
+              
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('voiceover')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'voiceover'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  🎙️ Voiceover Only
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('show')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'show'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  👤 Show Character
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('partial')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'partial'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  ✋ Partial Presence
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Mode 3: Multi-Story & Visual Mastery */}
+          <TabsContent value="multi" className="space-y-4 mt-4" data-mode="multi">
+            {/* Scene Description */}
+            <div className="space-y-2 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Film className="h-3 w-3 text-purple-600" />
+                Scene Description <span className="text-red-500">*</span>
+              </label>
+              <Textarea
+                placeholder="Describe the action, mood, and what's happening in this scene..."
+                value={mode3SceneDescription}
+                onChange={(e) => setMode3SceneDescription(e.target.value)}
+                rows={3}
+                className={`resize-none text-xs ${validationErrors.sceneDescription ? 'border-red-500' : ''}`}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Set the overall scene, atmosphere, and narrative flow for your multi-image story
+              </p>
+              
+              {/* Validation Error */}
+              {validationErrors.sceneDescription && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.sceneDescription}
+                </div>
+              )}
+            </div>
+
+            {/* Image 1 */}
+            <div className="space-y-2 p-3 bg-purple-50/50 dark:bg-purple-950/10 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <ShoppingBag className="h-3 w-3 text-purple-600" />
+                  Image 1 <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Purpose Selector */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground">Purpose</label>
+                <Select 
+                  value={images[0]?.purpose || 'product'} 
+                  onValueChange={(v) => updateImageSlot(0, { purpose: v })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="What is this image for?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="product">
+                      <div className="flex items-center gap-2">
+                        <span>🎁</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Product Visual</span>
+                          <span className="text-[10px] text-muted-foreground">The product itself</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="character">
+                      <div className="flex items-center gap-2">
+                        <span>👤</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Character Reference</span>
+                          <span className="text-[10px] text-muted-foreground">Person's style, appearance, mood</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="lighting">
+                      <div className="flex items-center gap-2">
+                        <span>💡</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Lighting/Mood</span>
+                          <span className="text-[10px] text-muted-foreground">Atmosphere, color grading</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="environment">
+                      <div className="flex items-center gap-2">
+                        <span>🌍</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Environment/Setting</span>
+                          <span className="text-[10px] text-muted-foreground">Background, location, scene</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="lifestyle">
+                      <div className="flex items-center gap-2">
+                        <span>🏠</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Lifestyle Context</span>
+                          <span className="text-[10px] text-muted-foreground">Product in use, real-world scenario</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="composition">
+                      <div className="flex items-center gap-2">
+                        <span>📐</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Composition/Framing</span>
+                          <span className="text-[10px] text-muted-foreground">Camera angle, shot structure</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="color">
+                      <div className="flex items-center gap-2">
+                        <span>🎨</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium text-xs">Color Palette</span>
+                          <span className="text-[10px] text-muted-foreground">Color scheme, tone reference</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Source Toggle */}
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(0, { source: 'library' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[0]?.source === 'library'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  From Library
+                </Button>
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(0, { source: 'upload' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[0]?.source === 'upload'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  Upload
+                </Button>
+              </div>
+
+              {/* Library Selection */}
+              {images[0]?.source === 'library' && (
+                <Select value={images[0]?.productId || ''} onValueChange={(v) => handleImageProductSelect(0, v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select a product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingProducts ? (
+                      <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                    ) : availableProducts.length === 0 ? (
+                      <SelectItem value="none" disabled>No products available</SelectItem>
+                    ) : (
+                      availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id} className="text-xs">
+                          {product.title || product.name || 'Untitled Product'}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Upload */}
+              {images[0]?.source === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    ref={image1InputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageUpload(0, file)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                          onClick={() => image1InputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload image 1"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Image 1
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {images[0]?.preview && (
+                <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                  <img
+                    src={images[0].preview}
+                    alt={`Image 1 preview - ${images[0]?.purpose || 'product visual'}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Contains Both Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contains-both-m3-1"
+                  checked={images[0]?.containsBoth || false}
+                  onCheckedChange={(checked) => updateImageSlot(0, { containsBoth: checked as boolean })}
+                />
+                <label htmlFor="contains-both-m3-1" className="text-xs text-muted-foreground cursor-pointer">
+                  This image contains both character and product
+                </label>
+              </div>
+
+              {/* Optional Description */}
+              <Input
+                placeholder="Describe how to use this reference (optional)..."
+                value={images[0]?.description || ''}
+                onChange={(e) => updateImageSlot(0, { description: e.target.value })}
+                className="h-8 text-xs"
+              />
+              
+              {/* Validation Error */}
+              {validationErrors.image1 && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.image1}
+                </div>
+              )}
+            </div>
+
+            {/* Image 2 */}
+            <div className="space-y-2 p-3 bg-pink-50/50 dark:bg-pink-950/10 rounded-lg border border-pink-200 dark:border-pink-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <ShoppingBag className="h-3 w-3 text-pink-600" />
+                  Image 2 <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Purpose Selector */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground">Purpose</label>
+                <Select 
+                  value={images[1]?.purpose || 'product'} 
+                  onValueChange={(v) => updateImageSlot(1, { purpose: v })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="What is this image for?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="product">🎁 Product Visual</SelectItem>
+                    <SelectItem value="character">👤 Character Reference</SelectItem>
+                    <SelectItem value="lighting">💡 Lighting/Mood</SelectItem>
+                    <SelectItem value="environment">🌍 Environment/Setting</SelectItem>
+                    <SelectItem value="lifestyle">🏠 Lifestyle Context</SelectItem>
+                    <SelectItem value="composition">📐 Composition/Framing</SelectItem>
+                    <SelectItem value="color">🎨 Color Palette</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Source Toggle */}
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(1, { source: 'library' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[1]?.source === 'library'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  From Library
+                </Button>
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(1, { source: 'upload' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[1]?.source === 'upload'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  Upload
+                </Button>
+              </div>
+
+              {/* Library/Upload (same pattern as Image 1) */}
+              {images[1]?.source === 'library' && (
+                <Select value={images[1]?.productId || ''} onValueChange={(v) => handleImageProductSelect(1, v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select a product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingProducts ? (
+                      <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                    ) : availableProducts.length === 0 ? (
+                      <SelectItem value="none" disabled>No products available</SelectItem>
+                    ) : (
+                      availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id} className="text-xs">
+                          {product.title || product.name || 'Untitled Product'}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {images[1]?.source === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    ref={image2InputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageUpload(1, file)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                          onClick={() => image2InputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload image 2"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Image 2
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                </div>
+              )}
+
+              {images[1]?.preview && (
+                <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                  <img src={images[1].preview} alt="Image 2 preview" className="w-full h-full object-contain" />
+                </div>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contains-both-m3-2"
+                  checked={images[1]?.containsBoth || false}
+                  onCheckedChange={(checked) => updateImageSlot(1, { containsBoth: checked as boolean })}
+                />
+                <label htmlFor="contains-both-m3-2" className="text-xs text-muted-foreground cursor-pointer">
+                  This image contains both character and product
+                </label>
+              </div>
+
+              <Input
+                placeholder="Describe how to use this reference (optional)..."
+                value={images[1]?.description || ''}
+                onChange={(e) => updateImageSlot(1, { description: e.target.value })}
+                className="h-8 text-xs"
+              />
+              
+              {/* Validation Error */}
+              {validationErrors.image2 && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.image2}
+                </div>
+              )}
+            </div>
+
+            {/* Image 3 */}
+            <div className="space-y-2 p-3 bg-blue-50/50 dark:bg-blue-950/10 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <ShoppingBag className="h-3 w-3 text-blue-600" />
+                  Image 3 <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Purpose Selector */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground">Purpose</label>
+                <Select 
+                  value={images[2]?.purpose || 'lifestyle'} 
+                  onValueChange={(v) => updateImageSlot(2, { purpose: v })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="What is this image for?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="product">🎁 Product Visual</SelectItem>
+                    <SelectItem value="character">👤 Character Reference</SelectItem>
+                    <SelectItem value="lighting">💡 Lighting/Mood</SelectItem>
+                    <SelectItem value="environment">🌍 Environment/Setting</SelectItem>
+                    <SelectItem value="lifestyle">🏠 Lifestyle Context</SelectItem>
+                    <SelectItem value="composition">📐 Composition/Framing</SelectItem>
+                    <SelectItem value="color">🎨 Color Palette</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Source Toggle */}
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(2, { source: 'library' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[2]?.source === 'library'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  From Library
+                </Button>
+                <Button
+                    type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateImageSlot(2, { source: 'upload' })}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    images[2]?.source === 'upload'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  Upload
+                </Button>
+              </div>
+
+              {/* Library/Upload (same pattern) */}
+              {images[2]?.source === 'library' && (
+                <Select value={images[2]?.productId || ''} onValueChange={(v) => handleImageProductSelect(2, v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select a product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingProducts ? (
+                      <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                    ) : availableProducts.length === 0 ? (
+                      <SelectItem value="none" disabled>No products available</SelectItem>
+                    ) : (
+                      availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id} className="text-xs">
+                          {product.title || product.name || 'Untitled Product'}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {images[2]?.source === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    ref={image3InputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageUpload(2, file)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                          onClick={() => image3InputRef.current?.click()}
+                          className="w-full h-8 text-xs"
+                          aria-label="Upload image 3"
+                        >
+                          <Upload className="h-3 w-3 mr-2" />
+                          Choose Image 3
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
+                </div>
+              )}
+
+              {images[2]?.preview && (
+                <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
+                  <img src={images[2].preview} alt={`Image 3 preview - ${images[2]?.purpose || 'lifestyle visual'}`} className="w-full h-full object-contain" />
+                </div>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contains-both-m3-3"
+                  checked={images[2]?.containsBoth || false}
+                  onCheckedChange={(checked) => updateImageSlot(2, { containsBoth: checked as boolean })}
+                />
+                <label htmlFor="contains-both-m3-3" className="text-xs text-muted-foreground cursor-pointer">
+                  This image contains both character and product
+                </label>
+              </div>
+
+              <Input
+                placeholder="Describe how to use this reference (optional)..."
+                value={images[2]?.description || ''}
+                onChange={(e) => updateImageSlot(2, { description: e.target.value })}
+                className="h-8 text-xs"
+              />
+              
+              {/* Validation Error */}
+              {validationErrors.image3 && (
+                <div className="text-xs text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.image3}
+                </div>
+              )}
+            </div>
+
+            {/* Script Section */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <MessageCircle className="h-3 w-3 text-purple-600" />
+                Script / Voice <span className="text-red-500">*</span>
+              </label>
+              
+              <Textarea
+                placeholder="Write your script here... What will be said in the ad?"
+                value={script}
+                onChange={(e) => setScript(e.target.value)}
+                rows={4}
+                className="resize-none text-xs"
+              />
+              
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>{script.length} characters</span>
+                <span>
+                  Estimated read time: {estimateReadTime(script)}s
+                  {estimateReadTime(script) > duration && script.length > 0 && (
+                    <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Voice Configuration */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">Voice Style</label>
+                  <Select value={voiceStyle} onValueChange={setVoiceStyle}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select style..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="casual-friendly" className="text-xs">😊 Casual & Friendly</SelectItem>
+                      <SelectItem value="excited-energetic" className="text-xs">🎉 Excited & Energetic</SelectItem>
+                      <SelectItem value="confident-bold" className="text-xs">💪 Confident & Bold</SelectItem>
+                      <SelectItem value="calm-soothing" className="text-xs">🧘 Calm & Soothing</SelectItem>
+                      <SelectItem value="professional-clear" className="text-xs">👔 Professional & Clear</SelectItem>
+                      <SelectItem value="passionate-warm" className="text-xs">🔥 Passionate & Warm</SelectItem>
+                      <SelectItem value="cool-minimalist" className="text-xs">❄️ Cool & Minimalist</SelectItem>
+                      <SelectItem value="dramatic-theatrical" className="text-xs">🎭 Dramatic & Theatrical</SelectItem>
+                      <SelectItem value="sincere-heartfelt" className="text-xs">💝 Sincere & Heartfelt</SelectItem>
+                      <SelectItem value="playful-humorous" className="text-xs">😄 Playful & Humorous</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">Tone of Delivery</label>
+                  <Select value={toneOfDelivery} onValueChange={setToneOfDelivery}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select tone..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="natural" className="text-xs">Natural & Conversational</SelectItem>
+                      <SelectItem value="slow" className="text-xs">Slow & Emphasised</SelectItem>
+                      <SelectItem value="fast" className="text-xs">Fast & Punchy</SelectItem>
+                      <SelectItem value="whisper" className="text-xs">Whisper & Intimate</SelectItem>
+                      <SelectItem value="loud" className="text-xs">Loud & Commanding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground">Language</label>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select language..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en" className="text-xs">English</SelectItem>
+                      <SelectItem value="es" className="text-xs">Spanish</SelectItem>
+                      <SelectItem value="fr" className="text-xs">French</SelectItem>
+                      <SelectItem value="de" className="text-xs">German</SelectItem>
+                      <SelectItem value="it" className="text-xs">Italian</SelectItem>
+                      <SelectItem value="pt" className="text-xs">Portuguese</SelectItem>
+                      <SelectItem value="zh" className="text-xs">Chinese</SelectItem>
+                      <SelectItem value="ja" className="text-xs">Japanese</SelectItem>
+                      <SelectItem value="ko" className="text-xs">Korean</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Duration Presets */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Clock className="h-3 w-3 text-purple-600" />
+                Video Duration
+              </label>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={duration === 15 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(15)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">⚡ 15s Quick</span>
+                  <span className="sm:hidden">⚡ 15s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 30 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(30)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">📱 30s Social</span>
+                  <span className="sm:hidden">📱 30s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 60 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(60)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">🎬 60s Standard</span>
+                  <span className="sm:hidden">🎬 60s</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 120 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(120)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <span className="hidden sm:inline">🎥 120s Full</span>
+                  <span className="sm:hidden">🎥 120s</span>
+                </Button>
+              </div>
+              
+              <p className="text-[10px] text-muted-foreground">
+                {duration === 15 && '⚡ Perfect for TikTok and Instagram Reels'}
+                {duration === 30 && '📱 Ideal for social media feeds'}
+                {duration === 60 && '🎬 Standard YouTube and Facebook ads'}
+                {duration === 120 && '🎥 Full-length product demonstrations'}
+              </p>
+            </div>
+
+            {/* Character Presence (Optional) */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Users className="h-3 w-3 text-purple-600" />
+                Character Presence (Optional)
+              </label>
+              
+              <div className="flex gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('voiceover')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'voiceover'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  🎙️ Voiceover Only
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('show')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'show'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  👤 Show Character
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCharacterPresence('partial')}
+                  className={`text-xs h-8 flex-1 transition-all duration-200 font-medium ${
+                    characterPresence === 'partial'
+                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  ✋ Partial Presence
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
       
       {/* Generate Button - Fixed at bottom */}
       <div className="pt-6 border-t border-border">
         <Button 
+          type="submit"
           className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600 text-white border-0 h-9 text-sm font-medium" 
-          disabled={!config.brandDNA.name || !config.brandDNA.prompt || (!useCustomProduct && !selectedProductId) || (useCustomProduct && !customProductFile) || isGenerating}
+          disabled={isGenerating}
           onClick={handleGenerate}
         >
           {isGenerating ? (
@@ -1447,9 +2978,6 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
           )}
         </Button>
       </div>
-
-      {/* Previous Generations */}
-      <PreviousGenerations contentType="ugc_ads" userId={user?.id || ''} className="mt-8" />
     </div>
   )
 }

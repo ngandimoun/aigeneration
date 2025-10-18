@@ -9,3 +9,4 @@ DROP COLUMN IF EXISTS tone_match;
 -- Note: brand_persona_matching and default_script_tone 
 -- were likely stored in JSONB metadata only, not as separate columns
 
+

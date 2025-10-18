@@ -182,18 +182,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-xs ${
-                  selectedSection === 'illustration'
-                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                    : 'text-sidebar-foreground hover:bg-accent'
-                }`}
-                onClick={() => {
-                  setSelectedSection('illustration')
-                  onMobileClose()
-                }}
+                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+                disabled
               >
                 <Palette className="h-4 w-4 shrink-0" />
                 <span>Illustration</span>
+                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
               </Button>
               <Button
                 variant="ghost"
@@ -227,18 +221,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start gap-3 text-xs ${
-                  selectedSection === 'concept-worlds'
-                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                    : 'text-sidebar-foreground hover:bg-accent'
-                }`}
-                onClick={() => {
-                  setSelectedSection('concept-worlds')
-                  onMobileClose()
-                }}
+                className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+                disabled
               >
                 <Globe className="h-4 w-4 shrink-0" />
                 <span>Concept Worlds</span>
+                <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
               </Button>
               <Button
                 variant="ghost"
@@ -288,18 +276,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'voice-creation'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('voice-creation')
-                onMobileClose()
-              }}
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
             >
               <Mic className="h-4 w-4 shrink-0" />
               <span>Voice Creation</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
             </Button>
             <Button
               variant="ghost"
@@ -334,17 +316,26 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'sound-fx'
+                selectedSection === 'music-videos'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
               }`}
               onClick={() => {
-                setSelectedSection('sound-fx')
+                setSelectedSection('music-videos')
                 onMobileClose()
               }}
             >
+              <Film className="h-4 w-4 shrink-0" />
+              <span>Music Videos</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
+            >
               <Zap className="h-4 w-4 shrink-0" />
               <span>Sound FX</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
             </Button>
           </div>
         )}
@@ -377,18 +368,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
           <div className="ml-6 mt-1 space-y-1">
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'explainers'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('explainers')
-                onMobileClose()
-              }}
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
             >
               <PlayCircle className="h-4 w-4 shrink-0" />
               <span>Explainers</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
             </Button>
             <Button
               variant="ghost"
@@ -408,17 +393,17 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'product-motion'
+                selectedSection === 'diverse-motion'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
               }`}
               onClick={() => {
-                setSelectedSection('product-motion')
+                setSelectedSection('diverse-motion')
                 onMobileClose()
               }}
             >
               <Zap className="h-4 w-4 shrink-0" />
-              <span>Product in Motion</span>
+              <span>Diverse Motion</span>
             </Button>
             <Button
               variant="ghost"

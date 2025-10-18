@@ -53,7 +53,7 @@ import {
   Settings,
   Info,
 } from "lucide-react"
-import { STYLE_MAP, CHART_PURPOSE_MAP, MOOD_CONTEXTS, LIGHTING_PRESETS, COLOR_PALETTES, EXPORT_PRESETS } from "@/lib/styles/chart-style-map"
+import { STYLE_MAP, CHART_PURPOSE_MAP, MOOD_CONTEXTS, LIGHTING_PRESETS, COLOR_PALETTES, EXPORT_PRESETS, BACKGROUND_OPTIONS, TEXTURE_OPTIONS } from "@/lib/styles/chart-style-map"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
@@ -807,7 +807,12 @@ export function ChartsInfographicsGeneratorInterface({
                         "Minimalist Modern": "✨",
                         "Retro Vintage": "🕺",
                         "Neon Cyberpunk": "🌃",
-                        "Hand-Drawn Sketch": "✏️"
+                        "Hand-Drawn Sketch": "✏️",
+                        "3D Data Art": "🎲",
+                        "Watercolor Artistic": "🎨",
+                        "Geometric Modern": "📐",
+                        "Tech & Digital": "💻",
+                        "Organic & Natural": "🌿"
                       }
                       return (
                         <SelectItem key={direction} value={direction}>
@@ -878,17 +883,55 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select texture" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px]">
                       <SelectItem value="none">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">🚫</span>
                           <span className="text-sm">None</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value="paper">📄 Paper</SelectItem>
-                      <SelectItem value="fabric">🧵 Fabric</SelectItem>
-                      <SelectItem value="metal">🔩 Metal</SelectItem>
-                      <SelectItem value="glass">🪟 Glass</SelectItem>
+                      
+                      {/* Natural Textures */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Natural</div>
+                      {Object.entries(TEXTURE_OPTIONS).filter(([_, option]) => option.category === "natural").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🌿</span>
+                            <div>
+                              <div className="text-sm font-medium">{name}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      
+                      {/* Technical Textures */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Technical</div>
+                      {Object.entries(TEXTURE_OPTIONS).filter(([_, option]) => option.category === "technical").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">⚙️</span>
+                            <div>
+                              <div className="text-sm font-medium">{name}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      
+                      {/* Abstract Textures */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Abstract</div>
+                      {Object.entries(TEXTURE_OPTIONS).filter(([_, option]) => option.category === "abstract").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🎨</span>
+                            <div>
+                              <div className="text-sm font-medium">{name}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1066,7 +1109,7 @@ export function ChartsInfographicsGeneratorInterface({
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px]">
                       <SelectItem value="none">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">🚫</span>
@@ -1077,6 +1120,53 @@ export function ChartsInfographicsGeneratorInterface({
                       <SelectItem value="dark">🌙 Dark</SelectItem>
                       <SelectItem value="transparent">👻 Transparent</SelectItem>
                       <SelectItem value="gradient">🌈 Gradient</SelectItem>
+                      
+                      {/* Solid Colors */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Solid Colors</div>
+                      {Object.entries(BACKGROUND_OPTIONS).filter(([_, option]) => option.type === "solid").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded border border-gray-300" 
+                              style={{ backgroundColor: option.value }}
+                            />
+                            <span className="text-sm">{name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      
+                      {/* Gradients */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Gradients</div>
+                      {Object.entries(BACKGROUND_OPTIONS).filter(([_, option]) => option.type === "gradient").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded border border-gray-300 bg-gradient-to-br from-orange-400 to-pink-500" />
+                            <span className="text-sm">{name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      
+                      {/* Patterns */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Patterns</div>
+                      {Object.entries(BACKGROUND_OPTIONS).filter(([_, option]) => option.type === "pattern").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded border border-gray-300 bg-gray-100" />
+                            <span className="text-sm">{name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      
+                      {/* Themed */}
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t">Themed</div>
+                      {Object.entries(BACKGROUND_OPTIONS).filter(([_, option]) => option.type === "themed").map(([name, option]) => (
+                        <SelectItem key={name} value={name.toLowerCase()}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded border border-gray-300 bg-gradient-to-br from-blue-100 to-blue-200" />
+                            <span className="text-sm">{name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

@@ -141,14 +141,16 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return "Voiceovers"
       case "music-jingles":
         return "Music & Jingles"
+      case "music-videos":
+        return "Music Videos"
       case "sound-fx":
         return "Sound FX"
       case "explainers":
         return "Explainers"
       case "ugc-ads":
         return "UGC Ads"
-      case "product-motion":
-        return "Product in Motion"
+      case "diverse-motion":
+        return "Diverse Motion"
       case "cinematic-clips":
         return "Cinematic Clips"
       case "social-cuts":

@@ -3,6 +3,10 @@
     {
       "path": "/api/jobs/refresh-urls",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/check-pending-music",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

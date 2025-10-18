@@ -45,7 +45,7 @@ export interface GenerationParams {
   model: FalModel
   hasImages: boolean
   imageUrls: string[]
-  logoImagePath?: string
+  logoImageUrl?: string
 }
 
 // Generation result interface
@@ -61,17 +61,26 @@ export interface GenerationResult {
  */
 export async function generateWithFal(params: GenerationParams): Promise<GenerationResult> {
   try {
-    const { model, prompt, aspectRatio, numImages = 1, hasImages, imageUrls, logoImagePath } = params
+    const { model, prompt, aspectRatio, numImages = 1, hasImages, imageUrls, logoImageUrl } = params
 
     // Validate OpenAI API key for gpt-image-1
     if (model === "gpt-image-1" && !process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY environment variable is required for gpt-image-1 model")
     }
 
-    // Enhance prompt if logo is present
+    // Build image URLs array - include logo if present
+    let finalImageUrls = [...imageUrls]
+    
+    if (logoImageUrl) {
+      // Add logo as second image for GPT Image 1 to reference
+      finalImageUrls.push(logoImageUrl)
+      console.log('📝 Including logo image in image_urls for GPT Image 1')
+    }
+
+    // Enhance prompt to instruct logo placement
     let enhancedPrompt = prompt
-    if (logoImagePath && imageUrls.length > 0) {
-      enhancedPrompt = `Using the logo from the first reference image as a brand element, ${prompt}. Ensure the logo is prominently placed as specified.`
+    if (logoImageUrl) {
+      enhancedPrompt = `${prompt}. Use the logo from the second reference image and place it on the chart as specified in the prompt.`
     }
 
     // Validate model
@@ -93,11 +102,16 @@ export async function generateWithFal(params: GenerationParams): Promise<Generat
       // Use edit endpoints when images are present
       const editParams = {
         prompt: enhancedPrompt,
-        imageUrls,
+        imageUrls: finalImageUrls,
         aspectRatio: mappedAspectRatio,
         numImages
       }
-      console.log('Calling edit endpoint with params:', { model, ...editParams, imageUrls: imageUrls.length })
+      console.log('Calling edit endpoint with params:', { 
+        model, 
+        ...editParams, 
+        imageUrls: finalImageUrls.length,
+        hasLogo: !!logoImageUrl 
+      })
       result = await callEditEndpoint(model, editParams)
     } else {
       // Use text-to-image endpoints when no images

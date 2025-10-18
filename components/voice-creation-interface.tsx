@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,13 +13,9 @@ import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { 
   Mic, 
-  Play, 
-  Pause, 
-  Volume2, 
   Download,
   Sparkles,
   X,
-  Check,
   Info,
   Save,
   Settings,
@@ -31,27 +27,21 @@ import {
   Smile,
   Shield,
   Moon,
-  Sun
+  Sun,
+  Loader2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
-import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { buildVoicePrompt } from "@/lib/utils/voice-prompt-builder"
 import { PreviousGenerations } from "@/components/ui/previous-generations"
+import { GenerationLoading } from "@/components/ui/generation-loading"
 
 interface VoiceCreationInterfaceProps {
   onClose: () => void
   projectTitle?: string
 }
 
-interface VoicePreview {
-  id: string
-  audio_base_64: string
-  media_type: string
-  duration_secs: number
-  language: string
-  variation: string
-}
 
 const VOICE_PURPOSES = [
   "📖 Narrator",
@@ -519,15 +509,8 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
   const [performanceStyle, setPerformanceStyle] = useState("")
   const [audioQualityIntent, setAudioQualityIntent] = useState("")
   const [guidanceScale, setGuidanceScale] = useState([50])
-  const [previewText, setPreviewText] = useState("Welcome to DreamCut — where stories find their voice.")
-  const [autoGeneratePreview, setAutoGeneratePreview] = useState(false)
+  const [previewText, setPreviewText] = useState("Welcome to DreamCut — where stories find their voice, visions take shape, and imagination turns moments into masterpieces.")
   
-  // Brand / World Sync
-  const [brandSync, setBrandSync] = useState(false)
-  const [worldLink, setWorldLink] = useState("")
-  const [toneMatchLevel, setToneMatchLevel] = useState([50])
-  const [brandPersonaMatching, setBrandPersonaMatching] = useState("")
-  const [defaultScriptTone, setDefaultScriptTone] = useState("")
   
   // ASMR Voice Options
   const [isASMRVoice, setIsASMRVoice] = useState(false)
@@ -549,8 +532,6 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
   
   // Preview & Fine-tuning
   const [isGenerating, setIsGenerating] = useState(false)
-  const [voicePreviews, setVoicePreviews] = useState<VoicePreview[]>([])
-  const [selectedPreview, setSelectedPreview] = useState<string | null>(null)
   const [fineTuningPitch, setFineTuningPitch] = useState([50])
   const [fineTuningSpeed, setFineTuningSpeed] = useState([50])
   const [fineTuningVolume, setFineTuningVolume] = useState([50])
@@ -559,15 +540,12 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
   
   // Export & Save
   const [voiceName, setVoiceName] = useState("")
-  const [voiceId, setVoiceId] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
   const [prompt, setPrompt] = useState("")
   
   // Smart behavior states
   const [smartMessage, setSmartMessage] = useState("")
-  const [isPlaying, setIsPlaying] = useState<string | null>(null)
-  const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({})
 
   // Smart behavior logic
   useEffect(() => {
@@ -589,10 +567,6 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
       message = "Lo-fi quality selected — gentle distortion filter applied."
     } else if (audioQualityIntent === "ASMR Quality" || audioQualityIntent === "Meditation Quality") {
       message = "ASMR/Meditation quality selected — enhanced binaural audio, whisper-friendly processing."
-    } else if (brandSync) {
-      message = "Brand sync enabled — tone locked to brand guidelines."
-    } else if (worldLink) {
-      message = `World '${worldLink}' linked — environmental reverb simulation enabled.`
     } else if (voicePurpose === "ASMR Content Creator" || characterRole === "ASMR Artist") {
       message = "ASMR content detected — whisper mode recommended, background sounds available."
     } else if (soundCategory) {
@@ -612,71 +586,15 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
     }
     
     setSmartMessage(message)
-  }, [isASMRVoice, gender, fidelity, moodContext, performanceStyle, audioQualityIntent, brandSync, worldLink, voicePurpose, characterRole, tone, soundCategory, usageContext, environmentStyle, reverbCharacter, stereoBehavior, motionCharacter, purposeInScene])
+  }, [isASMRVoice, gender, fidelity, moodContext, performanceStyle, audioQualityIntent, voicePurpose, characterRole, tone, soundCategory, usageContext, environmentStyle, reverbCharacter, stereoBehavior, motionCharacter, purposeInScene])
 
-  const handleGeneratePreviews = async () => {
-    setIsGenerating(true)
-    try {
-      // Simulate API call to generate voice previews
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      // Mock voice previews
-      const mockPreviews: VoicePreview[] = [
-        {
-          id: "voice_1",
-          audio_base_64: "data:audio/mp3;base64,mock_audio_1",
-          media_type: "audio/mp3",
-          duration_secs: 3.2,
-          language: language,
-          variation: "Softer"
-        },
-        {
-          id: "voice_2", 
-          audio_base_64: "data:audio/mp3;base64,mock_audio_2",
-          media_type: "audio/mp3",
-          duration_secs: 3.1,
-          language: language,
-          variation: "Brighter"
-        },
-        {
-          id: "voice_3",
-          audio_base_64: "data:audio/mp3;base64,mock_audio_3", 
-          media_type: "audio/mp3",
-          duration_secs: 3.3,
-          language: language,
-          variation: "More Confident"
-        }
-      ]
-      
-      setVoicePreviews(mockPreviews)
-      toast({
-        title: "Voice previews generated!",
-        description: "Three variations are ready for comparison."
-      })
-    } catch (error) {
-      toast({
-        title: "Generation failed",
-        description: "Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsGenerating(false)
-    }
-  }
 
-  const handlePlayPreview = (previewId: string) => {
-    if (isPlaying === previewId) {
-      setIsPlaying(null)
-      audioRefs.current[previewId]?.pause()
-    } else {
-      setIsPlaying(previewId)
-      // In real implementation, would play the actual audio
-      console.log(`Playing preview ${previewId}`)
-    }
-  }
 
   const handleSaveVoice = async () => {
+    console.log('🎤 [VOICE CREATION] Starting voice generation...')
+    
     if (!prompt.trim()) {
+      console.log('❌ [VOICE CREATION] No prompt provided')
       toast({
         title: "Prompt required",
         description: "Please enter a prompt describing the voice you want to create.",
@@ -685,8 +603,43 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
       return
     }
 
+    // Note: Preview text is optional - if not provided, ElevenLabs will auto-generate it
+
     try {
-      // Collect all creative fields
+      console.log('📝 [VOICE CREATION] Building enhanced prompt...')
+      // Build enhanced prompt from all UI parameters
+      const enhancedPrompt = buildVoicePrompt({
+        prompt: prompt.trim(),
+        purpose: voicePurpose,
+        language,
+        gender,
+        age: perceivedAge,
+        accent,
+        tone,
+        pitch: pitchLevel[0],
+        pacing,
+        fidelity,
+        mood: moodContext,
+        emotional_weight: emotionalWeight[0],
+        role: characterRole,
+        style: performanceStyle,
+        audio_quality: audioQualityIntent,
+        guidance_scale: guidanceScale[0],
+        preview_text: previewText,
+        is_asmr_voice: isASMRVoice,
+        asmr_intensity: asmrIntensity[0],
+        asmr_triggers: asmrTriggers,
+        asmr_background: asmrBackground,
+        sound_category: soundCategory,
+        usage_context: usageContext,
+        sound_texture: soundTexture,
+        attack_type: attackType,
+        environment_style: environmentStyle,
+        purpose_in_scene: purposeInScene
+      })
+      console.log('✅ [VOICE CREATION] Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...')
+
+      // Collect all creative fields for database storage
       const allFields = {
         name: voiceName || `Voice_${Date.now()}`,
         purpose: voicePurpose,
@@ -705,9 +658,6 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
         audio_quality: audioQualityIntent,
         guidance_scale: guidanceScale[0],
         preview_text: previewText,
-        brand_sync: brandSync,
-        world_link: worldLink,
-        tone_match: toneMatchLevel[0],
         is_asmr_voice: isASMRVoice,
         asmr_intensity: asmrIntensity[0],
         asmr_triggers: asmrTriggers,
@@ -719,7 +669,7 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
       const filledFields = filterFilledFields(allFields)
 
       const voiceData = {
-        prompt: prompt.trim(),
+        prompt: enhancedPrompt, // Enhanced prompt for AI
         name: voiceName || `Voice_${Date.now()}`,
         purpose: voicePurpose,
         language,
@@ -737,17 +687,17 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
         audio_quality: audioQualityIntent,
         guidance_scale: guidanceScale[0],
         preview_text: previewText,
-        brand_sync: brandSync,
-        world_link: worldLink,
-        tone_match: toneMatchLevel[0],
         is_asmr_voice: isASMRVoice,
         asmr_intensity: asmrIntensity[0],
         asmr_triggers: asmrTriggers,
         asmr_background: asmrBackground,
         tags,
+        auto_generate_text: false,
         created_at: new Date().toISOString()
       }
+      console.log('📦 [VOICE CREATION] Payload:', JSON.stringify(voiceData, null, 2))
 
+      console.log('🌐 [VOICE CREATION] Calling API...')
       // API call to save voice
       const response = await fetch('/api/voice-creation', {
         method: 'POST',
@@ -755,23 +705,33 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
         body: JSON.stringify(voiceData)
       })
 
-      if (response.ok) {
-        toast({
-          title: "Voice generated successfully!",
-          description: `Voice '${voiceName || 'Unnamed Voice'}' has been created and added to your DreamCut Voice Library.`
-        })
+      console.log('📡 [VOICE CREATION] Response status:', response.status)
 
-        // Invalidate SWR cache to refresh previous generations
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ [VOICE CREATION] Success:', result)
+        
+
+        // Refresh previous generations list immediately
         mutate('/api/library?content_type=voices_creations')
 
-        onClose()
+        toast({
+          title: "Voice generated successfully!",
+          description: `3 variations created and added to your ElevenLabs library.`
+        })
+
+        // Close the interface after brief delay
+        setTimeout(() => onClose(), 1500)
       } else {
-        throw new Error('Failed to save voice')
+        const errorText = await response.text()
+        console.error('❌ [VOICE CREATION] API Error:', errorText)
+        throw new Error(`API returned ${response.status}: ${errorText}`)
       }
     } catch (error) {
+      console.error('❌ [VOICE CREATION] Exception:', error)
       toast({
         title: "Save failed",
-        description: "Please try again.",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       })
     }
@@ -788,8 +748,18 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
     setTags(tags.filter(tag => tag !== tagToRemove))
   }
 
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-1">
+    <>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <GenerationLoading 
+          model="Nano-banana"
+          onCancel={() => setIsGenerating(false)}
+        />
+      )}
+      
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-1">
       <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[calc(100vh-1rem)] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-2 border-b sticky top-0 bg-background z-10">
@@ -826,17 +796,6 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
                     value={voiceName}
                     onChange={(e) => setVoiceName(e.target.value)}
                     placeholder="e.g., Ava – Calm Narrator"
-                    className="h-7 text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Voice ID</Label>
-                  <Input
-                    value={voiceId}
-                    onChange={(e) => setVoiceId(e.target.value)}
-                    placeholder="Auto-generated from selection"
-                    disabled
                     className="h-7 text-xs"
                   />
                 </div>
@@ -1000,20 +959,6 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
                   </Select>
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs">Default Script Tone</Label>
-                  <Select value={defaultScriptTone} onValueChange={setDefaultScriptTone}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select tone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="friendly">Friendly</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="epic">Epic</SelectItem>
-                      <SelectItem value="conversational">Conversational</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs">🏷️ Tags</Label>
@@ -1164,17 +1109,17 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
                     placeholder="Enter text to preview the voice..."
                     className="min-h-[50px] text-xs"
                   />
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>{previewText.length} characters</span>
+                    <span className="text-blue-500">
+                      {previewText.length > 0 
+                        ? "Custom text will be used" 
+                        : "ElevenLabs will auto-generate text"
+                      }
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="auto-generate"
-                    checked={autoGeneratePreview}
-                    onCheckedChange={setAutoGeneratePreview}
-                    className="scale-75"
-                  />
-                  <Label htmlFor="auto-generate" className="text-xs">Auto-generate Preview Text</Label>
-                </div>
               </div>
 
               <div className="text-xs text-muted-foreground italic">
@@ -1183,190 +1128,8 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
             </CardContent>
           </Card>
 
-          {/* Brand / World Sync Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Globe className="h-3 w-3" />
-                🌍 Brand / World Sync
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Connect the voice tone with the brand or story world it belongs to.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="brand-sync"
-                    checked={brandSync}
-                    onCheckedChange={setBrandSync}
-                    className="scale-75"
-                  />
-                  <Label htmlFor="brand-sync" className="text-xs">Brand Sync</Label>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">🌐 World Link</Label>
-                  <Select value={worldLink} onValueChange={setWorldLink}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select world" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cyber-tokyo">Cyber Tokyo</SelectItem>
-                      <SelectItem value="zen-oasis">Zen Oasis</SelectItem>
-                      <SelectItem value="steampunk-london">Steampunk London</SelectItem>
-                      <SelectItem value="space-station">Space Station</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Tone Match Level: {toneMatchLevel[0]}</Label>
-                  <Slider
-                    value={toneMatchLevel}
-                    onValueChange={setToneMatchLevel}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                    disabled={brandSync}
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Independent</span>
-                    <span>Full Match</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Brand Persona Matching</Label>
-                  <Select value={brandPersonaMatching} onValueChange={setBrandPersonaMatching}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select persona" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BRAND_PERSONA_OPTIONS.map((persona) => (
-                        <SelectItem key={persona} value={persona.toLowerCase()}>
-                          {persona}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Default Script Tone</Label>
-                  <Select value={defaultScriptTone} onValueChange={setDefaultScriptTone}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Select tone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SCRIPT_TONE_OPTIONS.map((tone) => (
-                        <SelectItem key={tone} value={tone.toLowerCase()}>
-                          {tone}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="text-xs text-muted-foreground italic">
-                "Your world's tone is Mysterious — softening consonants and lowering treble to match."
-              </div>
-            </CardContent>
-          </Card>
 
 
-          {/* ASMR Voice Options Section */}
-          <Card>
-            <CardHeader className="p-2">
-              <CardTitle className="flex items-center gap-2 text-xs">
-                <Heart className="h-3 w-3" />
-                🎧 ASMR Voice Options
-              </CardTitle>
-              <CardDescription className="text-[10px]">
-                Specialized settings for ASMR content creation and relaxation-focused voices.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 p-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="asmr-voice"
-                  checked={isASMRVoice}
-                  onCheckedChange={setIsASMRVoice}
-                  className="scale-75"
-                />
-                <Label htmlFor="asmr-voice" className="text-xs">Enable ASMR Voice Mode</Label>
-              </div>
-
-              {isASMRVoice && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">🔊 ASMR Intensity: {asmrIntensity[0]}</Label>
-                      <Slider
-                        value={asmrIntensity}
-                        onValueChange={setAsmrIntensity}
-                        min={0}
-                        max={100}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-[10px] text-muted-foreground">
-                        <span>Subtle</span>
-                        <span>Intense</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-xs">Background Sound</Label>
-                      <Select value={asmrBackground} onValueChange={setAsmrBackground}>
-                        <SelectTrigger className="h-7 text-xs">
-                          <SelectValue placeholder="Select background" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ASMR_BACKGROUND_OPTIONS.map((background) => (
-                            <SelectItem key={background} value={background.toLowerCase()}>
-                              {background}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                      <Label className="text-xs">🎯 ASMR Triggers</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                      {ASMR_TRIGGERS.map((trigger) => (
-                        <div key={trigger} className="flex items-center space-x-1">
-                          <input
-                            type="checkbox"
-                            id={trigger}
-                            checked={asmrTriggers.includes(trigger)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setAsmrTriggers([...asmrTriggers, trigger])
-                              } else {
-                                setAsmrTriggers(asmrTriggers.filter(t => t !== trigger))
-                              }
-                            }}
-                            className="rounded border-gray-300 h-3 w-3"
-                          />
-                          <Label htmlFor={trigger} className="text-xs">{trigger}</Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground italic">
-                    "ASMR mode enables whisper processing, binaural audio, and relaxation-optimized sound quality."
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
 
 
@@ -1408,8 +1171,14 @@ export function VoiceCreationInterface({ onClose, projectTitle }: VoiceCreationI
         </div>
       </div>
 
+
       {/* Previous Generations */}
-      <PreviousGenerations contentType="voices_creations" userId={user?.id || ''} className="mt-8" />
+      <PreviousGenerations 
+        contentType="voices_creations" 
+        userId={user?.id || ''} 
+        className="mt-8"
+      />
     </div>
+    </>
   )
 }

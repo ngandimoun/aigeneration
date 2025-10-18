@@ -323,13 +323,24 @@ image = (
     cpu=4.0,
     memory=8192,
 )
-def render_manim(code: str, scene_name: str, upload_url: str = None, openai_api_key: str = None, 
-                 resolution: str = "720p", aspect_ratio: str = "16:9", duration: int = 8, style: str = "auto"):
+@modal.fastapi_endpoint(method="POST")
+def render_manim(request_body: dict) -> dict:
     """Render Manim animation and optionally upload to Supabase."""
     
-    # Set OpenAI API key if provided
-    if openai_api_key:
-        os.environ['OPENAI_API_KEY'] = openai_api_key
+    # Extract parameters from request body
+    code = request_body.get("code", "")
+    scene_name = request_body.get("scene_name", "GeneratedScene")
+    upload_url = request_body.get("upload_url")
+    resolution = request_body.get("resolution", "720p")
+    aspect_ratio = request_body.get("aspect_ratio", "16:9")
+    duration = request_body.get("duration", 8)
+    style = request_body.get("style", "auto")
+    
+    if not code:
+        return {
+            "success": False,
+            "error": "No code provided in request body"
+        }
     
     # Map resolution to Manim quality flag
     quality_map = {

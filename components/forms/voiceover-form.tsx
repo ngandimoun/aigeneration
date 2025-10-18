@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Mic, Volume2, Settings, Globe, Heart, User, Sparkles } from "lucide-react"
+import { Mic, Volume2, Settings, Globe, Heart, User, Sparkles, Play, Pause } from "lucide-react"
+import { OPENAI_VOICES, type OpenAIVoice } from "@/lib/openai/text-to-speech"
 
 interface VoiceoverFormProps {
   onSubmit: (data: any) => void
@@ -18,21 +19,6 @@ interface VoiceoverFormProps {
   isLoading?: boolean
 }
 
-interface DreamCutVoice {
-  voice_id: string
-  name: string
-  description: string
-  category: string
-  language: string
-  gender: string
-  age: string
-  accent: string
-  tone: string
-  mood: string
-  style: string
-  preview_url?: string
-  created_at: string
-}
 
 const VOICEOVER_USE_CASES = [
   "Narration",
@@ -90,26 +76,6 @@ const LANGUAGES = [
   "Multilingual"
 ]
 
-const EMOTION_OPTIONS = [
-  { value: "calm", label: "Calm", icon: "🌿" },
-  { value: "energetic", label: "Energetic", icon: "⚡" },
-  { value: "sad", label: "Sad", icon: "💧" },
-  { value: "dramatic", label: "Dramatic", icon: "🔥" },
-  { value: "playful", label: "Playful", icon: "🎈" },
-  { value: "confident", label: "Confident", icon: "💪" },
-  { value: "mysterious", label: "Mysterious", icon: "🌑" },
-  { value: "hopeful", label: "Hopeful", icon: "🌅" },
-  { value: "relaxed", label: "Relaxed", icon: "🧘" },
-  { value: "sleepy", label: "Sleepy", icon: "😴" },
-  { value: "soothing", label: "Soothing", icon: "🕊️" },
-  { value: "meditative", label: "Meditative", icon: "🧘‍♀️" },
-  { value: "whisper", label: "Whisper", icon: "🤫" },
-  { value: "intimate", label: "Intimate", icon: "💕" },
-  { value: "professional", label: "Professional", icon: "👔" },
-  { value: "friendly", label: "Friendly", icon: "😊" },
-  { value: "authoritative", label: "Authoritative", icon: "👑" },
-  { value: "gentle", label: "Gentle", icon: "🕊️" }
-]
 
 export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormProps) {
   const [formData, setFormData] = useState({
@@ -121,39 +87,24 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
     speed: 50,
     pitch: 50,
     volume: 50,
-    emotion: "",
     use_case: ""
   })
 
-  // DreamCut Voice Library
-  const [dreamCutVoices, setDreamCutVoices] = useState<DreamCutVoice[]>([])
-  const [loadingVoices, setLoadingVoices] = useState(true)
-  const [selectedVoice, setSelectedVoice] = useState<DreamCutVoice | null>(null)
+  // OpenAI Voice Selection
+  const [selectedVoice, setSelectedVoice] = useState<OpenAIVoice | null>(null)
+  
+  // Voice Preview Audio
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Load DreamCut voices on component mount
-  useEffect(() => {
-    const loadDreamCutVoices = async () => {
-      try {
-        const response = await fetch('/api/voice-creation')
-        if (response.ok) {
-          const data = await response.json()
-          setDreamCutVoices(data.voiceCreations || [])
-        }
-      } catch (error) {
-        console.error('Failed to load DreamCut voices:', error)
-      } finally {
-        setLoadingVoices(false)
-      }
-    }
-
-    loadDreamCutVoices()
-  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
     onSubmit({
       ...formData,
-      dreamcut_voice: selectedVoice
+      voice_id: selectedVoice?.id || formData.voice_id,
+      openai_voice: selectedVoice
     })
   }
 
@@ -165,11 +116,75 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
   }
 
   const handleVoiceSelection = (voiceId: string) => {
-    if (voiceId === "no-voices") return
-    const voice = dreamCutVoices.find(v => v.voice_id === voiceId)
+    const voice = OPENAI_VOICES.find(v => v.id === voiceId)
+    console.log('🎤 [VOICEOVER FORM] Selected OpenAI voice:', {
+      name: voice?.name,
+      id: voice?.id,
+      description: voice?.description
+    })
     setSelectedVoice(voice || null)
     handleInputChange("voice_id", voiceId)
   }
+
+  const handlePlayVoicePreview = (voiceId: string) => {
+    if (playingVoiceId === voiceId) {
+      // Pause current voice
+      voiceAudioRef.current?.pause()
+      setPlayingVoiceId(null)
+    } else {
+      // Stop any currently playing voice
+      if (playingVoiceId) {
+        voiceAudioRef.current?.pause()
+      }
+      
+      // Play new voice
+      setPlayingVoiceId(voiceId)
+      
+      // Generate a sample audio for preview using OpenAI TTS
+      const sampleText = "Hello, this is a preview of my voice. I can speak naturally and clearly."
+      
+      fetch('/api/openai/text-to-speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: sampleText,
+          voice: voiceId,
+          response_format: 'mp3'
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        return response.blob()
+      })
+      .then(blob => {
+        const audioUrl = URL.createObjectURL(blob)
+        const audio = new Audio(audioUrl)
+        voiceAudioRef.current = audio
+        
+        audio.play().catch(error => {
+          console.error('Error playing voice preview:', error)
+          setPlayingVoiceId(null)
+        })
+        
+        audio.onended = () => {
+          setPlayingVoiceId(null)
+          URL.revokeObjectURL(audioUrl)
+        }
+        audio.onerror = () => {
+          console.error('Audio playback error')
+          setPlayingVoiceId(null)
+          URL.revokeObjectURL(audioUrl)
+        }
+      })
+      .catch(error => {
+        console.error('Error generating voice preview:', error)
+        setPlayingVoiceId(null)
+      })
+    }
+  }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -225,10 +240,10 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
             </div>
 
             <div className="space-y-2">
-              <Label>Use Case</Label>
+              <Label>Content Type</Label>
               <Select value={formData.use_case} onValueChange={(value) => handleInputChange("use_case", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select use case" />
+                  <SelectValue placeholder="Select content type" />
                 </SelectTrigger>
                 <SelectContent>
                   {VOICEOVER_USE_CASES.map((useCase) => (
@@ -269,56 +284,45 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
         </CardContent>
       </Card>
 
-      {/* DreamCut Voice Selection */}
+      {/* OpenAI Voice Selection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            DreamCut Voice Selection
+            <Mic className="h-5 w-5" />
+            OpenAI Voice Selection
           </CardTitle>
           <CardDescription>
-            Select a voice from your DreamCut voice library to use with ElevenLabs.
+            Select a voice from OpenAI's GPT-4o-mini-TTS model.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>DreamCut Voice Library</Label>
-            {loadingVoices ? (
-              <div className="flex items-center justify-center p-4">
-                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                Loading voices...
-              </div>
-            ) : (
-              <Select 
-                value={formData.voice_id} 
-                onValueChange={handleVoiceSelection}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a voice from your library" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dreamCutVoices.length === 0 ? (
-                    <SelectItem value="no-voices" disabled>
-                      No voices found. Create voices first in Voice Creation.
-                    </SelectItem>
-                  ) : (
-                    dreamCutVoices.map((voice) => (
-                      <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <div>
-                            <div className="font-medium">{voice.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {voice.gender} • {voice.language} • {voice.mood}
-                            </div>
-                          </div>
+            <Label>OpenAI Voice</Label>
+            <Select 
+              value={formData.voice_id} 
+              onValueChange={handleVoiceSelection}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an OpenAI voice" />
+              </SelectTrigger>
+              <SelectContent>
+                {OPENAI_VOICES.map((voice) => (
+                  <SelectItem key={voice.id} value={voice.id}>
+                    <div className="flex items-center gap-2">
+                      <Mic className="h-4 w-4" />
+                      <div>
+                        <div className="font-medium">
+                          {voice.name}
                         </div>
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            )}
+                        <div className="text-xs text-muted-foreground">
+                          {voice.description}
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Selected Voice Preview */}
@@ -327,32 +331,40 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary" />
+                    <Mic className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium">{selectedVoice.name}</h4>
                     <p className="text-sm text-muted-foreground">{selectedVoice.description}</p>
                     <div className="flex gap-2 mt-1">
                       <Badge variant="secondary" className="text-xs">
-                        {selectedVoice.gender}
+                        OpenAI TTS
                       </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {selectedVoice.language}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {selectedVoice.mood}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {selectedVoice.style}
+                      <Badge variant="outline" className="text-xs">
+                        {selectedVoice.id}
                       </Badge>
                     </div>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8"
+                    onClick={() => handlePlayVoicePreview(selectedVoice.id)}
+                  >
+                    {playingVoiceId === selectedVoice.id ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           )}
         </CardContent>
       </Card>
+
+
 
       {/* Voice Characteristics */}
       <Card>
@@ -416,24 +428,6 @@ export function VoiceoverForm({ onSubmit, onCancel, isLoading }: VoiceoverFormPr
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Emotion</Label>
-            <Select value={formData.emotion} onValueChange={(value) => handleInputChange("emotion", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select emotion" />
-              </SelectTrigger>
-              <SelectContent>
-                {EMOTION_OPTIONS.map((emotionOption) => (
-                  <SelectItem key={emotionOption.value} value={emotionOption.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{emotionOption.icon}</span>
-                      {emotionOption.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
       </Card>
 

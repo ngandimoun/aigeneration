@@ -106,6 +106,16 @@ export function MainContent() {
           </div>
         )}
 
+        {/* Music Videos section - Previous Generations */}
+        {selectedSection === 'music-videos' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="music_videos" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
         {/* Charts & Infographics section - Project details or Welcome message (OLD) */}
         {false && selectedSection === 'charts-infographics' && (
           false ? (
@@ -586,7 +596,7 @@ export function MainContent() {
         )}
 
         {/* Product in Motion section - Previous Generations */}
-        {selectedSection === 'product-motion' && (
+        {selectedSection === 'diverse-motion' && (
           <div className="space-y-6">
             <PreviousGenerations 
               contentType="product_motions" 
@@ -596,7 +606,7 @@ export function MainContent() {
         )}
 
         {/* Product in Motion section - Project details or Attention Message (OLD) */}
-        {false && selectedSection === 'product-motion' && (
+        {false && selectedSection === 'diverse-motion' && (
           false ? (
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

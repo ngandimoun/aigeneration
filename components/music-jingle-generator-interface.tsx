@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { mutate } from "swr"
+import { useMusicGenerationStatus } from "@/hooks/use-music-generation-status"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import { 
   Select,
   SelectContent,
@@ -46,13 +49,16 @@ import {
   Volume2,
   VolumeX,
   Clock,
-  FileAudio
+  FileAudio,
+  FileText
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
+import { detectProblematicContent, getContentWarningMessage } from "@/lib/utils/content-validation"
 import { PreviousGenerations } from "@/components/ui/previous-generations"
+import { LyricsGeneratorInterface } from "@/components/lyrics-generator-interface"
 
 interface MusicJingleGeneratorInterfaceProps {
   onClose: () => void
@@ -66,6 +72,9 @@ interface GeneratedMusic {
   currentTime: number
   isPlaying: boolean
   waveform: number[]
+  status?: 'pending' | 'completed' | 'failed'
+  sunoTaskId?: string
+  audioUrl?: string
 }
 
 // Model configurations
@@ -85,6 +94,18 @@ const getCharacterLimits = (model: string) => ({
   // For non-custom mode, prompt is limited to 500 characters
   promptSimple: 500
 })
+
+// Duration limits by model (based on Suno API documentation)
+const getDurationLimit = (model: string): number => {
+  return ['V3_5', 'V4'].includes(model) ? 240 : 480
+}
+
+// Format duration display
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 // Style Tags organized by categories
 const STYLE_CATEGORIES = {
@@ -142,7 +163,7 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   const { user } = useAuth()
   
   // Core State
-  const [description, setDescription] = useState("")
+  const [lyrics, setLyrics] = useState("")
   const [title, setTitle] = useState("")
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
   
@@ -157,6 +178,31 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   const [isInstrumental, setIsInstrumental] = useState(false)
   const [customMode, setCustomMode] = useState(false)
   const [style, setStyle] = useState("")
+  const [tags, setTags] = useState("")  // NEW: for add_instrumental
+  const [continueAtTime, setContinueAtTime] = useState<number>(0)
+  
+  // Auto-switch model when action requires restricted models
+  useEffect(() => {
+    if ((audioAction === 'add_instrumental' || audioAction === 'add_vocals') && 
+        selectedModel !== 'V4_5PLUS' && selectedModel !== 'V5') {
+      setSelectedModel('V4_5PLUS')
+      toast({
+        title: "Model auto-switched",
+        description: `${audioAction} requires V4.5+ or V5 model`,
+      })
+    }
+  }, [audioAction])
+  
+  // Check if current action requires restricted models
+  const isRestrictedAction = audioAction === 'add_instrumental' || audioAction === 'add_vocals'
+
+  // Get allowed models for current action
+  const getAllowedModels = () => {
+    if (isRestrictedAction) {
+      return ['V4_5PLUS', 'V5']
+    }
+    return ['V3_5', 'V4', 'V4_5', 'V4_5PLUS', 'V5']
+  }
   
   // Advanced Settings
   const [showStyles, setShowStyles] = useState(false)
@@ -164,6 +210,9 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [isSimpleMode, setIsSimpleMode] = useState(true)
   const [showAudioMenu, setShowAudioMenu] = useState(false)
+  const [showLyricsGenerator, setShowLyricsGenerator] = useState(false)
+  const [showAudioSeparation, setShowAudioSeparation] = useState(false)
+  const [separationType, setSeparationType] = useState<'separate_vocal' | 'split_stem'>('separate_vocal')
   const [audioUploaded, setAudioUploaded] = useState(false)
   const [uploadedAudioFile, setUploadedAudioFile] = useState<File | null>(null)
   const [audioFileName, setAudioFileName] = useState("")
@@ -176,18 +225,90 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   const [recordingDuration, setRecordingDuration] = useState<number>(0)
   const [waveformAnimation, setWaveformAnimation] = useState<number>(0)
   const [duration, setDuration] = useState([30])
+  const [isAutoDuration, setIsAutoDuration] = useState(true) // NEW: default to auto
   const [volume, setVolume] = useState([80])
   const [fadeIn, setFadeIn] = useState([0])
   const [fadeOut, setFadeOut] = useState([0])
   const [loopMode, setLoopMode] = useState(false)
-  const [stereoMode, setStereoMode] = useState(true)
+  const [stereoMode, setStereoMode] = useState<'mono' | 'stereo' | 'wide'>('stereo')
+  
+  // Style categories expansion state
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   
   // Generation & Playback
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [showPreviousGenerations, setShowPreviousGenerations] = useState(false)
+  
+  // Status tracking for automatic polling
+  const [generatingTaskId, setGeneratingTaskId] = useState<string | null>(null)
+  const [showProgress, setShowProgress] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement>(null)
+
+  // Use the status polling hook
+  const { status, progress } = useMusicGenerationStatus({
+    taskId: generatingTaskId,
+    enabled: showProgress,
+    onComplete: () => {
+      toast({
+        title: "🎵 Music Generated!",
+        description: "Your song is ready to play.",
+      })
+      setShowProgress(false)
+      setGeneratingTaskId(null)
+      onClose()
+    },
+    onError: (error) => {
+      toast({
+        title: "Generation Failed",
+        description: error,
+        variant: "destructive",
+      })
+      setShowProgress(false)
+      setGeneratingTaskId(null)
+    }
+  })
+
+  // Handle lyrics selection from lyrics generator
+  const handleLyricsSelect = (generatedLyrics: string) => {
+    setLyrics(generatedLyrics)
+    setShowLyricsGenerator(false)
+    toast({
+      title: "Lyrics imported",
+      description: "Generated lyrics have been added to your lyrics field",
+    })
+  }
+
+  // Toggle category expansion for style tags
+  const toggleCategory = (categoryKey: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(categoryKey)) {
+        newSet.delete(categoryKey)
+      } else {
+        newSet.add(categoryKey)
+      }
+      return newSet
+    })
+  }
+
+  // Auto-adjust duration when model changes
+  useEffect(() => {
+    // Only adjust if manual mode is active
+    if (!isAutoDuration) {
+      const currentDuration = duration[0]
+      const maxDuration = getDurationLimit(selectedModel)
+      if (currentDuration > maxDuration) {
+        setDuration([maxDuration])
+        toast({
+          title: "Duration adjusted",
+          description: `Duration reduced to ${formatDuration(maxDuration)} for ${selectedModel} model`,
+        })
+      }
+    }
+  }, [selectedModel, isAutoDuration, duration])
 
   // Close audio menu when clicking outside
   useEffect(() => {
@@ -302,7 +423,7 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   }
 
   const insertTemplate = (template: string) => {
-    setDescription(template)
+    setLyrics(template)
   }
 
   // Validation functions
@@ -315,15 +436,20 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
       errors.push(`Title exceeds ${limits.title} character limit (${title.length}/${limits.title})`)
     }
     
-    // Check prompt/description limit based on mode
+    // Check prompt/lyrics limit based on mode
     const promptLimit = isSimpleMode ? limits.promptSimple : limits.prompt
-    if (description.length > promptLimit) {
-      errors.push(`Description exceeds ${promptLimit} character limit (${description.length}/${promptLimit})`)
+    if (lyrics.length > promptLimit) {
+      errors.push(`Lyrics exceeds ${promptLimit} character limit (${lyrics.length}/${promptLimit})`)
     }
     
     // Check style limit (if style field exists)
     if (style && style.length > limits.style) {
       errors.push(`Style exceeds ${limits.style} character limit (${style.length}/${limits.style})`)
+    }
+    
+    // Check tags limit for add_instrumental
+    if (audioAction === 'add_instrumental' && tags && tags.length > limits.style) {
+      errors.push(`Tags exceeds ${limits.style} character limit (${tags.length}/${limits.style})`)
     }
     
     return errors
@@ -615,10 +741,55 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
   }
 
   const handleGenerate = async () => {
-    if (!description.trim()) {
+    if (!lyrics.trim()) {
       toast({
-        title: "Description required",
+        title: "Lyrics required",
         description: "Please describe the music you want to create.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Check for problematic content that might cause rejection
+    const contentCheck = detectProblematicContent(lyrics)
+    if (contentCheck.hasIssues) {
+      const warningMessage = getContentWarningMessage(contentCheck)
+      const shouldContinue = window.confirm(warningMessage)
+      
+      if (!shouldContinue) {
+        return
+      }
+    }
+
+    // Validate required fields for add_instrumental
+    if (audioAction === 'add_instrumental') {
+      if (!tags || !tags.trim()) {
+        toast({
+          title: "Tags required",
+          description: "Please describe the instruments and style",
+          variant: "destructive"
+        })
+        return
+      }
+    }
+
+    // Validate required fields for add_vocals
+    if (audioAction === 'add_vocals') {
+      if (!style || !style.trim()) {
+        toast({
+          title: "Style required",
+          description: "Please specify the musical style",
+          variant: "destructive"
+        })
+        return
+      }
+    }
+
+    // Ensure audio is uploaded for these actions
+    if ((audioAction === 'add_instrumental' || audioAction === 'add_vocals') && !uploadedAudioFile) {
+      toast({
+        title: "Audio file required",
+        description: `Please upload an audio file to use ${audioAction}`,
         variant: "destructive"
       })
       return
@@ -637,85 +808,112 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
 
     setIsGenerating(true)
     try {
-      // Collect all creative fields
-      const allFields = {
-        title: title ? truncateToLimit(title, 'title') : undefined,
-        style: style ? truncateToLimit(style, 'style') : undefined,
-        customMode: !isSimpleMode,
-        instrumental: isInstrumental,
-        model: selectedModel,
-        vocalGender: !isInstrumental ? vocalGender : undefined,
-        styleWeight: styleWeight[0],
-        weirdnessConstraint: weirdnessConstraint[0],
-        audioWeight: audioUploaded ? audioWeight[0] : undefined,
-        negativeTags: negativeTags.length > 0 ? negativeTags.join(', ') : undefined,
-        audioAction: audioUploaded ? audioAction : undefined,
-        uploadUrl: audioUploaded && uploadedAudioFile ? 'uploaded_audio_url' : undefined
-      }
 
-      // Filter to only filled fields
-      const filledFields = filterFilledFields(allFields)
+      // Prepare FormData for API request
+      const formData = new FormData()
+      
+      // Add core parameters
+      formData.append('prompt', truncateToLimit(lyrics, 'prompt'))
+      if (title) formData.append('title', String(truncateToLimit(title, 'title')))
 
-      // Prepare data for Suno API with proper character limits
-      const apiData = {
-        // Core parameters
-        prompt: truncateToLimit(description, 'prompt'),
-        title: title ? truncateToLimit(title, 'title') : undefined,
-        style: style ? truncateToLimit(style, 'style') : undefined,
-        
-        // Mode settings
-        customMode: !isSimpleMode,
-        instrumental: isInstrumental,
-        model: selectedModel,
-        
-        // Advanced parameters (V5)
-        vocalGender: !isInstrumental ? vocalGender : undefined,
-        styleWeight: styleWeight[0],
-        weirdnessConstraint: weirdnessConstraint[0],
-        audioWeight: audioUploaded ? audioWeight[0] : undefined,
-        negativeTags: negativeTags.length > 0 ? negativeTags.join(', ') : undefined,
-        
-        // Audio action (if audio uploaded)
-        audioAction: audioUploaded ? audioAction : undefined,
-        uploadUrl: audioUploaded && uploadedAudioFile ? 'uploaded_audio_url' : undefined,
-        
-        // Callback URL for async processing
-        callBackUrl: `${window.location.origin}/api/suno/callback`
-      }
-
-      console.log('Sending to Suno API:', apiData)
-
-      // Show generation stages with realistic timing
-      const stages = [
-        { message: "Analyzing prompt...", duration: 1000 },
-        { message: "Generating composition...", duration: 2000 },
-        { message: "Rendering audio...", duration: 1500 },
-        { message: "Finalizing...", duration: 500 }
-      ]
-
-      for (const stage of stages) {
-        toast({
-          title: stage.message,
-          description: "Please wait while we create your music...",
-        })
-        await new Promise(resolve => setTimeout(resolve, stage.duration))
+      // Add style OR tags based on action
+      if (audioAction === 'add_instrumental') {
+        if (tags) formData.append('tags', truncateToLimit(tags, 'style'))
+      } else {
+        if (style) formData.append('style', truncateToLimit(style, 'style'))
       }
       
-      // Mock generated music with Suno v5 parameters
-      const mockMusic: GeneratedMusic = {
-        id: "generated_music_1",
-        title: title || "Generated Music",
+      // Add mode settings
+      formData.append('customMode', String(!isSimpleMode))
+      formData.append('instrumental', String(isInstrumental))
+      formData.append('model', selectedModel)
+      
+      // Add advanced parameters
+      if (!isInstrumental) formData.append('vocalGender', vocalGender)
+      formData.append('styleWeight', String(styleWeight[0]))
+      formData.append('weirdnessConstraint', String(weirdnessConstraint[0]))
+      
+      if (audioUploaded) {
+        formData.append('audioWeight', String(audioWeight[0]))
+        formData.append('audioAction', audioAction)
+        if (audioAction === 'extend' && continueAtTime !== undefined) {
+          formData.append('continueAt', String(continueAtTime))
+        }
+      }
+      
+      if (negativeTags.length > 0) {
+        formData.append('negativeTags', negativeTags.join(', '))
+      }
+      
+      // Add audio file if uploaded
+      if (uploadedAudioFile) {
+        formData.append('audioFile', uploadedAudioFile)
+      }
+      
+      // Add legacy fields for backward compatibility
+      if (selectedStyles.length > 0) {
+        formData.append('styles', selectedStyles.join(','))
+      }
+      // Add duration parameter - only if not auto
+      if (!isAutoDuration) {
+        formData.append('duration', String(duration[0]))
+      }
+      // If isAutoDuration is true, don't send duration parameter
+      // The API will let Suno decide the optimal length
+      formData.append('volume', String(volume[0]))
+      formData.append('fade_in', String(fadeIn[0]))
+      formData.append('fade_out', String(fadeOut[0]))
+      formData.append('loop_mode', String(loopMode))
+      formData.append('stereo_mode', stereoMode)
+
+      console.log('Sending to Suno API via FormData')
+
+      // Show initial stage
+      toast({
+        title: "Sending request to Suno API...",
+        description: "Please wait while we start your music generation...",
+      })
+      
+      // Call the API
+      const response = await fetch('/api/music-jingles', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      // Show success message with task ID
+      toast({
+        title: "Music generation started!",
+        description: `Your ${MODEL_CONFIGS[selectedModel].name} music is being generated. Task ID: ${result.musicJingle.suno_task_id}`,
+        duration: 5000
+      })
+      
+      // Set a placeholder music object to show pending state
+      const pendingMusic: GeneratedMusic = {
+        id: result.musicJingle.id,
+        title: title || "Generating Music...",
         duration: duration[0],
         currentTime: 0,
         isPlaying: false,
-        waveform: Array.from({ length: 100 }, () => Math.random() * 100)
+        waveform: Array.from({ length: 100 }, () => 0), // Empty waveform for pending
+        status: 'pending',
+        sunoTaskId: result.musicJingle.suno_task_id
       }
       
-      setGeneratedMusic(mockMusic)
-      toast({
-        title: "Music generated successfully!",
-        description: `Your ${MODEL_CONFIGS[selectedModel].name} music is ready to play and customize.`
-      })
+      setGeneratedMusic(pendingMusic)
+      setGeneratingTaskId(result.musicJingle.suno_task_id)
+      setShowProgress(true)
+
+      // Refresh the library to show the new generation
+      mutate('/api/music-jingles')
+
+      // Remove the immediate onClose() call - it will be called by the status polling hook
     } catch (error) {
       toast({
         title: "Generation failed",
@@ -843,7 +1041,7 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
     try {
       const musicData = {
         title: title || generatedMusic.title,
-        description,
+        description: lyrics,
         styles: selectedStyles,
         duration: duration[0],
         volume: volume[0],
@@ -958,21 +1156,33 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(MODEL_CONFIGS).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{config.name}</span>
-                        {config.badge && (
-                          <Badge variant="secondary" className="text-xs">
-                            {config.badge}
-                          </Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {config.duration}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {Object.entries(MODEL_CONFIGS).map(([key, config]) => {
+                    const isDisabled = isRestrictedAction && key !== 'V4_5PLUS' && key !== 'V5'
+                    return (
+                      <SelectItem 
+                        key={key} 
+                        value={key}
+                        disabled={isDisabled}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{config.name}</span>
+                          {config.badge && (
+                            <Badge variant="secondary" className="text-xs">
+                              {config.badge}
+                            </Badge>
+                          )}
+                          {isDisabled && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              Not available
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {config.duration}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
               <Badge variant="outline" className="text-xs">
@@ -1012,26 +1222,92 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                 </div>
               </div>
 
+              {/* Duration Control */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Duration</span>
+                    {!isAutoDuration && (
+                      <span className="text-xs text-muted-foreground">
+                        ({formatDuration(duration[0])})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Auto Duration Checkbox */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="auto-duration"
+                    checked={isAutoDuration}
+                    onChange={(e) => setIsAutoDuration(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <label htmlFor="auto-duration" className="text-sm cursor-pointer">
+                    Auto (Let AI decide the optimal length)
+                  </label>
+                </div>
+                
+                {/* Manual Duration Slider - only shown when not auto */}
+                {!isAutoDuration && (
+                  <div className="space-y-1">
+                    <Slider
+                      value={duration}
+                      onValueChange={setDuration}
+                      max={getDurationLimit(selectedModel)}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1 second</span>
+                      <span>{formatDuration(getDurationLimit(selectedModel))}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Set the desired length of your music. Max: {formatDuration(getDurationLimit(selectedModel))}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Auto Mode Description */}
+                {isAutoDuration && (
+                  <p className="text-xs text-muted-foreground">
+                    AI will automatically determine the best duration based on your prompt and style
+                  </p>
+                )}
+              </div>
+
               {/* Description Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Describe your song</span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs ${getCharacterCountColor(getCharacterCount(description, 'prompt').current, getCharacterCount(description, 'prompt').limit)}`}>
-                      {getCharacterCount(description, 'prompt').current} / {getCharacterCount(description, 'prompt').limit}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowLyricsGenerator(true)}
+                      className="h-6 text-xs"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Generate Lyrics
+                    </Button>
+                    <span className={`text-xs ${getCharacterCountColor(getCharacterCount(lyrics, 'prompt').current, getCharacterCount(lyrics, 'prompt').limit)}`}>
+                      {getCharacterCount(lyrics, 'prompt').current} / {getCharacterCount(lyrics, 'prompt').limit}
                     </span>
                     <Expand className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
                 <Textarea
-                  value={description}
+                  value={lyrics}
                   onChange={(e) => {
                     const newValue = e.target.value
                     const limits = getCharacterLimits(selectedModel)
                     const maxLength = isSimpleMode ? limits.promptSimple : limits.prompt
                     
                     if (newValue.length <= maxLength) {
-                      setDescription(newValue)
+                      setLyrics(newValue)
                     } else {
                       // Show warning but don't prevent typing
                       toast({
@@ -1046,11 +1322,11 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                 />
                 
                 {/* Smart Suggestions */}
-                {description && getSmartSuggestions(description).length > 0 && (
+                {lyrics && getSmartSuggestions(lyrics).length > 0 && (
                   <div className="space-y-1">
                     <span className="text-xs text-muted-foreground">Suggested styles:</span>
                     <div className="flex flex-wrap gap-1">
-                      {getSmartSuggestions(description).slice(0, 3).map((suggestion) => (
+                      {getSmartSuggestions(lyrics).slice(0, 3).map((suggestion) => (
                         <Button
                           key={suggestion}
                           variant="outline"
@@ -1067,45 +1343,31 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                 )}
               </div>
 
-              {/* Input Options */}
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-7 text-xs"
-                  onClick={() => setAudioUploaded(false)}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Audio
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className={`h-7 text-xs ${!isInstrumental ? 'bg-primary text-primary-foreground' : ''}`}
-                  onClick={() => setIsInstrumental(false)}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Lyrics
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className={`h-7 text-xs ${isInstrumental ? 'bg-primary text-primary-foreground' : ''}`}
-                  onClick={() => setIsInstrumental(true)}
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Instrumental
-                </Button>
+              {/* Vocal Type Toggle */}
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Vocal Type</span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant={!isInstrumental ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setIsInstrumental(false)}
+                    className="h-8 text-xs"
+                  >
+                    <Mic className="h-3 w-3 mr-1" />
+                    With Vocals
+                  </Button>
+                  <Button 
+                    variant={isInstrumental ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setIsInstrumental(true)}
+                    className="h-8 text-xs"
+                  >
+                    <Music className="h-3 w-3 mr-1" />
+                    Instrumental Only
+                  </Button>
+                </div>
               </div>
 
-              {/* Inspiration Section */}
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Inspiration</span>
-                <Textarea
-                  placeholder="Add inspiration or reference..."
-                  className="min-h-[60px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
-                />
-              </div>
 
               {/* Generation Preview & Button */}
               <div className="space-y-3 pt-4 border-t">
@@ -1128,10 +1390,6 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                       <div className="text-muted-foreground">Type:</div>
                       <div className="font-medium">{isInstrumental ? 'Instrumental' : 'With Vocals'}</div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-muted-foreground">Mode:</div>
-                      <div className="font-medium">Simple</div>
-                    </div>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
                     <span className="text-xs text-muted-foreground">Estimated time: ~30 seconds</span>
@@ -1142,7 +1400,7 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                 {/* Generate Button */}
                 <Button 
                   onClick={handleGenerate}
-                  disabled={isGenerating || !description.trim()}
+                  disabled={isGenerating || !lyrics.trim()}
                   className="w-full h-10 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (
@@ -1158,6 +1416,25 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                   )}
                 </Button>
               </div>
+              
+              {/* Progress Indicator */}
+              {showProgress && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Generating your music...</span>
+                    <span className="font-medium">{progress}%</span>
+                  </div>
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This usually takes 1-2 minutes. You can close this and we'll notify you when it's ready.
+                  </p>
+                </div>
+              )}
             </>
           ) : (
              // Custom Mode Content
@@ -1228,14 +1505,6 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                    </div>
                    )}
                    
-                   <Button variant="outline" size="sm" className="h-7 text-xs">
-                     <Plus className="h-3 w-3 mr-1" />
-                     Persona
-                   </Button>
-                   <Button variant="outline" size="sm" className="h-7 text-xs">
-                     <Plus className="h-3 w-3 mr-1" />
-                     Inspo
-                   </Button>
                  </div>
 
                  {audioUploaded ? (
@@ -1277,6 +1546,7 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                            size="sm"
                            className="h-8 text-xs"
                            onClick={() => setAudioAction('add_instrumental')}
+                           disabled={!audioUploaded}
                          >
                            <Music className="h-3 w-3 mr-1" />
                            Add Instrumental
@@ -1286,12 +1556,56 @@ export function MusicJingleGeneratorInterface({ onClose, projectTitle }: MusicJi
                            size="sm"
                            className="h-8 text-xs"
                            onClick={() => setAudioAction('add_vocals')}
+                           disabled={!audioUploaded}
                          >
                            <Mic className="h-3 w-3 mr-1" />
                            Add Vocals
                          </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           className="h-8 text-xs"
+                           onClick={() => setShowAudioSeparation(true)}
+                           disabled={!audioUploaded}
+                         >
+                           <Users className="h-3 w-3 mr-1" />
+                           Separate Audio
+                         </Button>
                        </div>
                      </div>
+
+                     {/* Helper text for actions */}
+                     {audioAction === 'add_instrumental' && (
+                       <p className="text-xs text-muted-foreground">
+                         Generate instrumental backing music for your uploaded audio
+                       </p>
+                     )}
+                     {audioAction === 'add_vocals' && (
+                       <p className="text-xs text-muted-foreground">
+                         Add AI-generated vocals to your instrumental track
+                       </p>
+                     )}
+
+                     {/* Continue At Time Slider (for extend action) */}
+                     {audioAction === 'extend' && (
+                       <div className="space-y-2">
+                         <div className="flex items-center justify-between">
+                           <Label className="text-sm font-medium">Continue at (seconds)</Label>
+                           <span className="text-xs text-muted-foreground">{continueAtTime}s</span>
+                         </div>
+                         <Slider
+                           value={[continueAtTime]}
+                           onValueChange={(value) => setContinueAtTime(value[0])}
+                           max={30}
+                           min={0}
+                           step={0.5}
+                           className="w-full"
+                         />
+                         <p className="text-xs text-muted-foreground">
+                           Choose where to start extending the audio (0-30 seconds)
+                         </p>
+                       </div>
+                     )}
 
                      {/* Audio Player Section */}
                      <div className="space-y-3">
@@ -1507,7 +1821,7 @@ In the
                                  <span className="text-sm font-medium">{category.label}</span>
                                </div>
                                <div className="flex flex-wrap gap-1">
-                                 {category.tags.slice(0, 8).map((tag) => (
+                                 {(expandedCategories.has(key) ? category.tags : category.tags.slice(0, 8)).map((tag) => (
                                    <Button
                                      key={tag}
                                      variant={selectedStyles.includes(tag) ? "default" : "outline"}
@@ -1534,8 +1848,12 @@ In the
                                      variant="ghost"
                                      size="sm"
                                      className="h-6 text-xs text-muted-foreground"
+                                     onClick={() => toggleCategory(key)}
                                    >
-                                     +{category.tags.length - 8} more
+                                     {expandedCategories.has(key) 
+                                       ? `Show less` 
+                                       : `+${category.tags.length - 8} more`
+                                     }
                                    </Button>
                                  )}
                                </div>
@@ -1544,6 +1862,7 @@ In the
                          </div>
                        )}
                      </div>
+
 
                      {/* Advanced Options */}
                      <div className="space-y-2">
@@ -1766,138 +2085,193 @@ In the
                      </div>
                    </div>
 
-                   {/* Description Section */}
+                   {/* Duration Control */}
                    <div className="space-y-2">
                      <div className="flex items-center justify-between">
-                       <span className="text-sm font-medium">Describe your song</span>
                        <div className="flex items-center gap-2">
-                         <span className={`text-xs ${getCharacterCountColor(getCharacterCount(description, 'prompt').current, getCharacterCount(description, 'prompt').limit)}`}>
-                           {getCharacterCount(description, 'prompt').current} / {getCharacterCount(description, 'prompt').limit}
-                         </span>
-                         <Expand className="h-4 w-4 text-muted-foreground" />
-                       </div>
-                     </div>
-                     <Textarea
-                       value={description}
-                       onChange={(e) => {
-                         const newValue = e.target.value
-                         const limits = getCharacterLimits(selectedModel)
-                         const maxLength = isSimpleMode ? limits.promptSimple : limits.prompt
-                         
-                         if (newValue.length <= maxLength) {
-                           setDescription(newValue)
-                         } else {
-                           // Show warning but don't prevent typing
-                           toast({
-                             title: "Character limit warning",
-                             description: `You're approaching the ${maxLength} character limit.`,
-                             variant: "destructive"
-                           })
-                         }
-                       }}
-                       placeholder="Describe the music you want to create..."
-                       className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
-                     />
-                     
-                     {/* Smart Suggestions */}
-                     {description && getSmartSuggestions(description).length > 0 && (
-                       <div className="space-y-1">
-                         <span className="text-xs text-muted-foreground">Suggested styles:</span>
-                         <div className="flex flex-wrap gap-1">
-                           {getSmartSuggestions(description).slice(0, 3).map((suggestion) => (
-                             <Button
-                               key={suggestion}
-                               variant="outline"
-                               size="sm"
-                               className="h-6 text-xs"
-                               onClick={() => addStyle(suggestion)}
-                             >
-                               <Plus className="h-3 w-3 mr-1" />
-                               {suggestion}
-                             </Button>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                   </div>
-
-                   {/* Lyrics Section */}
-                   <div className="space-y-2">
-                     <div className="flex items-center gap-2">
-                       <button
-                         onClick={() => setShowLyrics(!showLyrics)}
-                         className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
-                       >
-                         {showLyrics ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                         Lyrics
-                         {!showLyrics && (
+                         <Clock className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm font-medium">Duration</span>
+                         {!isAutoDuration && (
                            <span className="text-xs text-muted-foreground">
-                             • {description.length > 0 ? 'Custom' : 'Auto-generated'}
+                             ({formatDuration(duration[0])})
                            </span>
                          )}
-                       </button>
-                       <Edit3 className="h-4 w-4 text-muted-foreground" />
+                       </div>
                      </div>
                      
-                     {showLyrics && (
-                       <div className="relative">
-                         <Textarea
-                           value={description}
-                           onChange={(e) => {
-                             const newValue = e.target.value
-                             const limits = getCharacterLimits(selectedModel)
-                             const maxLength = limits.prompt // Custom mode uses full prompt limit for lyrics
-                             
-                             if (newValue.length <= maxLength) {
-                               setDescription(newValue)
-                             } else {
-                               // Show warning but don't prevent typing
-                               toast({
-                                 title: "Character limit warning",
-                                 description: `Lyrics exceed ${maxLength} character limit.`,
-                                 variant: "destructive"
-                               })
-                             }
-                           }}
-                           placeholder="Write some lyrics (leave empty for instrumental)"
-                           className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors pr-8"
+                     {/* Auto Duration Checkbox */}
+                     <div className="flex items-center gap-2">
+                       <input
+                         type="checkbox"
+                         id="auto-duration-custom"
+                         checked={isAutoDuration}
+                         onChange={(e) => setIsAutoDuration(e.target.checked)}
+                         className="h-4 w-4 rounded border-gray-300"
+                       />
+                       <label htmlFor="auto-duration-custom" className="text-sm cursor-pointer">
+                         Auto (Let AI decide the optimal length)
+                       </label>
+                     </div>
+                     
+                     {/* Manual Duration Slider - only shown when not auto */}
+                     {!isAutoDuration && (
+                       <div className="space-y-1">
+                         <Slider
+                           value={duration}
+                           onValueChange={setDuration}
+                           max={getDurationLimit(selectedModel)}
+                           min={1}
+                           step={1}
+                           className="w-full"
                          />
-                         <div className="absolute bottom-2 right-2">
-                           <Expand className="h-3 w-3 text-muted-foreground" />
+                         <div className="flex justify-between text-xs text-muted-foreground">
+                           <span>1 second</span>
+                           <span>{formatDuration(getDurationLimit(selectedModel))}</span>
                          </div>
+                         <p className="text-xs text-muted-foreground">
+                           Set the desired length of your music. Max: {formatDuration(getDurationLimit(selectedModel))}
+                         </p>
                        </div>
+                     )}
+                     
+                     {/* Auto Mode Description */}
+                     {isAutoDuration && (
+                       <p className="text-xs text-muted-foreground">
+                         AI will automatically determine the best duration based on your prompt and style
+                       </p>
                      )}
                    </div>
 
-                   {/* Style Description Section */}
-                   <div className="space-y-2">
-                     <div className="flex items-center justify-between">
-                       <span className="text-sm font-medium">Style Description</span>
-                       <span className={`text-xs ${getCharacterCountColor(getCharacterCount(style, 'style').current, getCharacterCount(style, 'style').limit)}`}>
-                         {getCharacterCount(style, 'style').current} / {getCharacterCount(style, 'style').limit}
-                       </span>
+                   {/* Lyrics Section - Only show for Custom Mode with vocals */}
+                   {!isInstrumental && (
+                     <div className="space-y-2">
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm font-medium">Lyrics</span>
+                         <div className="flex items-center gap-2">
+                           <span className={`text-xs ${getCharacterCountColor(getCharacterCount(lyrics, 'prompt').current, getCharacterCount(lyrics, 'prompt').limit)}`}>
+                             {getCharacterCount(lyrics, 'prompt').current} / {getCharacterCount(lyrics, 'prompt').limit}
+                           </span>
+                           <Expand className="h-4 w-4 text-muted-foreground" />
+                         </div>
+                       </div>
+                       <Textarea
+                         value={lyrics}
+                         onChange={(e) => {
+                           const newValue = e.target.value
+                           const limits = getCharacterLimits(selectedModel)
+                           const maxLength = limits.prompt // Custom mode uses full prompt limit
+                           
+                           if (newValue.length <= maxLength) {
+                             setLyrics(newValue)
+                           } else {
+                             // Show warning but don't prevent typing
+                             toast({
+                               title: "Character limit warning",
+                               description: `You're approaching the ${maxLength} character limit.`,
+                               variant: "destructive"
+                             })
+                           }
+                         }}
+                         placeholder="Write the exact lyrics you want the AI to sing in your track"
+                         className="min-h-[80px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
+                       />
+                       
+                       {/* Smart Suggestions */}
+                       {lyrics && getSmartSuggestions(lyrics).length > 0 && (
+                         <div className="space-y-1">
+                           <span className="text-xs text-muted-foreground">Suggested styles:</span>
+                           <div className="flex flex-wrap gap-1">
+                             {getSmartSuggestions(lyrics).slice(0, 3).map((suggestion) => (
+                               <Button
+                                 key={suggestion}
+                                 variant="outline"
+                                 size="sm"
+                                 className="h-6 text-xs"
+                                 onClick={() => addStyle(suggestion)}
+                               >
+                                 <Plus className="h-3 w-3 mr-1" />
+                                 {suggestion}
+                               </Button>
+                             ))}
+                           </div>
+                         </div>
+                       )}
                      </div>
-                     <Textarea
-                       value={style}
-                       onChange={(e) => {
-                         const newValue = e.target.value
-                         const limits = getCharacterLimits(selectedModel)
-                         
-                         if (newValue.length <= limits.style) {
-                           setStyle(newValue)
-                         } else {
-                           // Show warning but don't prevent typing
-                           toast({
-                             title: "Character limit warning",
-                             description: `Style description exceeds ${limits.style} character limit.`,
-                             variant: "destructive"
-                           })
-                         }
-                       }}
-                       placeholder="Describe the musical style (e.g., 'Jazz piano trio with smooth saxophone')"
-                       className="min-h-[60px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
-                     />
-                   </div>
+                   )}
+                   
+                   {/* Instrumental Mode Info */}
+                   {isInstrumental && (
+                     <div className="p-3 bg-muted/20 rounded-lg">
+                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                         <Music className="h-4 w-4" />
+                         <span>Instrumental mode - no vocals needed</span>
+                       </div>
+                     </div>
+                   )}
+
+
+                   {/* Show Tags field for add_instrumental, Style for everything else */}
+                   {audioAction === 'add_instrumental' ? (
+                     <div className="space-y-2">
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm font-medium">Tags (Instruments & Style)</span>
+                         <span className={`text-xs ${getCharacterCountColor(getCharacterCount(tags, 'style').current, getCharacterCount(tags, 'style').limit)}`}>
+                           {getCharacterCount(tags, 'style').current} / {getCharacterCount(tags, 'style').limit}
+                         </span>
+                       </div>
+                       <Textarea
+                         value={tags}
+                         onChange={(e) => {
+                           const newValue = e.target.value
+                           const limits = getCharacterLimits(selectedModel)
+                           
+                           if (newValue.length <= limits.style) {
+                             setTags(newValue)
+                           } else {
+                             // Show warning but don't prevent typing
+                             toast({
+                               title: "Character limit warning",
+                               description: `Tags description exceeds ${limits.style} character limit.`,
+                               variant: "destructive"
+                             })
+                           }
+                         }}
+                         placeholder="Describe instruments and musical style (e.g., 'Relaxing Piano, Ambient, Peaceful')"
+                         className="min-h-[60px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
+                       />
+                     </div>
+                   ) : (
+                     <div className="space-y-2">
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm font-medium">
+                           Style {audioAction === 'add_vocals' && '(Required)'}
+                         </span>
+                         <span className={`text-xs ${getCharacterCountColor(getCharacterCount(style, 'style').current, getCharacterCount(style, 'style').limit)}`}>
+                           {getCharacterCount(style, 'style').current} / {getCharacterCount(style, 'style').limit}
+                         </span>
+                       </div>
+                       <Textarea
+                         value={style}
+                         onChange={(e) => {
+                           const newValue = e.target.value
+                           const limits = getCharacterLimits(selectedModel)
+                           
+                           if (newValue.length <= limits.style) {
+                             setStyle(newValue)
+                           } else {
+                             // Show warning but don't prevent typing
+                             toast({
+                               title: "Character limit warning",
+                               description: `Style description exceeds ${limits.style} character limit.`,
+                               variant: "destructive"
+                             })
+                           }
+                         }}
+                         placeholder="Describe the musical style (e.g., 'Jazz piano trio with smooth saxophone')"
+                         className="min-h-[60px] text-sm resize-none border-0 bg-muted/30 focus:bg-muted/50 transition-colors"
+                       />
+                     </div>
+                   )}
 
                    {/* Styles Section */}
                    <div className="space-y-2">
@@ -2200,7 +2574,7 @@ In the
                      {/* Generate Button */}
                      <Button 
                        onClick={handleGenerate}
-                       disabled={isGenerating || !description.trim()}
+                       disabled={isGenerating || !lyrics.trim()}
                        className="w-full h-10 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                      >
                        {isGenerating ? (
@@ -2215,6 +2589,25 @@ In the
                          </>
                        )}
                      </Button>
+                     
+                     {/* Progress Indicator */}
+                     {showProgress && (
+                       <div className="mt-4 space-y-2">
+                         <div className="flex items-center justify-between text-sm">
+                           <span className="text-muted-foreground">Generating your music...</span>
+                           <span className="font-medium">{progress}%</span>
+                         </div>
+                         <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                           <div 
+                             className="h-full bg-primary transition-all duration-500"
+                             style={{ width: `${progress}%` }}
+                           />
+                         </div>
+                         <p className="text-xs text-muted-foreground">
+                           This usually takes 1-2 minutes. You can close this and we'll notify you when it's ready.
+                         </p>
+                       </div>
+                     )}
                    </div>
 
                    {/* Workspace */}
@@ -2235,6 +2628,139 @@ In the
 
       {/* Previous Generations */}
       <PreviousGenerations contentType="music_jingles" userId={user?.id || ''} className="mt-8" />
+
+      {/* Lyrics Generator Modal */}
+      {showLyricsGenerator && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-lg font-semibold">Generate Lyrics</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLyricsGenerator(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6">
+              <LyricsGeneratorInterface onLyricsSelect={handleLyricsSelect} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audio Separation Modal */}
+      {showAudioSeparation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-lg font-semibold">Separate Audio</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAudioSeparation(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Separation Type</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={separationType === 'separate_vocal' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSeparationType('separate_vocal')}
+                  >
+                    Simple (Vocal/Instrumental)
+                  </Button>
+                  <Button
+                    variant={separationType === 'split_stem' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSeparationType('split_stem')}
+                  >
+                    Advanced (12 Stems)
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {separationType === 'separate_vocal' 
+                    ? 'Separates audio into vocals and instrumental tracks'
+                    : 'Separates audio into 12 individual instrument stems (drums, bass, guitar, etc.)'
+                  }
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Audio File</Label>
+                <div className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <FileAudio className="h-4 w-4" />
+                    <span className="text-sm">{audioFileName || 'No file selected'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={async () => {
+                    if (!uploadedAudioFile) {
+                      toast({
+                        title: "No audio file",
+                        description: "Please upload an audio file first",
+                        variant: "destructive"
+                      })
+                      return
+                    }
+
+                    try {
+                      const formData = new FormData()
+                      formData.append('audioFile', uploadedAudioFile)
+                      formData.append('separationType', separationType)
+
+                      const response = await fetch('/api/audio-separation', {
+                        method: 'POST',
+                        body: formData
+                      })
+
+                      if (!response.ok) {
+                        const errorData = await response.json()
+                        throw new Error(errorData.error || 'Failed to separate audio')
+                      }
+
+                      const result = await response.json()
+                      
+                      toast({
+                        title: "Audio separation started!",
+                        description: `Your audio is being separated. Task ID: ${result.audioSeparation.suno_task_id}`,
+                        duration: 5000
+                      })
+
+                      setShowAudioSeparation(false)
+                    } catch (error) {
+                      toast({
+                        title: "Separation failed",
+                        description: error instanceof Error ? error.message : 'Unknown error occurred',
+                        variant: "destructive"
+                      })
+                    }
+                  }}
+                  className="flex-1"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Start Separation
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAudioSeparation(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
      </div>
    )
  }

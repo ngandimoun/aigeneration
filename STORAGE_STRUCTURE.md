@@ -50,7 +50,7 @@ dreamcut/
     │       ├── references/
     │       ├── logo/
     │       └── generated/
-    ├── product-motion/
+    ├── diverse-motion/
     │   └── {user_id}/
     │       └── generated/
     ├── sound-fx/
@@ -107,7 +107,7 @@ dreamcut/
 |--------------|-------|---------------------|----------------|
 | **Explainers** | `explainers` | `renders/explainers/{user_id}/{job_id}.mp4` | `storage_path` (TEXT) |
 | **UGC Ads** | `ugc_ads` | `renders/ugc-ads/{user_id}/generated/` | `storage_path` (TEXT) |
-| **Product in Motion** | `product_motions` | `renders/product-motion/{user_id}/generated/` | `storage_path` (TEXT) |
+| **Diverse Motion** | `product_motions` | `renders/diverse-motion/{user_id}/generated/` | `storage_path` (TEXT) |
 | **Talking Avatars** | `talking_avatars` | `renders/talking-avatars/{user_id}/generated/` | `storage_path` (TEXT) |
 
 ### Edit Category
@@ -202,7 +202,7 @@ concept-worlds       | 1     | ✅ Ready (.keep file)
 illustrations        | 1     | ✅ Ready (.keep file)
 music-jingles        | 1     | ✅ Ready (.keep file)
 product-mockups      | 1     | ✅ Ready (.keep file)
-product-motion       | 1     | ✅ Ready (.keep file)
+diverse-motion       | 1     | ✅ Ready (.keep file)
 sound-fx             | 1     | ✅ Ready (.keep file)
 subtitles            | 1     | ✅ Ready (.keep file)
 talking-avatars      | 1     | ✅ Ready (.keep file)
