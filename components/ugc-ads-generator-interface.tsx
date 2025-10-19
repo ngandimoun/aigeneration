@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/collapsible"
 import { 
   X, 
+  Plus,
   Package,
   Film,
   Users,
@@ -30,16 +31,134 @@ import {
   Clock,
   Settings,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Loader2,
   Image,
   Palette,
   Music,
   Camera,
-  Lightbulb
+  Lightbulb,
+  Zap,
+  Info
 } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useToast } from "@/hooks/use-toast"
+
+// Character design constants
+const ART_STYLES = [
+  { value: "Ultra-realistic", label: "Ultra-realistic", icon: "📸" },
+  { value: "Comic", label: "Comic", icon: "💥" },
+  { value: "Anime", label: "Anime", icon: "🎌" },
+  { value: "3D Render", label: "3D Render", icon: "🎮" },
+  { value: "Cartoon", label: "Cartoon", icon: "🎨" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+const AGE_RANGES = [
+  { value: "Teen", label: "Teen (13-19)", icon: "👦" },
+  { value: "Twenties", label: "Twenties (20-29)", icon: "👨" },
+  { value: "Thirties", label: "Thirties (30-39)", icon: "👨" },
+  { value: "Forties", label: "Forties (40-49)", icon: "👨" },
+  { value: "Fifties+", label: "Fifties+ (50+)", icon: "👴" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+const ETHNICITY_OPTIONS = [
+  { value: "Caucasian", label: "Caucasian", icon: "👱" },
+  { value: "African", label: "African", icon: "👨🏿" },
+  { value: "Asian", label: "Asian", icon: "👨🏻" },
+  { value: "Hispanic", label: "Hispanic", icon: "👨🏽" },
+  { value: "Middle Eastern", label: "Middle Eastern", icon: "👳" },
+  { value: "Mixed", label: "Mixed", icon: "👥" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+const GENDER_OPTIONS = [
+  { value: "Female", label: "Female", icon: "👩" },
+  { value: "Male", label: "Male", icon: "👨" },
+  { value: "Non-binary", label: "Non-binary", icon: "🧑" },
+  { value: "Custom", label: "Custom", icon: "🌈" }
+]
+
+const BODY_TYPES = [
+  { value: "Slim", label: "Slim", icon: "🏃" },
+  { value: "Athletic", label: "Athletic", icon: "💪" },
+  { value: "Curvy", label: "Curvy", icon: "💃" },
+  { value: "Stocky", label: "Stocky", icon: "🏋️" },
+  { value: "Custom", label: "Custom", icon: "🎨" }
+]
+
+const OUTFIT_CATEGORIES = [
+  { value: "Streetwear", label: "Streetwear", icon: "👕" },
+  { value: "Business", label: "Business", icon: "👔" },
+  { value: "Casual", label: "Casual", icon: "👖" },
+  { value: "Athletic", label: "Athletic", icon: "🏃" },
+  { value: "Formal", label: "Formal", icon: "🎩" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+const EXPRESSIONS = [
+  { value: "Happy", label: "Happy", icon: "😊" },
+  { value: "Serious", label: "Serious", icon: "😐" },
+  { value: "Excited", label: "Excited", icon: "🤩" },
+  { value: "Confident", label: "Confident", icon: "😎" },
+  { value: "Friendly", label: "Friendly", icon: "🙂" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+// Partial character design constants
+const PARTIAL_TYPES = [
+  { value: "Hands", label: "Hands Only", icon: "✋" },
+  { value: "Face", label: "Face Close-up", icon: "👤" },
+  { value: "Feet", label: "Feet/Legs", icon: "🦶" },
+  { value: "Silhouette", label: "Silhouette", icon: "👥" },
+  { value: "Shadow", label: "Shadow", icon: "🌑" },
+  { value: "Custom", label: "Custom", icon: "🎨" }
+]
+
+const VISIBILITY_LEVELS = [
+  { value: "Prominent", label: "Prominent", icon: "🔆" },
+  { value: "Subtle", label: "Subtle", icon: "🌤️" },
+  { value: "Background", label: "Background", icon: "🌫️" },
+  { value: "Barely Visible", label: "Barely Visible", icon: "👻" }
+]
+
+const POSITIONS = [
+  { value: "Left", label: "Left Side", icon: "⬅️" },
+  { value: "Right", label: "Right Side", icon: "➡️" },
+  { value: "Center", label: "Center", icon: "⏺️" },
+  { value: "Top", label: "Top", icon: "⬆️" },
+  { value: "Bottom", label: "Bottom", icon: "⬇️" },
+  { value: "Corner", label: "Corner", icon: "📐" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+const SKIN_TONES = [
+  { value: "Fair", label: "Fair", color: "#FDBCB4" },
+  { value: "Light", label: "Light", color: "#F1C27D" },
+  { value: "Medium", label: "Medium", color: "#C68642" },
+  { value: "Tan", label: "Tan", color: "#8D5524" },
+  { value: "Dark", label: "Dark", color: "#4A2511" },
+  { value: "Deep", label: "Deep", color: "#2C1810" }
+]
+
+const ACTIONS_POSES = [
+  { value: "Holding Product", label: "Holding Product", icon: "🤲" },
+  { value: "Pointing", label: "Pointing", icon: "☝️" },
+  { value: "Gesturing", label: "Gesturing", icon: "👋" },
+  { value: "Resting", label: "Resting", icon: "🤚" },
+  { value: "Reaching", label: "Reaching", icon: "🫴" },
+  { value: "Custom", label: "Custom", icon: "✏️" }
+]
+
+const HAND_ACCESSORIES = [
+  { value: "Watch", label: "Watch", icon: "⌚" },
+  { value: "Rings", label: "Rings", icon: "💍" },
+  { value: "Bracelet", label: "Bracelet", icon: "📿" },
+  { value: "Nail Polish", label: "Nail Polish", icon: "💅" },
+  { value: "None", label: "None", icon: "🚫" }
+]
 
 interface UGCAdsGeneratorInterfaceProps {
   onClose: () => void
@@ -64,6 +183,9 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
   
   // Template Selection
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  
+  // Aspect Ratio
+  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('16:9')
   
   // Product Image (Mode 1)
   const [productSource, setProductSource] = useState<'library' | 'upload'>('library')
@@ -100,7 +222,90 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
   const [characterFile, setCharacterFile] = useState<File | null>(null)
   const [characterPreview, setCharacterPreview] = useState<string | null>(null)
   const [characterDescription, setCharacterDescription] = useState<string>('')
+  const [characterCount, setCharacterCount] = useState<number>(1)
+  const [characterDescriptions, setCharacterDescriptions] = useState<Array<{
+    description: string
+    artStyle: string
+    customArtStyle: string
+    ageRange: string
+    customAgeRange: string
+    ethnicity: string
+    customEthnicity: string
+    gender: string
+    customGender: string
+    bodyType: string
+    customBodyType: string
+    outfitCategory: string
+    customOutfitCategory: string
+    outfitColors: string
+    expression: string
+    customExpression: string
+  }>>([{
+    description: '',
+    artStyle: '',
+    customArtStyle: '',
+    ageRange: '',
+    customAgeRange: '',
+    ethnicity: '',
+    customEthnicity: '',
+    gender: '',
+    customGender: '',
+    bodyType: '',
+    customBodyType: '',
+    outfitCategory: '',
+    customOutfitCategory: '',
+    outfitColors: '',
+    expression: '',
+    customExpression: ''
+  }])
   const [partialType, setPartialType] = useState<string>('')
+  
+  // Partial character structured fields (single mode only)
+  const [partialCharacter, setPartialCharacter] = useState<{
+    partialType: string
+    customPartialType: string
+    visibilityLevel: string
+    position: string
+    customPosition: string
+    artStyle: string
+    customArtStyle: string
+    skinTone: string
+    customSkinTone: string
+    accessories: string[]
+    handAccessories: string
+    customHandAccessories: string
+    expression: string
+    customExpression: string
+    actionPose: string
+    customActionPose: string
+    description: string
+  }>({
+    partialType: '',
+    customPartialType: '',
+    visibilityLevel: '',
+    position: '',
+    customPosition: '',
+    artStyle: '',
+    customArtStyle: '',
+    skinTone: '',
+    customSkinTone: '',
+    accessories: [],
+    handAccessories: '',
+    customHandAccessories: '',
+    expression: '',
+    customExpression: '',
+    actionPose: '',
+    customActionPose: '',
+    description: ''
+  })
+  
+  // Dialog lines for conversation (single mode only)
+  const [dialogLines, setDialogLines] = useState<Array<{
+    id: string
+    characterIndex: number  // Which character (0-4) is speaking
+    text: string
+    expression: string
+  }>>([])
   
   // Available avatars
   const [availableAvatars, setAvailableAvatars] = useState<any[]>([])
@@ -307,6 +512,40 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
     }
   }
 
+  // Dialog helper functions
+  const addDialogLine = () => {
+    const newLine = {
+      id: Date.now().toString(),
+      characterIndex: 0,
+      text: '',
+      expression: ''
+    }
+    setDialogLines([...dialogLines, newLine])
+  }
+
+  const updateDialogLine = (id: string, field: string, value: string | number) => {
+    setDialogLines(dialogLines.map(line => 
+      line.id === id ? { ...line, [field]: value } : line
+    ))
+  }
+
+  const removeDialogLine = (id: string) => {
+    setDialogLines(dialogLines.filter(line => line.id !== id))
+  }
+
+  const moveDialogLine = (id: string, direction: 'up' | 'down') => {
+    const index = dialogLines.findIndex(line => line.id === id)
+    if (index === -1) return
+    
+    const newLines = [...dialogLines]
+    if (direction === 'up' && index > 0) {
+      [newLines[index - 1], newLines[index]] = [newLines[index], newLines[index - 1]]
+    } else if (direction === 'down' && index < newLines.length - 1) {
+      [newLines[index], newLines[index + 1]] = [newLines[index + 1], newLines[index]]
+    }
+    setDialogLines(newLines)
+  }
+
   // Validation function
   const validateForm = () => {
     const errors: Record<string, string> = {}
@@ -326,9 +565,28 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       }
     }
     
-    // Check for required script
+    // Check for required script/dialog
+    if (containsBoth || (!containsBoth && characterPresence === 'voiceover')) {
+      // Simple script validation for manual entry or voiceover
     if (!script.trim()) {
       errors.script = 'Please enter a script for your ad'
+      }
+    } else if (!containsBoth && characterPresence !== 'voiceover') {
+      // Dialog validation for character-based content
+      if (characterCount === 1) {
+        if (!dialogLines[0]?.text?.trim()) {
+          errors.script = 'Please enter what the character should say'
+        }
+      } else {
+        if (dialogLines.length === 0) {
+          errors.script = 'Please add at least one dialog line'
+        } else {
+          const hasEmptyLines = dialogLines.some(line => !line.text.trim())
+          if (hasEmptyLines) {
+            errors.script = 'All dialog lines must have text'
+          }
+        }
+      }
     }
     
     // Check for required scene description in multi mode
@@ -425,13 +683,42 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       if (characterSource === 'upload' && !characterFile) {
         errors.push("Please upload a character image")
       }
-      if (characterSource === 'describe' && !characterDescription.trim()) {
-        errors.push("Please describe your character")
+      if (characterSource === 'describe') {
+        const hasValidDescriptions = characterDescriptions.some(character => {
+          // Check if at least one structured field is filled OR description is filled
+          return character.description.trim() || 
+                 character.artStyle || 
+                 character.ageRange || 
+                 character.ethnicity || 
+                 character.gender || 
+                 character.bodyType || 
+                 character.outfitCategory || 
+                 character.outfitColors.trim() || 
+                 character.expression
+        })
+        if (!hasValidDescriptions) {
+          errors.push("Please fill in at least one character field (description, art style, age, etc.)")
+        }
       }
     }
     
-    if (characterPresence === 'partial' && !partialType) {
+    if (characterPresence === 'partial') {
+      if (mode === 'single') {
+        // For single mode, check structured partial character fields
+        const hasValidPartialFields = partialCharacter.partialType || 
+                                     partialCharacter.visibilityLevel || 
+                                     partialCharacter.position || 
+                                     partialCharacter.artStyle || 
+                                     partialCharacter.description.trim()
+        if (!hasValidPartialFields) {
+          errors.push("Please fill in at least one partial character field")
+        }
+      } else {
+        // For dual/multi modes, check simple partial type
+        if (!partialType) {
       errors.push("Please select a partial presence type")
+        }
+      }
     }
     
     return errors
@@ -458,13 +745,42 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       if (characterSource === 'upload' && !characterFile) {
         errors.push("Please upload a character image")
       }
-      if (characterSource === 'describe' && !characterDescription.trim()) {
-        errors.push("Please describe your character")
+      if (characterSource === 'describe') {
+        const hasValidDescriptions = characterDescriptions.some(character => {
+          // Check if at least one structured field is filled OR description is filled
+          return character.description.trim() || 
+                 character.artStyle || 
+                 character.ageRange || 
+                 character.ethnicity || 
+                 character.gender || 
+                 character.bodyType || 
+                 character.outfitCategory || 
+                 character.outfitColors.trim() || 
+                 character.expression
+        })
+        if (!hasValidDescriptions) {
+          errors.push("Please fill in at least one character field (description, art style, age, etc.)")
+        }
       }
     }
     
-    if (characterPresence === 'partial' && !partialType) {
+    if (characterPresence === 'partial') {
+      if (mode === 'single') {
+        // For single mode, check structured partial character fields
+        const hasValidPartialFields = partialCharacter.partialType || 
+                                     partialCharacter.visibilityLevel || 
+                                     partialCharacter.position || 
+                                     partialCharacter.artStyle || 
+                                     partialCharacter.description.trim()
+        if (!hasValidPartialFields) {
+          errors.push("Please fill in at least one partial character field")
+        }
+      } else {
+        // For dual/multi modes, check simple partial type
+        if (!partialType) {
       errors.push("Please select a partial presence type")
+        }
+      }
     }
     
     return errors
@@ -496,13 +812,42 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       if (characterSource === 'upload' && !characterFile) {
         errors.push("Please upload a character image")
       }
-      if (characterSource === 'describe' && !characterDescription.trim()) {
-        errors.push("Please describe your character")
+      if (characterSource === 'describe') {
+        const hasValidDescriptions = characterDescriptions.some(character => {
+          // Check if at least one structured field is filled OR description is filled
+          return character.description.trim() || 
+                 character.artStyle || 
+                 character.ageRange || 
+                 character.ethnicity || 
+                 character.gender || 
+                 character.bodyType || 
+                 character.outfitCategory || 
+                 character.outfitColors.trim() || 
+                 character.expression
+        })
+        if (!hasValidDescriptions) {
+          errors.push("Please fill in at least one character field (description, art style, age, etc.)")
+        }
       }
     }
     
-    if (characterPresence === 'partial' && !partialType) {
+    if (characterPresence === 'partial') {
+      if (mode === 'single') {
+        // For single mode, check structured partial character fields
+        const hasValidPartialFields = partialCharacter.partialType || 
+                                     partialCharacter.visibilityLevel || 
+                                     partialCharacter.position || 
+                                     partialCharacter.artStyle || 
+                                     partialCharacter.description.trim()
+        if (!hasValidPartialFields) {
+          errors.push("Please fill in at least one partial character field")
+        }
+      } else {
+        // For dual/multi modes, check simple partial type
+        if (!partialType) {
       errors.push("Please select a partial presence type")
+        }
+      }
     }
     
     return errors
@@ -530,12 +875,24 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       // Add mode-specific data
       formData.append('mode', mode)
       formData.append('template', selectedTemplate)
+      
+      // Add script/dialog data based on mode and character presence
+      if (containsBoth || (!containsBoth && characterPresence === 'voiceover')) {
+        // Simple script for manual entry or voiceover
       formData.append('script', script)
+      } else if (!containsBoth && characterPresence !== 'voiceover' && dialogLines.length > 0) {
+        // Dialog lines for character-based content
+        formData.append('dialogLines', JSON.stringify(dialogLines))
+      } else {
+        // Fallback to script
+        formData.append('script', script)
+      }
       // Utiliser la valeur custom si "custom" est sélectionné
       formData.append('voiceStyle', voiceStyle === 'custom' ? customVoiceStyle : voiceStyle)
       formData.append('toneOfDelivery', toneOfDelivery === 'custom' ? customToneOfDelivery : toneOfDelivery)
       formData.append('language', language === 'custom' ? customLanguage : language)
       formData.append('duration', duration.toString())
+      formData.append('aspectRatio', aspectRatio)
       formData.append('characterPresence', characterPresence)
       
       // Add character data if not voiceover
@@ -546,12 +903,18 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         } else if (characterSource === 'upload' && characterFile) {
           formData.append('characterFile', characterFile)
         } else if (characterSource === 'describe') {
-          formData.append('characterDescription', characterDescription)
+          formData.append('characterDescriptions', JSON.stringify(characterDescriptions))
         }
         if (characterPresence === 'partial') {
+          if (mode === 'single') {
+            // For single mode, send structured partial character data
+            formData.append('partialCharacter', JSON.stringify(partialCharacter))
+          } else {
+            // For dual/multi modes, send simple partial type
           formData.append('partialType', partialType)
           if (partialType === 'custom') {
             formData.append('characterDescription', characterDescription)
+            }
           }
         }
       }
@@ -951,6 +1314,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
+              {/* Preview for selected product from library */}
+              {selectedProductId && productSource === 'library' && (() => {
+                const selectedProduct = availableProducts.find(p => p.id === selectedProductId)
+                if (!selectedProduct) return null
+                
+                const productImageUrl = selectedProduct.generated_images?.[0] || selectedProduct.image_url || selectedProduct.imageUrl
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {productImageUrl ? (
+                        <img 
+                          src={productImageUrl} 
+                          alt={selectedProduct.title || selectedProduct.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('Product image failed to load:', productImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedProduct.title || selectedProduct.name || 'Untitled Product'}
+                        </p>
+                        {selectedProduct.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {selectedProduct.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Preview */}
               {(productPreview || customProductPreview) && (
                 <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
@@ -970,105 +1372,141 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
-              {/* AI Smart Suggestions */}
-              {showSuggestions && aiSuggestions && (
-                <div className="p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <h4 className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
-                    <Lightbulb className="h-3 w-3 text-purple-600" />
-                    💡 AI Suggestions
-                  </h4>
-                  <ul className="text-[10px] text-muted-foreground space-y-1 mb-3">
-                    <li>Voice Style: {aiSuggestions.voiceStyle}</li>
-                    <li>Duration: {aiSuggestions.duration}s</li>
-                    <li>Environment: {aiSuggestions.environment}</li>
-                  </ul>
-                  <Button 
-                    type="button"
-                    onClick={applySuggestions}
-                    size="sm"
-                    className="h-6 text-[10px] px-2"
-                  >
-                    Apply All
-                  </Button>
-                </div>
-              )}
 
-              {/* Contains Both Checkbox */}
-              <div className="flex items-center space-x-2">
+              {/* Contains Both Checkbox - Clean & Bold */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-purple-400 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                 <Checkbox
                   id="contains-both"
                   checked={containsBoth}
                   onCheckedChange={(checked) => setContainsBoth(checked as boolean)}
+                    className="border-purple-600 data-[state=checked]:bg-purple-600"
                 />
                 <label
                   htmlFor="contains-both"
-                  className="text-xs text-muted-foreground cursor-pointer"
+                    className="text-sm font-bold text-purple-900 dark:text-purple-100 cursor-pointer"
                 >
-                  This image contains both character and product
+                    ⚡ This image contains both character and product
                 </label>
+                </div>
               </div>
 
               {/* Optional Description */}
-              <Input
+              <Textarea
                 placeholder="Describe the product or how to use this image (optional)..."
                 value={imageDescription}
                 onChange={(e) => setImageDescription(e.target.value)}
-                className="h-8 text-xs"
+                rows={3}
+                className="text-sm resize-none"
               />
             </div>
 
-            {/* Character Presence Section */}
+            {/* Character Presence Section - Only show if image doesn't contain both */}
+            {!containsBoth && (
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground flex items-center gap-2">
                 <Users className="h-3 w-3 text-purple-600" />
                 Character Presence (Optional)
               </label>
               
-              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('voiceover')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+              <div className="space-y-3">
+                {/* Voiceover Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'voiceover'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('voiceover')}
                 >
-                  🎙️ Voiceover
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('show')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+                  <input
+                    type="radio"
+                    id="voiceover"
+                    name="characterPresence"
+                    value="voiceover"
+                    checked={characterPresence === 'voiceover'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="voiceover" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🎙️</span>
+                      <span className="font-medium text-sm">Voiceover</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Audio narration only - no character appears in the video. Perfect for product-focused content with professional voice explanation.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Show Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'show'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('show')}
                 >
-                  👤 Show
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('partial')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+                  <input
+                    type="radio"
+                    id="show"
+                    name="characterPresence"
+                    value="show"
+                    checked={characterPresence === 'show'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="show" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">👤</span>
+                      <span className="font-medium text-sm">Show</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Full character visible in the video - complete body, face, and presence. Ideal for authentic, relatable UGC-style content.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Partial Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'partial'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('partial')}
                 >
-                  ✋ Partial
-                </Button>
+                  <input
+                    type="radio"
+                    id="partial"
+                    name="characterPresence"
+                    value="partial"
+                    checked={characterPresence === 'partial'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="partial" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">✋</span>
+                      <span className="font-medium text-sm">Partial</span>
+              </div>
+                    <p className="text-xs text-muted-foreground">
+                      Partial character presence - show only hands, face, feet, or silhouette. Great for subtle human touch without full character focus.
+                    </p>
+                  </label>
+            </div>
               </div>
             </div>
+            )}
 
-            {/* Character Selection (when not voiceover) */}
-            {characterPresence !== 'voiceover' && (
+            {/* Character Selection (when not voiceover) - Multi mode only */}
+            {mode !== 'single' && mode !== 'dual' && !containsBoth && characterPresence !== 'voiceover' && (
               <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
                 <label className="text-xs font-medium text-foreground flex items-center gap-2">
                   <Users className="h-3 w-3 text-purple-600" />
@@ -1077,128 +1515,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
 
                 {characterPresence === 'show' ? (
                   <>
-                    {/* Character Source Toggle */}
-                    <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacterSource('library')}
-                        className={`text-xs h-8 transition-all duration-200 font-medium ${
-                          characterSource === 'library'
-                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <span className="truncate">From Library</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacterSource('upload')}
-                        className={`text-xs h-8 transition-all duration-200 font-medium ${
-                          characterSource === 'upload'
-                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <span className="truncate">Upload Image</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacterSource('describe')}
-                        className={`text-xs h-8 transition-all duration-200 font-medium ${
-                          characterSource === 'describe'
-                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        Describe Character
-                      </Button>
-                    </div>
-
-                    {/* Avatar Library Selection */}
-                    {characterSource === 'library' && (
-                      loadingAvatars ? (
-                        <div className="space-y-2">
-                          <SkeletonLoader className="h-8 w-full" />
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Loading avatars...
-                          </div>
-                        </div>
-                      ) : (
-                        <Select value={selectedAvatarId} onValueChange={setSelectedAvatarId}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Select an avatar..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableAvatars.length === 0 ? (
-                              <SelectItem value="none" disabled>No avatars available</SelectItem>
-                            ) : (
-                              availableAvatars.map((avatar) => (
-                                <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
-                                  {avatar.title || avatar.name || 'Untitled Avatar'}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )
-                    )}
-
-                    {/* Character Upload */}
-                    {characterSource === 'upload' && (
-                      <div className="space-y-2">
-                        <input
-                          ref={characterImageInputRef}
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleCharacterImageUpload(file)
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => characterImageInputRef.current?.click()}
-                          className="w-full h-8 text-xs"
-                          aria-label="Upload character image"
-                        >
-                          <Upload className="h-3 w-3 mr-2" />
-                          Choose Character Image
-                        </Button>
-                        <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
-                      </div>
-                    )}
-
-                    {/* Character Description */}
-                    {characterSource === 'describe' && (
-                      <Textarea
-                        placeholder="Describe your character... e.g., 'A friendly 25-year-old woman with curly brown hair, wearing casual clothes, smiling warmly'"
-                        value={characterDescription}
-                        onChange={(e) => setCharacterDescription(e.target.value)}
-                        rows={3}
-                        className="resize-none text-xs"
-                      />
-                    )}
-
-                    {/* Character Preview */}
-                    {characterPreview && (
-                      <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
-                        <img
-                          src={characterPreview}
-                          alt={selectedAvatarId ? `Character preview for ${availableAvatars.find(a => a.id === selectedAvatarId)?.name || 'selected character'}` : 'Uploaded character image preview'}
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    )}
+                    {/* Character source buttons removed for single mode - using new section below */}
                   </>
                 ) : (
                   /* Partial Presence Options */
@@ -1229,8 +1546,684 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
             )}
 
-            {/* Character Selection (when not voiceover) */}
-            {characterPresence !== 'voiceover' && (
+            {/* NEW: Multiple Character Description - Single mode only */}
+            {mode === 'single' && !containsBoth && characterPresence === 'show' && (
+              <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-3 w-3 text-purple-600" />
+                  Character Descriptions
+                </label>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium">Number of Characters</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (characterCount > 1) {
+                            setCharacterCount(characterCount - 1)
+                            setCharacterDescriptions(prev => prev.slice(0, -1))
+                          }
+                        }}
+                        disabled={characterCount <= 1}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      <span className="text-sm font-medium w-8 text-center">{characterCount}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (characterCount < 5) {
+                            setCharacterCount(characterCount + 1)
+                            setCharacterDescriptions(prev => [...prev, {
+                              description: '',
+                              artStyle: '',
+                              customArtStyle: '',
+                              ageRange: '',
+                              customAgeRange: '',
+                              ethnicity: '',
+                              customEthnicity: '',
+                              gender: '',
+                              customGender: '',
+                              bodyType: '',
+                              customBodyType: '',
+                              outfitCategory: '',
+                              customOutfitCategory: '',
+                              outfitColors: '',
+                              expression: '',
+                              customExpression: ''
+                            }])
+                          }
+                        }}
+                        disabled={characterCount >= 5}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Describe each character separately. Maximum 5 characters. In single mode, you can only describe characters.
+                  </p>
+                  
+                  {/* Character description fields */}
+                  {characterDescriptions.map((character, index) => (
+                    <Collapsible key={index} className="space-y-2">
+                      <CollapsibleTrigger asChild>
+                      <Button
+                          variant="outline"
+                          className="w-full justify-between h-8 text-xs"
+                        >
+                          <span>Character {index + 1}</span>
+                          <ChevronDown className="h-3 w-3" />
+                      </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-3 p-3 bg-muted/20 rounded-lg border">
+                        {/* Free-text description */}
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-700">
+                            Additional Description (Optional)
+                          </label>
+                          <Textarea
+                            placeholder={`Additional details for character ${index + 1}...`}
+                            value={character.description}
+                            onChange={(e) => {
+                              const newDescriptions = [...characterDescriptions]
+                              newDescriptions[index] = { ...newDescriptions[index], description: e.target.value }
+                              setCharacterDescriptions(newDescriptions)
+                            }}
+                            rows={2}
+                            className="resize-none text-xs"
+                          />
+                    </div>
+
+                        {/* Structured fields */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Art Style */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Art Style</label>
+                            <Select 
+                              value={character.artStyle} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], artStyle: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select style..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ART_STYLES.map((style) => (
+                                  <SelectItem key={style.value} value={style.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{style.icon}</span>
+                                      <span className="text-sm">{style.label}</span>
+                          </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {character.artStyle === 'Custom' && (
+                              <Input
+                                value={character.customArtStyle}
+                                onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customArtStyle: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom art style..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                        </div>
+
+                          {/* Age Range */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Age Range</label>
+                            <Select 
+                              value={character.ageRange} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], ageRange: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                          <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select age..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                                {AGE_RANGES.map((age) => (
+                                  <SelectItem key={age.value} value={age.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{age.icon}</span>
+                                      <span className="text-sm">{age.label}</span>
+                                    </div>
+                                </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {character.ageRange === 'Custom' && (
+                              <Input
+                                value={character.customAgeRange}
+                                onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customAgeRange: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom age..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                          </div>
+
+                          {/* Ethnicity */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Ethnicity</label>
+                            <Select 
+                              value={character.ethnicity} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], ethnicity: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select ethnicity..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ETHNICITY_OPTIONS.map((ethnicity) => (
+                                  <SelectItem key={ethnicity.value} value={ethnicity.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{ethnicity.icon}</span>
+                                      <span className="text-sm">{ethnicity.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                          </SelectContent>
+                        </Select>
+                            {character.ethnicity === 'Custom' && (
+                              <Input
+                                value={character.customEthnicity}
+                                onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customEthnicity: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom ethnicity..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                          </div>
+
+                          {/* Gender */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Gender</label>
+                            <Select 
+                              value={character.gender} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], gender: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select gender..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {GENDER_OPTIONS.map((gender) => (
+                                  <SelectItem key={gender.value} value={gender.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{gender.icon}</span>
+                                      <span className="text-sm">{gender.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {character.gender === 'Custom' && (
+                              <Input
+                                value={character.customGender}
+                          onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customGender: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom gender..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                          </div>
+
+                          {/* Body Type */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Body Type</label>
+                            <Select 
+                              value={character.bodyType} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], bodyType: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select body type..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {BODY_TYPES.map((bodyType) => (
+                                  <SelectItem key={bodyType.value} value={bodyType.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{bodyType.icon}</span>
+                                      <span className="text-sm">{bodyType.label}</span>
+                      </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {character.bodyType === 'Custom' && (
+                              <Input
+                                value={character.customBodyType}
+                                onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customBodyType: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom body type..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                          </div>
+
+                          {/* Outfit Category */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Outfit Category</label>
+                            <Select 
+                              value={character.outfitCategory} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], outfitCategory: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select outfit..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {OUTFIT_CATEGORIES.map((outfit) => (
+                                  <SelectItem key={outfit.value} value={outfit.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{outfit.icon}</span>
+                                      <span className="text-sm">{outfit.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {character.outfitCategory === 'Custom' && (
+                              <Input
+                                value={character.customOutfitCategory}
+                                onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customOutfitCategory: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom outfit..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                          </div>
+
+                          {/* Outfit Colors */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Outfit Colors</label>
+                            <Input
+                              value={character.outfitColors}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], outfitColors: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              placeholder="e.g., blue and white, black and gold..."
+                              className="h-8 text-xs"
+                        />
+                      </div>
+
+                          {/* Expression */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Expression</label>
+                            <Select 
+                              value={character.expression} 
+                              onValueChange={(value) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], expression: value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                            >
+                    <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Select expression..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                                {EXPRESSIONS.map((expression) => (
+                                  <SelectItem key={expression.value} value={expression.value}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{expression.icon}</span>
+                                      <span className="text-sm">{expression.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                    </SelectContent>
+                  </Select>
+                            {character.expression === 'Custom' && (
+                              <Input
+                                value={character.customExpression}
+                                onChange={(e) => {
+                                  const newDescriptions = [...characterDescriptions]
+                                  newDescriptions[index] = { ...newDescriptions[index], customExpression: e.target.value }
+                                  setCharacterDescriptions(newDescriptions)
+                                }}
+                                placeholder="Enter custom expression..."
+                                className="h-8 text-xs mt-1"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* NEW: Structured Partial Character Design - Single mode only */}
+            {mode === 'single' && !containsBoth && characterPresence === 'partial' && (
+              <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-3 w-3 text-purple-600" />
+                  Partial Character Design
+                </label>
+
+                <Collapsible className="space-y-2">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between h-8 text-xs">
+                      <span>Partial Character Settings</span>
+                      <ChevronDown className="h-3 w-3" />
+                      </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 p-3 bg-muted/20 rounded-lg border">
+                    {/* Structured fields grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Partial Type */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Partial Type</label>
+                        <Select 
+                          value={partialCharacter.partialType} 
+                          onValueChange={(value) => setPartialCharacter({...partialCharacter, partialType: value})}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select partial type..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PARTIAL_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{type.icon}</span>
+                                  <span className="text-sm">{type.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {partialCharacter.partialType === 'Custom' && (
+                          <Input
+                            value={partialCharacter.customPartialType}
+                            onChange={(e) => setPartialCharacter({...partialCharacter, customPartialType: e.target.value})}
+                            placeholder="Enter custom partial type..."
+                            className="h-8 text-xs mt-1"
+                          />
+                        )}
+                      </div>
+
+                      {/* Visibility Level */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Visibility Level</label>
+                        <Select 
+                          value={partialCharacter.visibilityLevel} 
+                          onValueChange={(value) => setPartialCharacter({...partialCharacter, visibilityLevel: value})}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select visibility..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {VISIBILITY_LEVELS.map((level) => (
+                              <SelectItem key={level.value} value={level.value}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{level.icon}</span>
+                                  <span className="text-sm">{level.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                    </div>
+
+                      {/* Position */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Position</label>
+                        <Select 
+                          value={partialCharacter.position} 
+                          onValueChange={(value) => setPartialCharacter({...partialCharacter, position: value})}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select position..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {POSITIONS.map((position) => (
+                              <SelectItem key={position.value} value={position.value}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{position.icon}</span>
+                                  <span className="text-sm">{position.label}</span>
+                          </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {partialCharacter.position === 'Custom' && (
+                          <Input
+                            value={partialCharacter.customPosition}
+                            onChange={(e) => setPartialCharacter({...partialCharacter, customPosition: e.target.value})}
+                            placeholder="Enter custom position..."
+                            className="h-8 text-xs mt-1"
+                          />
+                        )}
+                        </div>
+
+                      {/* Art Style */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Art Style</label>
+                        <Select 
+                          value={partialCharacter.artStyle} 
+                          onValueChange={(value) => setPartialCharacter({...partialCharacter, artStyle: value})}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select style..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ART_STYLES.map((style) => (
+                              <SelectItem key={style.value} value={style.value}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{style.icon}</span>
+                                  <span className="text-sm">{style.label}</span>
+                                </div>
+                                </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {partialCharacter.artStyle === 'Custom' && (
+                          <Input
+                            value={partialCharacter.customArtStyle}
+                            onChange={(e) => setPartialCharacter({...partialCharacter, customArtStyle: e.target.value})}
+                            placeholder="Enter custom art style..."
+                            className="h-8 text-xs mt-1"
+                          />
+                        )}
+                      </div>
+
+                      {/* Skin Tone - conditional on partial type */}
+                      {(partialCharacter.partialType === 'Hands' || partialCharacter.partialType === 'Face' || partialCharacter.partialType === 'Feet') && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-700">Skin Tone</label>
+                          <Select 
+                            value={partialCharacter.skinTone} 
+                            onValueChange={(value) => setPartialCharacter({...partialCharacter, skinTone: value})}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select skin tone..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SKIN_TONES.map((tone) => (
+                                <SelectItem key={tone.value} value={tone.value}>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-4 h-4 rounded-full border border-gray-300" 
+                                      style={{ backgroundColor: tone.color }}
+                                    />
+                                    <span className="text-sm">{tone.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        </div>
+                      )}
+
+                      {/* Hand Accessories - conditional on partial type = Hands */}
+                      {partialCharacter.partialType === 'Hands' && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-700">Hand Accessories</label>
+                          <div className="space-y-1">
+                            {HAND_ACCESSORIES.map((accessory) => (
+                              <div key={accessory.value} className="flex items-center space-x-2">
+                        <input
+                                  type="checkbox"
+                                  id={`accessory-${accessory.value}`}
+                                  checked={partialCharacter.accessories.includes(accessory.value)}
+                          onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setPartialCharacter({
+                                        ...partialCharacter, 
+                                        accessories: [...partialCharacter.accessories, accessory.value]
+                                      })
+                                    } else {
+                                      setPartialCharacter({
+                                        ...partialCharacter, 
+                                        accessories: partialCharacter.accessories.filter(a => a !== accessory.value)
+                                      })
+                                    }
+                                  }}
+                                  className="h-3 w-3"
+                                />
+                                <label htmlFor={`accessory-${accessory.value}`} className="text-xs flex items-center gap-1">
+                                  <span>{accessory.icon}</span>
+                                  <span>{accessory.label}</span>
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expression - conditional on partial type = Face */}
+                      {partialCharacter.partialType === 'Face' && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-700">Expression</label>
+                          <Select 
+                            value={partialCharacter.expression} 
+                            onValueChange={(value) => setPartialCharacter({...partialCharacter, expression: value})}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select expression..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {EXPRESSIONS.map((expression) => (
+                                <SelectItem key={expression.value} value={expression.value}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm">{expression.icon}</span>
+                                    <span className="text-sm">{expression.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {partialCharacter.expression === 'Custom' && (
+                            <Input
+                              value={partialCharacter.customExpression}
+                              onChange={(e) => setPartialCharacter({...partialCharacter, customExpression: e.target.value})}
+                              placeholder="Enter custom expression..."
+                              className="h-8 text-xs mt-1"
+                            />
+                          )}
+                      </div>
+                    )}
+
+                      {/* Action/Pose */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700">Action/Pose</label>
+                        <Select 
+                          value={partialCharacter.actionPose} 
+                          onValueChange={(value) => setPartialCharacter({...partialCharacter, actionPose: value})}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select action..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ACTIONS_POSES.map((action) => (
+                              <SelectItem key={action.value} value={action.value}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{action.icon}</span>
+                                  <span className="text-sm">{action.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {partialCharacter.actionPose === 'Custom' && (
+                          <Input
+                            value={partialCharacter.customActionPose}
+                            onChange={(e) => setPartialCharacter({...partialCharacter, customActionPose: e.target.value})}
+                            placeholder="Enter custom action..."
+                            className="h-8 text-xs mt-1"
+                          />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Additional Description */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-700">
+                        Additional Description (Optional)
+                      </label>
+                      <Textarea
+                        placeholder="Additional details about the partial character..."
+                        value={partialCharacter.description}
+                        onChange={(e) => setPartialCharacter({...partialCharacter, description: e.target.value})}
+                        rows={2}
+                        className="resize-none text-xs"
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+                      </div>
+                    )}
+
+            {/* Character Selection (when not voiceover) - Multi mode only */}
+            {mode !== 'single' && mode !== 'dual' && !containsBoth && characterPresence !== 'voiceover' && (
               <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
                 <label className="text-xs font-medium text-foreground flex items-center gap-2">
                   <Users className="h-3 w-3 text-purple-600" />
@@ -1239,128 +2232,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
 
                 {characterPresence === 'show' ? (
                   <>
-                    {/* Character Source Toggle */}
-                    <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacterSource('library')}
-                        className={`text-xs h-8 transition-all duration-200 font-medium ${
-                          characterSource === 'library'
-                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <span className="truncate">From Library</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacterSource('upload')}
-                        className={`text-xs h-8 transition-all duration-200 font-medium ${
-                          characterSource === 'upload'
-                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <span className="truncate">Upload Image</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacterSource('describe')}
-                        className={`text-xs h-8 transition-all duration-200 font-medium ${
-                          characterSource === 'describe'
-                            ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        Describe Character
-                      </Button>
-                    </div>
-
-                    {/* Avatar Library Selection */}
-                    {characterSource === 'library' && (
-                      loadingAvatars ? (
-                        <div className="space-y-2">
-                          <SkeletonLoader className="h-8 w-full" />
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Loading avatars...
-                          </div>
-                        </div>
-                      ) : (
-                        <Select value={selectedAvatarId} onValueChange={setSelectedAvatarId}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Select an avatar..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableAvatars.length === 0 ? (
-                              <SelectItem value="none" disabled>No avatars available</SelectItem>
-                            ) : (
-                              availableAvatars.map((avatar) => (
-                                <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
-                                  {avatar.title || avatar.name || 'Untitled Avatar'}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )
-                    )}
-
-                    {/* Character Upload */}
-                    {characterSource === 'upload' && (
-                      <div className="space-y-2">
-                        <input
-                          ref={characterImageInputRef}
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleCharacterImageUpload(file)
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => characterImageInputRef.current?.click()}
-                          className="w-full h-8 text-xs"
-                          aria-label="Upload character image"
-                        >
-                          <Upload className="h-3 w-3 mr-2" />
-                          Choose Character Image
-                        </Button>
-                        <p className="text-[10px] text-muted-foreground">JPG, JPEG, PNG (max 10MB)</p>
-                      </div>
-                    )}
-
-                    {/* Character Description */}
-                    {characterSource === 'describe' && (
-                      <Textarea
-                        placeholder="Describe your character... e.g., 'A friendly 25-year-old woman with curly brown hair, wearing casual clothes, smiling warmly'"
-                        value={characterDescription}
-                        onChange={(e) => setCharacterDescription(e.target.value)}
-                        rows={3}
-                        className="resize-none text-xs"
-                      />
-                    )}
-
-                    {/* Character Preview */}
-                    {characterPreview && (
-                      <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
-                        <img
-                          src={characterPreview}
-                          alt={selectedAvatarId ? `Character preview for ${availableAvatars.find(a => a.id === selectedAvatarId)?.name || 'selected character'}` : 'Uploaded character image preview'}
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    )}
+                    {/* Character source buttons removed for single mode - using new section below */}
                   </>
                 ) : (
                   /* Partial Presence Options */
@@ -1398,6 +2270,9 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Script / Voice <span className="text-red-500">*</span>
               </label>
               
+              {/* Case 1: Image contains both - Simple manual script entry */}
+              {containsBoth && (
+                <>
               <Textarea
                 placeholder="Write your script here... What will be said in the ad?"
                 value={script}
@@ -1415,6 +2290,174 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                   )}
                 </span>
               </div>
+                </>
+              )}
+              
+              {/* Case 2: User designs characters - Dynamic conversation dialog */}
+              {!containsBoth && characterPresence !== 'voiceover' && (
+                <div className="space-y-4">
+                  {characterCount === 1 ? (
+                    // Single character - simple textarea
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-foreground">What do they say?</label>
+                      <Textarea
+                        value={dialogLines.length > 0 ? dialogLines[0]?.text || '' : ''}
+                        onChange={(e) => {
+                          if (dialogLines.length === 0) {
+                            addDialogLine()
+                          }
+                          updateDialogLine(dialogLines[0]?.id || '', 'text', e.target.value)
+                        }}
+                        placeholder="Enter the exact words they should speak..."
+                        className="min-h-[80px] text-xs resize-none"
+                      />
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>{dialogLines[0]?.text?.length || 0} characters</span>
+                        <span>
+                          Estimated read time: {estimateReadTime(dialogLines[0]?.text || '')}s
+                          {estimateReadTime(dialogLines[0]?.text || '') > duration && (dialogLines[0]?.text?.length || 0) > 0 && (
+                            <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    // Multiple characters - turn-by-turn conversation
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-foreground">Turn-by-turn conversation</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={addDialogLine}
+                          className="text-xs h-6"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Line
+                        </Button>
+                      </div>
+                      
+                      {dialogLines.map((line, index) => (
+                        <div key={line.id} className="p-3 border rounded-lg space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-muted-foreground">Line {index + 1}</span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => moveDialogLine(line.id, 'up')}
+                                disabled={index === 0}
+                                className="h-6 w-6 p-0"
+                              >
+                                <ChevronUp className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => moveDialogLine(line.id, 'down')}
+                                disabled={index === dialogLines.length - 1}
+                                className="h-6 w-6 p-0"
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeDialogLine(line.id)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <label className="text-xs font-medium text-foreground">Who speaks?</label>
+                              <Select 
+                                value={line.characterIndex.toString()} 
+                                onValueChange={(value) => updateDialogLine(line.id, 'characterIndex', parseInt(value))}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Select character..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: characterCount }).map((_, idx) => (
+                                    <SelectItem key={idx} value={idx.toString()}>
+                                      Character {idx + 1}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label className="text-xs font-medium text-foreground">Expression for this line</label>
+                              <Select 
+                                value={line.expression} 
+                                onValueChange={(value) => updateDialogLine(line.id, 'expression', value)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Select expression..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="happy">😊 Happy</SelectItem>
+                                  <SelectItem value="serious">😐 Serious</SelectItem>
+                                  <SelectItem value="excited">🤩 Excited</SelectItem>
+                                  <SelectItem value="confident">😎 Confident</SelectItem>
+                                  <SelectItem value="friendly">🙂 Friendly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-foreground">What do they say?</label>
+                            <Textarea
+                              value={line.text}
+                              onChange={(e) => updateDialogLine(line.id, 'text', e.target.value)}
+                              placeholder="Enter the dialog for this line..."
+                              className="min-h-[60px] text-xs resize-none"
+                            />
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span>{line.text.length} characters</span>
+                              <span>
+                                Estimated read time: {estimateReadTime(line.text)}s
+                                {estimateReadTime(line.text) > duration && line.text.length > 0 && (
+                                  <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Case 3: Voiceover only - Simple script */}
+              {!containsBoth && characterPresence === 'voiceover' && (
+                <>
+                  <Textarea
+                    placeholder="Enter your voiceover script..."
+                    value={script}
+                    onChange={(e) => setScript(e.target.value)}
+                    rows={4}
+                    className="resize-none text-xs"
+                  />
+                  
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>{script.length} characters</span>
+                    <span>
+                      Estimated read time: {estimateReadTime(script)}s
+                      {estimateReadTime(script) > duration && script.length > 0 && (
+                        <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                      )}
+                    </span>
+                  </div>
+                </>
+              )}
 
               {/* Voice Configuration */}
               <div className="space-y-2">
@@ -1532,12 +2575,30 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </Button>
                 <Button
                   type="button"
+                  variant={duration === 45 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(45)}
+                  className="h-8 text-xs"
+                >
+                  ⏱️ 45s
+                </Button>
+                <Button
+                  type="button"
                   variant={duration === 60 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(60)}
                   className="h-8 text-xs"
                 >
                   🎬 60s
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 90 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(90)}
+                  className="h-8 text-xs"
+                >
+                  🎯 90s
                 </Button>
                 <Button
                   type="button"
@@ -1553,9 +2614,64 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               <p className="text-[10px] text-muted-foreground">
                 {duration === 15 && '⚡ Perfect for TikTok and Instagram Reels'}
                 {duration === 30 && '📱 Ideal for social media feeds'}
+                {duration === 45 && '⏱️ Extended social media content'}
                 {duration === 60 && '🎬 Standard YouTube and Facebook ads'}
+                {duration === 90 && '🎯 In-depth product showcases'}
                 {duration === 120 && '🎥 Full-length product demonstrations'}
               </p>
+            </div>
+
+            {/* Aspect Ratio */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Camera className="h-3 w-3 text-purple-600" />
+                Aspect Ratio
+              </label>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant={aspectRatio === '9:16' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('9:16')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-6 h-10 border-2 border-current rounded"></div>
+                  <span className="text-xs">9:16</span>
+                  <span className="text-[10px] text-muted-foreground">Vertical</span>
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant={aspectRatio === '16:9' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('16:9')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-10 h-6 border-2 border-current rounded"></div>
+                  <span className="text-xs">16:9</span>
+                  <span className="text-[10px] text-muted-foreground">Horizontal</span>
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant={aspectRatio === '1:1' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('1:1')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-8 h-8 border-2 border-current rounded"></div>
+                  <span className="text-xs">1:1</span>
+                  <span className="text-[10px] text-muted-foreground">Square</span>
+                </Button>
+              </div>
+              
+              {aspectRatio === '1:1' && (
+                <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Square videos will be outpainted to fill the frame
+                </p>
+              )}
             </div>
 
              {/* Advanced Fields (Collapsible) */}
@@ -1937,6 +3053,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
+              {/* Preview for selected product from library - Image 1 */}
+              {images[0]?.productId && images[0]?.source === 'library' && (() => {
+                const selectedProduct = availableProducts.find(p => p.id === images[0].productId)
+                if (!selectedProduct) return null
+                
+                const productImageUrl = selectedProduct.generated_images?.[0] || selectedProduct.image_url || selectedProduct.imageUrl
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {productImageUrl ? (
+                        <img 
+                          src={productImageUrl} 
+                          alt={selectedProduct.title || selectedProduct.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('Product image failed to load:', productImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedProduct.title || selectedProduct.name || 'Untitled Product'}
+                        </p>
+                        {selectedProduct.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {selectedProduct.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Preview */}
               {images[0]?.preview && (
                 <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
@@ -1948,24 +3103,36 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
-              {/* Contains Both Checkbox */}
-              <div className="flex items-center space-x-2">
+              {/* Contains Both Checkbox - Clean & Bold */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-purple-400 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                 <Checkbox
-                  id="contains-both-1"
+                    id="contains-both-img1"
                   checked={images[0]?.containsBoth || false}
                   onCheckedChange={(checked) => updateImageSlot(0, { containsBoth: checked as boolean })}
-                />
-                <label htmlFor="contains-both-1" className="text-xs text-muted-foreground cursor-pointer">
-                  This image contains both character and product
+                    className="border-purple-600 data-[state=checked]:bg-purple-600"
+                  />
+                  <label 
+                    htmlFor="contains-both-img1" 
+                    className="text-sm font-bold text-purple-900 dark:text-purple-100 cursor-pointer"
+                  >
+                    ⚡ This image contains both character and product
                 </label>
+                </div>
               </div>
 
               {/* Optional Description */}
-              <Input
+              <Textarea
                 placeholder="Describe this image or how to use it (optional)..."
                 value={images[0]?.description || ''}
                 onChange={(e) => updateImageSlot(0, { description: e.target.value })}
-                className="h-8 text-xs"
+                rows={3}
+                className="text-sm resize-none"
               />
               
               {/* Validation Error */}
@@ -2064,6 +3231,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
+              {/* Preview for selected product from library - Image 2 */}
+              {images[1]?.productId && images[1]?.source === 'library' && (() => {
+                const selectedProduct = availableProducts.find(p => p.id === images[1].productId)
+                if (!selectedProduct) return null
+                
+                const productImageUrl = selectedProduct.generated_images?.[0] || selectedProduct.image_url || selectedProduct.imageUrl
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {productImageUrl ? (
+                        <img 
+                          src={productImageUrl} 
+                          alt={selectedProduct.title || selectedProduct.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('Product image failed to load:', productImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedProduct.title || selectedProduct.name || 'Untitled Product'}
+                        </p>
+                        {selectedProduct.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {selectedProduct.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Preview */}
               {images[1]?.preview && (
                 <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
@@ -2075,24 +3281,36 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
-              {/* Contains Both Checkbox */}
-              <div className="flex items-center space-x-2">
+              {/* Contains Both Checkbox - Clean & Bold */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-purple-400 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                 <Checkbox
-                  id="contains-both-2"
+                    id="contains-both-img2"
                   checked={images[1]?.containsBoth || false}
                   onCheckedChange={(checked) => updateImageSlot(1, { containsBoth: checked as boolean })}
-                />
-                <label htmlFor="contains-both-2" className="text-xs text-muted-foreground cursor-pointer">
-                  This image contains both character and product
+                    className="border-purple-600 data-[state=checked]:bg-purple-600"
+                  />
+                  <label 
+                    htmlFor="contains-both-img2" 
+                    className="text-sm font-bold text-purple-900 dark:text-purple-100 cursor-pointer"
+                  >
+                    ⚡ This image contains both character and product
                 </label>
+                </div>
               </div>
 
               {/* Optional Description */}
-              <Input
+              <Textarea
                 placeholder="Describe this image or how to use it (optional)..."
                 value={images[1]?.description || ''}
                 onChange={(e) => updateImageSlot(1, { description: e.target.value })}
-                className="h-8 text-xs"
+                rows={3}
+                className="text-sm resize-none"
               />
               
               {/* Validation Error */}
@@ -2103,6 +3321,533 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
             </div>
+
+            {/* Character Descriptions (Dual Mode - Show) */}
+            {/* NEW: Multiple Character Description - Dual mode only */}
+            {mode === 'dual' && !images[0]?.containsBoth && !images[1]?.containsBoth && characterPresence === 'show' && (
+              <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-3 w-3 text-purple-600" />
+                  Character Descriptions
+                </label>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium">Number of Characters</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (characterCount > 1) {
+                            setCharacterCount(characterCount - 1)
+                            setCharacterDescriptions(prev => prev.slice(0, -1))
+                          }
+                        }}
+                        disabled={characterCount <= 1}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      <span className="text-sm font-medium w-8 text-center">{characterCount}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (characterCount < 5) {
+                            setCharacterCount(characterCount + 1)
+                            setCharacterDescriptions(prev => [...prev, {
+                              description: '',
+                              artStyle: '',
+                              customArtStyle: '',
+                              ageRange: '',
+                              customAgeRange: '',
+                              ethnicity: '',
+                              customEthnicity: '',
+                              gender: '',
+                              customGender: '',
+                              bodyType: '',
+                              customBodyType: '',
+                              outfitCategory: '',
+                              customOutfitCategory: '',
+                              outfitColors: '',
+                              expression: '',
+                              customExpression: ''
+                            }])
+                          }
+                        }}
+                        disabled={characterCount >= 5}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Describe each character separately. Maximum 5 characters. In dual mode, you can only describe characters.
+                  </p>
+                
+                  {/* Character description fields */}
+                  {characterDescriptions.map((character, index) => (
+                    <Collapsible key={index} className="space-y-2">
+                      <CollapsibleTrigger asChild>
+                      <Button
+                          variant="outline"
+                          className="w-full justify-between h-8 text-xs"
+                        >
+                          <span>Character {index + 1}</span>
+                          <ChevronDown className="h-3 w-3" />
+                      </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-3 p-3 bg-muted/20 rounded-lg border">
+                        {/* Free-text description */}
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-700">
+                            Additional Description (Optional)
+                          </label>
+                          <Textarea
+                            placeholder={`Additional details for character ${index + 1}...`}
+                            value={character.description}
+                            onChange={(e) => {
+                              const newDescriptions = [...characterDescriptions]
+                              newDescriptions[index] = { ...newDescriptions[index], description: e.target.value }
+                              setCharacterDescriptions(newDescriptions)
+                            }}
+                            rows={2}
+                            className="resize-none text-xs"
+                          />
+                    </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Art Style</label>
+                          <Select value={character.artStyle} onValueChange={(value) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], artStyle: value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select style..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ART_STYLES.map((style) => (
+                                <SelectItem key={style.value} value={style.value} className="text-xs">
+                                  {style.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {character.artStyle === 'custom' && (
+                            <Input
+                              placeholder="Custom art style..."
+                              value={character.customArtStyle}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], customArtStyle: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Age Range</label>
+                          <Select value={character.ageRange} onValueChange={(value) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], ageRange: value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select age..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {AGE_RANGES.map((age) => (
+                                <SelectItem key={age.value} value={age.value} className="text-xs">
+                                  {age.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {character.ageRange === 'custom' && (
+                            <Input
+                              placeholder="Custom age range..."
+                              value={character.customAgeRange}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], customAgeRange: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Ethnicity</label>
+                          <Select value={character.ethnicity} onValueChange={(value) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], ethnicity: value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select ethnicity..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ETHNICITY_OPTIONS.map((ethnicity) => (
+                                <SelectItem key={ethnicity.value} value={ethnicity.value} className="text-xs">
+                                  {ethnicity.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {character.ethnicity === 'custom' && (
+                            <Input
+                              placeholder="Custom ethnicity..."
+                              value={character.customEthnicity}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], customEthnicity: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Gender</label>
+                          <Select value={character.gender} onValueChange={(value) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], gender: value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select gender..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {GENDER_OPTIONS.map((gender) => (
+                                <SelectItem key={gender.value} value={gender.value} className="text-xs">
+                                  {gender.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {character.gender === 'custom' && (
+                            <Input
+                              placeholder="Custom gender..."
+                              value={character.customGender}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], customGender: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Body Type</label>
+                          <Select value={character.bodyType} onValueChange={(value) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], bodyType: value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select body type..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BODY_TYPES.map((body) => (
+                                <SelectItem key={body.value} value={body.value} className="text-xs">
+                                  {body.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {character.bodyType === 'custom' && (
+                            <Input
+                              placeholder="Custom body type..."
+                              value={character.customBodyType}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], customBodyType: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Outfit Category</label>
+                          <Select value={character.outfitCategory} onValueChange={(value) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], outfitCategory: value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select outfit..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {OUTFIT_CATEGORIES.map((outfit) => (
+                                <SelectItem key={outfit.value} value={outfit.value} className="text-xs">
+                                  {outfit.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {character.outfitCategory === 'custom' && (
+                            <Input
+                              placeholder="Custom outfit category..."
+                              value={character.customOutfitCategory}
+                              onChange={(e) => {
+                                const newDescriptions = [...characterDescriptions]
+                                newDescriptions[index] = { ...newDescriptions[index], customOutfitCategory: e.target.value }
+                                setCharacterDescriptions(newDescriptions)
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium">Outfit Colors</label>
+                        <Input
+                          placeholder="e.g., blue jeans, white t-shirt, red sneakers..."
+                          value={character.outfitColors}
+                          onChange={(e) => {
+                            const newDescriptions = [...characterDescriptions]
+                            newDescriptions[index] = { ...newDescriptions[index], outfitColors: e.target.value }
+                            setCharacterDescriptions(newDescriptions)
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Expression</label>
+                        <Select value={character.expression} onValueChange={(value) => {
+                          const newDescriptions = [...characterDescriptions]
+                          newDescriptions[index] = { ...newDescriptions[index], expression: value }
+                          setCharacterDescriptions(newDescriptions)
+                        }}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select expression..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {EXPRESSIONS.map((expression) => (
+                              <SelectItem key={expression.value} value={expression.value} className="text-xs">
+                                {expression.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {character.expression === 'custom' && (
+                          <Input
+                            placeholder="Custom expression..."
+                            value={character.customExpression}
+                            onChange={(e) => {
+                              const newDescriptions = [...characterDescriptions]
+                              newDescriptions[index] = { ...newDescriptions[index], customExpression: e.target.value }
+                              setCharacterDescriptions(newDescriptions)
+                            }}
+                            className="h-8 text-xs"
+                          />
+                        )}
+                      </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Partial Character Design (Dual Mode - Partial) */}
+            {mode === 'dual' && !images[0]?.containsBoth && !images[1]?.containsBoth && characterPresence === 'partial' && (
+              <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-3 w-3 text-purple-600" />
+                  Structured Partial Character Design
+                </label>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Partial Type</label>
+                    <Select value={partialCharacter.partialType} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, partialType: value })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select partial type..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PARTIAL_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value} className="text-xs">
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {partialCharacter.partialType === 'custom' && (
+                      <Input
+                        placeholder="Custom partial type..."
+                        value={partialCharacter.customPartialType}
+                        onChange={(e) => setPartialCharacter({ ...partialCharacter, customPartialType: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Visibility Level</label>
+                    <Select value={partialCharacter.visibilityLevel} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, visibilityLevel: value })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select visibility..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VISIBILITY_LEVELS.map((level) => (
+                          <SelectItem key={level.value} value={level.value} className="text-xs">
+                            {level.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Position</label>
+                    <Select value={partialCharacter.position} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, position: value })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select position..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {POSITIONS.map((position) => (
+                          <SelectItem key={position.value} value={position.value} className="text-xs">
+                            {position.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {partialCharacter.position === 'custom' && (
+                      <Input
+                        placeholder="Custom position..."
+                        value={partialCharacter.customPosition}
+                        onChange={(e) => setPartialCharacter({ ...partialCharacter, customPosition: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Art Style</label>
+                    <Select value={partialCharacter.artStyle} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, artStyle: value })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select art style..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ART_STYLES.map((style) => (
+                          <SelectItem key={style.value} value={style.value} className="text-xs">
+                            {style.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {partialCharacter.artStyle === 'custom' && (
+                      <Input
+                        placeholder="Custom art style..."
+                        value={partialCharacter.customArtStyle}
+                        onChange={(e) => setPartialCharacter({ ...partialCharacter, customArtStyle: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    )}
+                  </div>
+                </div>
+                
+                {(partialCharacter.partialType === 'hands' || partialCharacter.partialType === 'face' || partialCharacter.partialType === 'custom') && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Skin Tone</label>
+                    <Select value={partialCharacter.skinTone} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, skinTone: value })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select skin tone..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SKIN_TONES.map((tone) => (
+                          <SelectItem key={tone.value} value={tone.value} className="text-xs">
+                            {tone.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {partialCharacter.skinTone === 'custom' && (
+                      <Input
+                        placeholder="Custom skin tone..."
+                        value={partialCharacter.customSkinTone}
+                        onChange={(e) => setPartialCharacter({ ...partialCharacter, customSkinTone: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    )}
+                  </div>
+                )}
+                
+                {partialCharacter.partialType === 'hands' && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Hand Accessories</label>
+                    <Select value={partialCharacter.handAccessories} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, handAccessories: value })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select accessories..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HAND_ACCESSORIES.map((accessory) => (
+                          <SelectItem key={accessory.value} value={accessory.value} className="text-xs">
+                            {accessory.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {partialCharacter.handAccessories === 'custom' && (
+                      <Input
+                        placeholder="Custom hand accessories..."
+                        value={partialCharacter.customHandAccessories}
+                        onChange={(e) => setPartialCharacter({ ...partialCharacter, customHandAccessories: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    )}
+                  </div>
+                )}
+                
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Expression</label>
+                  <Select value={partialCharacter.expression} onValueChange={(value) => setPartialCharacter({ ...partialCharacter, expression: value })}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select expression..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPRESSIONS.map((expression) => (
+                        <SelectItem key={expression.value} value={expression.value} className="text-xs">
+                          {expression.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {partialCharacter.expression === 'custom' && (
+                    <Input
+                      placeholder="Custom expression..."
+                      value={partialCharacter.customExpression}
+                      onChange={(e) => setPartialCharacter({ ...partialCharacter, customExpression: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Scene-Based Script Input */}
             <div className="space-y-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -2276,12 +4021,30 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </Button>
                 <Button
                   type="button"
+                  variant={duration === 45 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(45)}
+                  className="h-8 text-xs"
+                >
+                  ⏱️ 45s
+                </Button>
+                <Button
+                  type="button"
                   variant={duration === 60 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(60)}
                   className="h-8 text-xs"
                 >
                   🎬 60s
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 90 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(90)}
+                  className="h-8 text-xs"
+                >
+                  🎯 90s
                 </Button>
                 <Button
                   type="button"
@@ -2297,60 +4060,402 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               <p className="text-[10px] text-muted-foreground">
                 {duration === 15 && '⚡ Perfect for TikTok and Instagram Reels'}
                 {duration === 30 && '📱 Ideal for social media feeds'}
+                {duration === 45 && '⏱️ Extended social media content'}
                 {duration === 60 && '🎬 Standard YouTube and Facebook ads'}
+                {duration === 90 && '🎯 In-depth product showcases'}
                 {duration === 120 && '🎥 Full-length product demonstrations'}
               </p>
             </div>
 
-            {/* Character Presence (Optional) */}
+            {/* Aspect Ratio */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Camera className="h-3 w-3 text-purple-600" />
+                Aspect Ratio
+              </label>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant={aspectRatio === '9:16' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('9:16')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-6 h-10 border-2 border-current rounded"></div>
+                  <span className="text-xs">9:16</span>
+                  <span className="text-[10px] text-muted-foreground">Vertical</span>
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant={aspectRatio === '16:9' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('16:9')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-10 h-6 border-2 border-current rounded"></div>
+                  <span className="text-xs">16:9</span>
+                  <span className="text-[10px] text-muted-foreground">Horizontal</span>
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant={aspectRatio === '1:1' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('1:1')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-8 h-8 border-2 border-current rounded"></div>
+                  <span className="text-xs">1:1</span>
+                  <span className="text-[10px] text-muted-foreground">Square</span>
+                </Button>
+              </div>
+              
+              {aspectRatio === '1:1' && (
+                <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Square videos will be outpainted to fill the frame
+                </p>
+              )}
+            </div>
+
+            {/* Character Presence (Optional) - Only show if neither image contains both */}
+            {!images[0]?.containsBoth && !images[1]?.containsBoth && (
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground flex items-center gap-2">
                 <Users className="h-3 w-3 text-purple-600" />
                 Character Presence (Optional)
               </label>
               
-              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('voiceover')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+              <div className="space-y-3">
+                {/* Voiceover Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'voiceover'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('voiceover')}
                 >
-                  🎙️ Voiceover
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('show')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+                  <input
+                    type="radio"
+                    id="voiceover-option"
+                    name="characterPresence"
+                    value="voiceover"
+                    checked={characterPresence === 'voiceover'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="voiceover-option" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🎙️</span>
+                      <span className="font-medium text-sm">Voiceover</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Audio narration only - no character appears in the video. Perfect for product-focused content with professional voice explanation.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Show Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'show'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('show')}
                 >
-                  👤 Show
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('partial')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+                  <input
+                    type="radio"
+                    id="show-option"
+                    name="characterPresence"
+                    value="show"
+                    checked={characterPresence === 'show'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="show-option" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">👤</span>
+                      <span className="font-medium text-sm">Show</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Full character visible in the video - complete body, face, and presence. Ideal for authentic, relatable UGC-style content.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Partial Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'partial'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('partial')}
                 >
-                  ✋ Partial
-                </Button>
+                  <input
+                    type="radio"
+                    id="partial-option"
+                    name="characterPresence"
+                    value="partial"
+                    checked={characterPresence === 'partial'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="partial-option" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">✋</span>
+                      <span className="font-medium text-sm">Partial</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Partial character presence - show only hands, face, feet, or silhouette. Great for subtle human touch without full character focus.
+                    </p>
+                  </label>
+                </div>
               </div>
             </div>
+            )}
+
+            {/* Advanced Fields (Collapsible) */}
+            <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between h-8 text-xs">
+                  <span className="flex items-center gap-2">
+                    <Settings className="h-3 w-3" />
+                    Advanced Creative Controls
+                  </span>
+                  {showAdvanced ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                </Button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="space-y-4 mt-3">
+                {/* Brand DNA */}
+                <div className="p-3 bg-purple-50/50 dark:bg-purple-950/10 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Palette className="h-3 w-3 text-purple-600" />
+                    Brand DNA
+                  </label>
+                  <div className="space-y-2">
+                    <Input placeholder="Brand name (optional)" className="h-8 text-xs" />
+                    <Select value={brandTone} onValueChange={setBrandTone}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Brand tone..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professional">💼 Professional & Trustworthy</SelectItem>
+                        <SelectItem value="friendly">😊 Friendly & Approachable</SelectItem>
+                        <SelectItem value="luxury">💎 Luxury & Premium</SelectItem>
+                        <SelectItem value="playful">🎉 Playful & Fun</SelectItem>
+                        <SelectItem value="minimalist">✨ Minimalist & Clean</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {brandTone === 'custom' && (
+                      <Input
+                        value={customBrandTone}
+                        onChange={(e) => setCustomBrandTone(e.target.value)}
+                        placeholder="Enter custom brand tone..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Input placeholder="Brand color (hex code, optional)" className="h-8 text-xs" />
+              </div>
+            </div>
+
+                {/* Product Essence */}
+                <div className="p-3 bg-pink-50/50 dark:bg-pink-950/10 rounded-lg border border-pink-200 dark:border-pink-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Package className="h-3 w-3 text-pink-600" />
+                    Product Essence
+                  </label>
+                  <div className="space-y-2">
+                    <Textarea placeholder="Hero benefit - what makes this product special?" rows={2} className="resize-none text-xs" />
+                    <Select value={visualFocus} onValueChange={setVisualFocus}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Visual focus..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="product">🔍 Product Close-up</SelectItem>
+                        <SelectItem value="lifestyle">🏠 Lifestyle Context</SelectItem>
+                        <SelectItem value="comparison">⚖️ Before/After</SelectItem>
+                        <SelectItem value="process">⚙️ Usage Process</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {visualFocus === 'custom' && (
+                      <Input
+                        value={customVisualFocus}
+                        onChange={(e) => setCustomVisualFocus(e.target.value)}
+                        placeholder="Enter custom visual focus..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Environment..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="home">Home Setting</SelectItem>
+                        <SelectItem value="office">Office/Work</SelectItem>
+                        <SelectItem value="outdoor">Outdoor</SelectItem>
+                        <SelectItem value="studio">Studio/Neutral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Creative Angle */}
+                <div className="p-3 bg-blue-50/50 dark:bg-blue-950/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Lightbulb className="h-3 w-3 text-blue-600" />
+                    Creative Angle
+                  </label>
+                  <div className="space-y-2">
+                    <Select value={coreAngle} onValueChange={setCoreAngle}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Core angle..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="problem-solution">🔧 Problem & Solution</SelectItem>
+                        <SelectItem value="transformation">🦋 Transformation Story</SelectItem>
+                        <SelectItem value="social-proof">👥 Social Proof</SelectItem>
+                        <SelectItem value="urgency">⏰ Urgency & Scarcity</SelectItem>
+                        <SelectItem value="emotional">💝 Emotional Connection</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {coreAngle === 'custom' && (
+                      <Input
+                        value={customCoreAngle}
+                        onChange={(e) => setCustomCoreAngle(e.target.value)}
+                        placeholder="Enter custom creative angle..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Input placeholder="Pattern interrupt - unexpected element" className="h-8 text-xs" />
+                    <Textarea placeholder="Hook framework - opening line" rows={2} className="resize-none text-xs" />
+                  </div>
+                </div>
+
+                {/* Camera DNA */}
+                <div className="p-3 bg-green-50/50 dark:bg-green-950/10 rounded-lg border border-green-200 dark:border-green-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Camera className="h-3 w-3 text-green-600" />
+                    Camera DNA
+                  </label>
+                  <div className="space-y-2">
+                    <Select value={cameraRhythm} onValueChange={setCameraRhythm}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Rhythm..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fast">⚡ Fast & Dynamic</SelectItem>
+                        <SelectItem value="medium">🎯 Medium Pace</SelectItem>
+                        <SelectItem value="slow">🎬 Slow & Cinematic</SelectItem>
+                        <SelectItem value="varied">🎭 Varied Rhythm</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {cameraRhythm === 'custom' && (
+                      <Input
+                        value={customCameraRhythm}
+                        onChange={(e) => setCustomCameraRhythm(e.target.value)}
+                        placeholder="Enter custom camera rhythm..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Movement..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="static">📷 Static Shots</SelectItem>
+                        <SelectItem value="pan">📹 Pan & Tilt</SelectItem>
+                        <SelectItem value="zoom">🔍 Zoom In/Out</SelectItem>
+                        <SelectItem value="tracking">🎥 Tracking Movement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Cut frequency..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="slow">Slow Cuts (2-3s)</SelectItem>
+                        <SelectItem value="medium">Medium Cuts (1-2s)</SelectItem>
+                        <SelectItem value="fast">Fast Cuts (&lt;1s)</SelectItem>
+                        <SelectItem value="mixed">Mixed Pacing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Ending..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fade">Fade Out</SelectItem>
+                        <SelectItem value="cut">Hard Cut</SelectItem>
+                        <SelectItem value="zoom">Zoom to Logo</SelectItem>
+                        <SelectItem value="hold">Hold Final Frame</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Audio DNA */}
+                <div className="p-3 bg-orange-50/50 dark:bg-orange-950/10 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Music className="h-3 w-3 text-orange-600" />
+                    Audio DNA
+                  </label>
+                  <div className="space-y-2">
+                    <Select value={musicMood} onValueChange={setMusicMood}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Music mood..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="upbeat">🎉 Upbeat & Energetic</SelectItem>
+                        <SelectItem value="calm">🧘 Calm & Relaxing</SelectItem>
+                        <SelectItem value="dramatic">🎭 Dramatic & Intense</SelectItem>
+                        <SelectItem value="playful">🎪 Playful & Fun</SelectItem>
+                        <SelectItem value="corporate">🏢 Corporate & Professional</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {musicMood === 'custom' && (
+                      <Input
+                        value={customMusicMood}
+                        onChange={(e) => setCustomMusicMood(e.target.value)}
+                        placeholder="Enter custom music mood..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-muted-foreground">Sound Effects</label>
+                      <div className="flex flex-wrap gap-1">
+                        {['Click', 'Whoosh', 'Pop', 'Chime', 'Applause', 'Custom'].map((effect) => (
+                          <Button key={effect} variant="outline" size="sm" className="h-6 text-[10px] px-2">
+                            {effect}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Sound mode..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="voice-over">Voice Over Music</SelectItem>
+                        <SelectItem value="music-only">Music Only</SelectItem>
+                        <SelectItem value="ambient">Ambient Sounds</SelectItem>
+                        <SelectItem value="mixed">Mixed Audio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
 
           {/* Mode 3: Multi-Story & Visual Mastery */}
@@ -2548,6 +4653,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
+              {/* Preview for selected product from library - Image 1 */}
+              {images[0]?.productId && images[0]?.source === 'library' && (() => {
+                const selectedProduct = availableProducts.find(p => p.id === images[0].productId)
+                if (!selectedProduct) return null
+                
+                const productImageUrl = selectedProduct.generated_images?.[0] || selectedProduct.image_url || selectedProduct.imageUrl
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {productImageUrl ? (
+                        <img 
+                          src={productImageUrl} 
+                          alt={selectedProduct.title || selectedProduct.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('Product image failed to load:', productImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedProduct.title || selectedProduct.name || 'Untitled Product'}
+                        </p>
+                        {selectedProduct.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {selectedProduct.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Preview */}
               {images[0]?.preview && (
                 <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
@@ -2572,11 +4716,12 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               </div>
 
               {/* Optional Description */}
-              <Input
+              <Textarea
                 placeholder="Describe how to use this reference (optional)..."
                 value={images[0]?.description || ''}
                 onChange={(e) => updateImageSlot(0, { description: e.target.value })}
-                className="h-8 text-xs"
+                rows={3}
+                className="text-sm resize-none"
               />
               
               {/* Validation Error */}
@@ -2698,6 +4843,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
+              {/* Preview for selected product from library - Image 2 */}
+              {images[1]?.productId && images[1]?.source === 'library' && (() => {
+                const selectedProduct = availableProducts.find(p => p.id === images[1].productId)
+                if (!selectedProduct) return null
+                
+                const productImageUrl = selectedProduct.generated_images?.[0] || selectedProduct.image_url || selectedProduct.imageUrl
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {productImageUrl ? (
+                        <img 
+                          src={productImageUrl} 
+                          alt={selectedProduct.title || selectedProduct.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('Product image failed to load:', productImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedProduct.title || selectedProduct.name || 'Untitled Product'}
+                        </p>
+                        {selectedProduct.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {selectedProduct.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {images[1]?.preview && (
                 <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
                   <img src={images[1].preview} alt="Image 2 preview" className="w-full h-full object-contain" />
@@ -2715,11 +4899,12 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </label>
               </div>
 
-              <Input
+              <Textarea
                 placeholder="Describe how to use this reference (optional)..."
                 value={images[1]?.description || ''}
                 onChange={(e) => updateImageSlot(1, { description: e.target.value })}
-                className="h-8 text-xs"
+                rows={3}
+                className="text-sm resize-none"
               />
               
               {/* Validation Error */}
@@ -2841,6 +5026,45 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               )}
 
+              {/* Preview for selected product from library - Image 3 */}
+              {images[2]?.productId && images[2]?.source === 'library' && (() => {
+                const selectedProduct = availableProducts.find(p => p.id === images[2].productId)
+                if (!selectedProduct) return null
+                
+                const productImageUrl = selectedProduct.generated_images?.[0] || selectedProduct.image_url || selectedProduct.imageUrl
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {productImageUrl ? (
+                        <img 
+                          src={productImageUrl} 
+                          alt={selectedProduct.title || selectedProduct.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('Product image failed to load:', productImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedProduct.title || selectedProduct.name || 'Untitled Product'}
+                        </p>
+                        {selectedProduct.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {selectedProduct.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {images[2]?.preview && (
                 <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden border">
                   <img src={images[2].preview} alt={`Image 3 preview - ${images[2]?.purpose || 'lifestyle visual'}`} className="w-full h-full object-contain" />
@@ -2858,11 +5082,12 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </label>
               </div>
 
-              <Input
+              <Textarea
                 placeholder="Describe how to use this reference (optional)..."
                 value={images[2]?.description || ''}
                 onChange={(e) => updateImageSlot(2, { description: e.target.value })}
-                className="h-8 text-xs"
+                rows={3}
+                className="text-sm resize-none"
               />
               
               {/* Validation Error */}
@@ -2881,8 +5106,11 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Script / Voice <span className="text-red-500">*</span>
               </label>
               
+              {(images[0]?.containsBoth || images[1]?.containsBoth || characterPresence === 'voiceover') ? (
+                // Simple script textarea
+                <>
               <Textarea
-                placeholder="Write your script here... What will be said in the ad?"
+                    placeholder="Write your script or voiceover narration..."
                 value={script}
                 onChange={(e) => setScript(e.target.value)}
                 rows={4}
@@ -2898,6 +5126,142 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                   )}
                 </span>
               </div>
+                </>
+              ) : (
+                // Dynamic based on character count
+                <>
+                  {characterCount === 1 ? (
+                    // Single character - simple dialog
+                    <>
+                      <Textarea
+                        placeholder="What does the character say?"
+                        value={dialogLines[0]?.text || ''}
+                        onChange={(e) => updateDialogLine('0', 'text', e.target.value)}
+                        rows={3}
+                        className="resize-none text-xs"
+                      />
+                      
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>{(dialogLines[0]?.text || '').length} characters</span>
+                        <span>
+                          Estimated read time: {estimateReadTime(dialogLines[0]?.text || '')}s
+                          {estimateReadTime(dialogLines[0]?.text || '') > duration && (dialogLines[0]?.text || '').length > 0 && (
+                            <span className="text-red-500 ml-2">⚠️ Too long for {duration}s video</span>
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    // Multiple characters - turn-by-turn conversation
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium">Turn-by-Turn Conversation</label>
+                        <Button 
+                          type="button"
+                          size="sm" 
+                          onClick={addDialogLine}
+                          className="h-6 text-xs"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Line
+                        </Button>
+                      </div>
+                      
+                      {dialogLines.map((line, index) => (
+                        <div key={index} className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium">Line {index + 1}</span>
+                            <div className="flex gap-1">
+                              {index > 0 && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => moveDialogLine(index.toString(), 'up')}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {index < dialogLines.length - 1 && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => moveDialogLine(index.toString(), 'down')}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeDialogLine(index.toString())}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium">Who speaks?</label>
+                              <Select 
+                                value={line.characterIndex?.toString() || ''} 
+                                onValueChange={(value) => updateDialogLine(index.toString(), 'characterIndex', parseInt(value))}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Select character..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: characterCount }, (_, i) => (
+                                    <SelectItem key={i} value={i.toString()} className="text-xs">
+                                      Character {i + 1}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium">Expression for this line</label>
+                              <Select 
+                                value={line.expression || ''} 
+                                onValueChange={(value) => updateDialogLine(index.toString(), 'expression', value)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Select expression..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {EXPRESSIONS.map((expression) => (
+                                    <SelectItem key={expression.value} value={expression.value} className="text-xs">
+                                      {expression.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">What do they say?</label>
+                            <Textarea
+                              placeholder="Enter the dialog text..."
+                              value={line.text}
+                              onChange={(e) => updateDialogLine(index.toString(), 'text', e.target.value)}
+                              rows={2}
+                              className="resize-none text-xs"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Voice Configuration */}
               <div className="space-y-2">
@@ -3015,12 +5379,30 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </Button>
                 <Button
                   type="button"
+                  variant={duration === 45 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(45)}
+                  className="h-8 text-xs"
+                >
+                  ⏱️ 45s
+                </Button>
+                <Button
+                  type="button"
                   variant={duration === 60 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(60)}
                   className="h-8 text-xs"
                 >
                   🎬 60s
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 90 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(90)}
+                  className="h-8 text-xs"
+                >
+                  🎯 90s
                 </Button>
                 <Button
                   type="button"
@@ -3036,60 +5418,402 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               <p className="text-[10px] text-muted-foreground">
                 {duration === 15 && '⚡ Perfect for TikTok and Instagram Reels'}
                 {duration === 30 && '📱 Ideal for social media feeds'}
+                {duration === 45 && '⏱️ Extended social media content'}
                 {duration === 60 && '🎬 Standard YouTube and Facebook ads'}
+                {duration === 90 && '🎯 In-depth product showcases'}
                 {duration === 120 && '🎥 Full-length product demonstrations'}
               </p>
             </div>
 
-            {/* Character Presence (Optional) */}
+            {/* Aspect Ratio */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Camera className="h-3 w-3 text-purple-600" />
+                Aspect Ratio
+              </label>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant={aspectRatio === '9:16' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('9:16')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-6 h-10 border-2 border-current rounded"></div>
+                  <span className="text-xs">9:16</span>
+                  <span className="text-[10px] text-muted-foreground">Vertical</span>
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant={aspectRatio === '16:9' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('16:9')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-10 h-6 border-2 border-current rounded"></div>
+                  <span className="text-xs">16:9</span>
+                  <span className="text-[10px] text-muted-foreground">Horizontal</span>
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant={aspectRatio === '1:1' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAspectRatio('1:1')}
+                  className="h-16 flex flex-col items-center justify-center gap-1"
+                >
+                  <div className="w-8 h-8 border-2 border-current rounded"></div>
+                  <span className="text-xs">1:1</span>
+                  <span className="text-[10px] text-muted-foreground">Square</span>
+                </Button>
+              </div>
+              
+              {aspectRatio === '1:1' && (
+                <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Square videos will be outpainted to fill the frame
+                </p>
+              )}
+            </div>
+
+            {/* Character Presence (Optional) - Only show if neither image contains both */}
+            {!images[0]?.containsBoth && !images[1]?.containsBoth && (
             <div className="space-y-2">
               <label className="text-xs font-medium text-foreground flex items-center gap-2">
                 <Users className="h-3 w-3 text-purple-600" />
                 Character Presence (Optional)
               </label>
               
-              <div className="grid grid-cols-1 gap-2 p-1 bg-muted/20 rounded-lg border border-border/50">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('voiceover')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+              <div className="space-y-3">
+                {/* Voiceover Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'voiceover'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('voiceover')}
                 >
-                  🎙️ Voiceover
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('show')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+                  <input
+                    type="radio"
+                    id="voiceover-option"
+                    name="characterPresence"
+                    value="voiceover"
+                    checked={characterPresence === 'voiceover'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="voiceover-option" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🎙️</span>
+                      <span className="font-medium text-sm">Voiceover</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Audio narration only - no character appears in the video. Perfect for product-focused content with professional voice explanation.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Show Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'show'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('show')}
                 >
-                  👤 Show
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCharacterPresence('partial')}
-                  className={`text-xs h-8 transition-all duration-200 font-medium ${
+                  <input
+                    type="radio"
+                    id="show-option"
+                    name="characterPresence"
+                    value="show"
+                    checked={characterPresence === 'show'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="show-option" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">👤</span>
+                      <span className="font-medium text-sm">Show</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Full character visible in the video - complete body, face, and presence. Ideal for authentic, relatable UGC-style content.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Partial Option */}
+                <div 
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer ${
                     characterPresence === 'partial'
-                      ? "bg-background shadow-sm border border-border/60 text-foreground hover:bg-background/80"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                      ? "border-purple-300 bg-purple-50/50 dark:border-purple-600 dark:bg-purple-950/20"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 dark:border-gray-700 dark:hover:border-purple-600 dark:hover:bg-purple-950/10"
                   }`}
+                  onClick={() => setCharacterPresence('partial')}
                 >
-                  ✋ Partial
-                </Button>
+                  <input
+                    type="radio"
+                    id="partial-option"
+                    name="characterPresence"
+                    value="partial"
+                    checked={characterPresence === 'partial'}
+                    onChange={(e) => setCharacterPresence(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <label htmlFor="partial-option" className="flex-1 cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">✋</span>
+                      <span className="font-medium text-sm">Partial</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Partial character presence - show only hands, face, feet, or silhouette. Great for subtle human touch without full character focus.
+                    </p>
+                  </label>
+                </div>
               </div>
             </div>
+            )}
+
+            {/* Advanced Fields (Collapsible) */}
+            <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between h-8 text-xs">
+                  <span className="flex items-center gap-2">
+                    <Settings className="h-3 w-3" />
+                    Advanced Creative Controls
+                  </span>
+                  {showAdvanced ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                </Button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="space-y-4 mt-3">
+                {/* Brand DNA */}
+                <div className="p-3 bg-purple-50/50 dark:bg-purple-950/10 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Palette className="h-3 w-3 text-purple-600" />
+                    Brand DNA
+                  </label>
+                  <div className="space-y-2">
+                    <Input placeholder="Brand name (optional)" className="h-8 text-xs" />
+                    <Select value={brandTone} onValueChange={setBrandTone}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Brand tone..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professional">💼 Professional & Trustworthy</SelectItem>
+                        <SelectItem value="friendly">😊 Friendly & Approachable</SelectItem>
+                        <SelectItem value="luxury">💎 Luxury & Premium</SelectItem>
+                        <SelectItem value="playful">🎉 Playful & Fun</SelectItem>
+                        <SelectItem value="minimalist">✨ Minimalist & Clean</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {brandTone === 'custom' && (
+                      <Input
+                        value={customBrandTone}
+                        onChange={(e) => setCustomBrandTone(e.target.value)}
+                        placeholder="Enter custom brand tone..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Input placeholder="Brand color (hex code, optional)" className="h-8 text-xs" />
+              </div>
+            </div>
+
+                {/* Product Essence */}
+                <div className="p-3 bg-pink-50/50 dark:bg-pink-950/10 rounded-lg border border-pink-200 dark:border-pink-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Package className="h-3 w-3 text-pink-600" />
+                    Product Essence
+                  </label>
+                  <div className="space-y-2">
+                    <Textarea placeholder="Hero benefit - what makes this product special?" rows={2} className="resize-none text-xs" />
+                    <Select value={visualFocus} onValueChange={setVisualFocus}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Visual focus..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="product">🔍 Product Close-up</SelectItem>
+                        <SelectItem value="lifestyle">🏠 Lifestyle Context</SelectItem>
+                        <SelectItem value="comparison">⚖️ Before/After</SelectItem>
+                        <SelectItem value="process">⚙️ Usage Process</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {visualFocus === 'custom' && (
+                      <Input
+                        value={customVisualFocus}
+                        onChange={(e) => setCustomVisualFocus(e.target.value)}
+                        placeholder="Enter custom visual focus..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Environment..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="home">Home Setting</SelectItem>
+                        <SelectItem value="office">Office/Work</SelectItem>
+                        <SelectItem value="outdoor">Outdoor</SelectItem>
+                        <SelectItem value="studio">Studio/Neutral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Creative Angle */}
+                <div className="p-3 bg-blue-50/50 dark:bg-blue-950/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Lightbulb className="h-3 w-3 text-blue-600" />
+                    Creative Angle
+                  </label>
+                  <div className="space-y-2">
+                    <Select value={coreAngle} onValueChange={setCoreAngle}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Core angle..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="problem-solution">🔧 Problem & Solution</SelectItem>
+                        <SelectItem value="transformation">🦋 Transformation Story</SelectItem>
+                        <SelectItem value="social-proof">👥 Social Proof</SelectItem>
+                        <SelectItem value="urgency">⏰ Urgency & Scarcity</SelectItem>
+                        <SelectItem value="emotional">💝 Emotional Connection</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {coreAngle === 'custom' && (
+                      <Input
+                        value={customCoreAngle}
+                        onChange={(e) => setCustomCoreAngle(e.target.value)}
+                        placeholder="Enter custom creative angle..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Input placeholder="Pattern interrupt - unexpected element" className="h-8 text-xs" />
+                    <Textarea placeholder="Hook framework - opening line" rows={2} className="resize-none text-xs" />
+                  </div>
+                </div>
+
+                {/* Camera DNA */}
+                <div className="p-3 bg-green-50/50 dark:bg-green-950/10 rounded-lg border border-green-200 dark:border-green-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Camera className="h-3 w-3 text-green-600" />
+                    Camera DNA
+                  </label>
+                  <div className="space-y-2">
+                    <Select value={cameraRhythm} onValueChange={setCameraRhythm}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Rhythm..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fast">⚡ Fast & Dynamic</SelectItem>
+                        <SelectItem value="medium">🎯 Medium Pace</SelectItem>
+                        <SelectItem value="slow">🎬 Slow & Cinematic</SelectItem>
+                        <SelectItem value="varied">🎭 Varied Rhythm</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {cameraRhythm === 'custom' && (
+                      <Input
+                        value={customCameraRhythm}
+                        onChange={(e) => setCustomCameraRhythm(e.target.value)}
+                        placeholder="Enter custom camera rhythm..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Movement..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="static">📷 Static Shots</SelectItem>
+                        <SelectItem value="pan">📹 Pan & Tilt</SelectItem>
+                        <SelectItem value="zoom">🔍 Zoom In/Out</SelectItem>
+                        <SelectItem value="tracking">🎥 Tracking Movement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Cut frequency..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="slow">Slow Cuts (2-3s)</SelectItem>
+                        <SelectItem value="medium">Medium Cuts (1-2s)</SelectItem>
+                        <SelectItem value="fast">Fast Cuts (&lt;1s)</SelectItem>
+                        <SelectItem value="mixed">Mixed Pacing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Ending..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fade">Fade Out</SelectItem>
+                        <SelectItem value="cut">Hard Cut</SelectItem>
+                        <SelectItem value="zoom">Zoom to Logo</SelectItem>
+                        <SelectItem value="hold">Hold Final Frame</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Audio DNA */}
+                <div className="p-3 bg-orange-50/50 dark:bg-orange-950/10 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
+                    <Music className="h-3 w-3 text-orange-600" />
+                    Audio DNA
+                  </label>
+                  <div className="space-y-2">
+                    <Select value={musicMood} onValueChange={setMusicMood}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Music mood..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="upbeat">🎉 Upbeat & Energetic</SelectItem>
+                        <SelectItem value="calm">🧘 Calm & Relaxing</SelectItem>
+                        <SelectItem value="dramatic">🎭 Dramatic & Intense</SelectItem>
+                        <SelectItem value="playful">🎪 Playful & Fun</SelectItem>
+                        <SelectItem value="corporate">🏢 Corporate & Professional</SelectItem>
+                        <SelectItem value="custom">✏️ Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {musicMood === 'custom' && (
+                      <Input
+                        value={customMusicMood}
+                        onChange={(e) => setCustomMusicMood(e.target.value)}
+                        placeholder="Enter custom music mood..."
+                        className="h-8 text-xs"
+                      />
+                    )}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-muted-foreground">Sound Effects</label>
+                      <div className="flex flex-wrap gap-1">
+                        {['Click', 'Whoosh', 'Pop', 'Chime', 'Applause', 'Custom'].map((effect) => (
+                          <Button key={effect} variant="outline" size="sm" className="h-6 text-[10px] px-2">
+                            {effect}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <Select>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Sound mode..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="voice-over">Voice Over Music</SelectItem>
+                        <SelectItem value="music-only">Music Only</SelectItem>
+                        <SelectItem value="ambient">Ambient Sounds</SelectItem>
+                        <SelectItem value="mixed">Mixed Audio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
         </Tabs>
       </div>

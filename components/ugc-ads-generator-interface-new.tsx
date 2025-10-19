@@ -144,6 +144,8 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
   const [characterFile, setCharacterFile] = useState<File | null>(null)
   const [characterPreview, setCharacterPreview] = useState<string | null>(null)
   const [characterDescription, setCharacterDescription] = useState<string>('')
+  const [characterCount, setCharacterCount] = useState<number>(1)
+  const [characterDescriptions, setCharacterDescriptions] = useState<string[]>([''])
   
   // Voice/Script (text-only)
   const [script, setScript] = useState<string>('')
@@ -531,13 +533,16 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         })
         return false
       }
-      if (characterSource === 'describe' && !characterDescription.trim()) {
-        toast({
-          title: "Character Description Required",
-          description: "Please describe the character you want.",
-          variant: "destructive"
-        })
-        return false
+      if (characterSource === 'describe') {
+        const hasValidDescriptions = characterDescriptions.some(desc => desc.trim())
+        if (!hasValidDescriptions) {
+          toast({
+            title: "Character Description Required",
+            description: "Please describe at least one character.",
+            variant: "destructive"
+          })
+          return false
+        }
       }
     }
     
@@ -588,7 +593,7 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
         } else if (characterSource === 'upload' && characterFile) {
           formData.append('character_image', characterFile)
         } else if (characterSource === 'describe') {
-          formData.append('character_description', characterDescription)
+          formData.append('character_descriptions', JSON.stringify(characterDescriptions))
         }
       } else if (characterPresence === 'partial') {
         formData.append('partial_type', partialType)
@@ -789,33 +794,6 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
               </div>
 
-              {/* AI Suggestions */}
-              {showSuggestions && aiSuggestions && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-2">
-                      <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-blue-900">💡 AI Suggestions Based on Your Product</h4>
-                        <ul className="text-sm text-blue-700 mt-2 space-y-1">
-                          <li>• Voice Style: {aiSuggestions.voiceStyle}</li>
-                          <li>• Environment: {aiSuggestions.environment}</li>
-                          <li>• Camera Movement: {aiSuggestions.cameraMovement}</li>
-                          <li>• Music Mood: {aiSuggestions.musicMood}</li>
-                          <li>• Duration: {aiSuggestions.duration} seconds</li>
-                        </ul>
-                      </div>
-                    </div>
-                    <Button size="sm" onClick={() => setShowSuggestions(false)} variant="ghost">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={applySuggestions}>Apply All</Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowSuggestions(false)}>Customize</Button>
-                  </div>
-                </div>
-              )}
 
               {/* Product Image Section */}
               <div className="space-y-3">
@@ -866,6 +844,43 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                         )}
                       </SelectContent>
                     </Select>
+                    
+                    {/* Preview for selected product from library */}
+                    {images[0].productId && (() => {
+                      const product = availableProducts.find(p => p.id === images[0].productId)
+                      const productImageUrl = product?.image_url || product?.imageUrl
+                      return product ? (
+                        <div className="p-3 bg-muted/30 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            {productImageUrl ? (
+                              <img 
+                                src={productImageUrl} 
+                                alt={product.title || product.name}
+                                className="w-12 h-12 object-cover rounded-lg border border-border"
+                                onError={(e) => {
+                                  console.error('Product image failed to load:', productImageUrl)
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                                <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <p className="font-semibold text-primary text-sm">
+                                {product.title || product.name || 'Untitled Product'}
+                              </p>
+                              {product.description && (
+                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                  {product.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null
+                    })()}
                   </div>
                 )}
 
@@ -923,20 +938,22 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 </div>
 
                 {/* Optional Description */}
-                <Input
+                <Textarea
                   placeholder="Describe the product or how to use this image (optional)..."
                   value={images[0].description || ''}
                   onChange={(e) => updateImageSlot(0, { description: e.target.value })}
-                  className="text-sm"
+                  rows={3}
+                  className="text-sm resize-none"
                 />
               </div>
 
-              {/* Character Presence Section */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4 text-purple-600" />
-                  Character Presence (Optional)
-                </label>
+              {/* Character Presence Section - Only show if image doesn't contain both */}
+              {!images[0].containsBoth && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4 text-purple-600" />
+                    Character Presence (Optional)
+                  </label>
                 
                 <div className="flex gap-2">
                   <Button
@@ -962,100 +979,69 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                   </Button>
                 </div>
 
-                {/* Show Character Options */}
+                {/* Show Character Options - Single mode only allows description */}
                 {characterPresence === 'show' && (
                   <div className="space-y-3 pl-4 border-l-2 border-purple-200">
-                    <div className="flex gap-2">
-                      <Button
-                        variant={characterSource === 'library' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setCharacterSource('library')}
-                      >
-                        From Avatar Library
-                      </Button>
-                      <Button
-                        variant={characterSource === 'upload' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setCharacterSource('upload')}
-                      >
-                        Upload Image
-                      </Button>
-                      <Button
-                        variant={characterSource === 'describe' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setCharacterSource('describe')}
-                      >
-                        Describe Character
-                      </Button>
-                    </div>
-
-                    {characterSource === 'library' && (
-                      <Select
-                        value={selectedAvatarId}
-                        onValueChange={setSelectedAvatarId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an avatar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {loadingAvatars ? (
-                            <SelectItem value="loading" disabled>Loading avatars...</SelectItem>
-                          ) : availableAvatars.length === 0 ? (
-                            <SelectItem value="none" disabled>No avatars available</SelectItem>
-                          ) : (
-                            availableAvatars.map((avatar) => (
-                              <SelectItem key={avatar.id} value={avatar.id}>
-                                {avatar.title || avatar.name || 'Untitled Avatar'}
-                                {avatar.role && ` - ${avatar.role}`}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
-
-                    {characterSource === 'upload' && (
-                      <div className="space-y-2">
-                        <input
-                          ref={characterImageInputRef}
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleCharacterImageUpload(file)
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => characterImageInputRef.current?.click()}
-                          className="w-full"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Choose Character Image
-                        </Button>
-                        {characterPreview && (
-                          <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
-                            <img
-                              src={characterPreview}
-                              alt="Character preview"
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                        )}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium">Number of Characters</label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (characterCount > 1) {
+                                setCharacterCount(characterCount - 1)
+                                setCharacterDescriptions(prev => prev.slice(0, -1))
+                              }
+                            }}
+                            disabled={characterCount <= 1}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <span className="text-sm font-medium w-8 text-center">{characterCount}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (characterCount < 5) {
+                                setCharacterCount(characterCount + 1)
+                                setCharacterDescriptions(prev => [...prev, ''])
+                              }
+                            }}
+                            disabled={characterCount >= 5}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                    )}
-
-                    {characterSource === 'describe' && (
-                      <Textarea
-                        placeholder="Describe the character you want (appearance, style, mood, etc.)..."
-                        value={characterDescription}
-                        onChange={(e) => setCharacterDescription(e.target.value)}
-                        rows={3}
-                      />
-                    )}
+                      
+                      <p className="text-xs text-muted-foreground">
+                        Describe each character separately. Maximum 5 characters. In single mode, you can only describe characters. Use multi-mode to upload or select from library.
+                      </p>
+                      
+                      {/* Character description fields */}
+                      {characterDescriptions.map((desc, index) => (
+                        <div key={index} className="space-y-1">
+                          <label className="text-xs font-medium text-gray-700">
+                            Character {index + 1}
+                          </label>
+                          <Textarea
+                            placeholder={`Describe character ${index + 1} (appearance, style, mood, etc.)...`}
+                            value={desc}
+                            onChange={(e) => {
+                              const newDescriptions = [...characterDescriptions]
+                              newDescriptions[index] = e.target.value
+                              setCharacterDescriptions(newDescriptions)
+                            }}
+                            rows={3}
+                            className="resize-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -1108,7 +1094,8 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                     )}
                   </div>
                 )}
-              </div>
+                </div>
+              )}
 
               {/* Script Section */}
               <div className="space-y-3">
@@ -1667,10 +1654,8 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
           {/* Previous Generations */}
           <div className="mt-6">
             <PreviousGenerations
-              generationType="ugc-ads"
-              onSelectGeneration={(generation) => {
-                console.log('Selected generation:', generation)
-              }}
+              contentType="ugc_ads"
+              userId={user?.id || ''}
             />
           </div>
         </div>

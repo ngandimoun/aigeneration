@@ -66,6 +66,34 @@ const createUgcAdSchema = z.object({
   custom_core_angle: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   custom_camera_rhythm: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   custom_music_mood: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // New fields
+  aspect_ratio: z.enum(['9:16', '16:9', '1:1']).default('16:9'),
+  duration: z.number().int().min(15).max(120).default(30),
+  mode: z.enum(['single', 'dual', 'multi']).optional(),
+  template: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Single mode fields
+  contains_both: z.boolean().optional().default(false),
+  image_description: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // Character fields
+  character_presence: z.enum(['voiceover', 'show', 'partial']).optional(),
+  character_source: z.enum(['library', 'upload', 'describe']).optional(),
+  selected_avatar_id: z.string().uuid().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  partial_type: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  
+  // JSON fields (will be parsed from strings)
+  character_descriptions: z.array(z.any()).optional(),
+  partial_character: z.object({}).passthrough().optional(),
+  dialog_lines: z.array(z.any()).optional(),
+  
+  // Dual mode fields
+  two_image_mode: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  scene_scripts: z.array(z.any()).optional(),
+  
+  // Multi mode fields
+  scene_description: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
 })
 
 // GET /api/ugc-ads - Get user's UGC ads
@@ -183,6 +211,40 @@ export async function POST(request: NextRequest) {
     const custom_camera_rhythm = formData.get('custom_camera_rhythm')?.toString()
     const custom_music_mood = formData.get('custom_music_mood')?.toString()
 
+    // Extract new fields
+    const aspectRatio = formData.get('aspectRatio')?.toString() || '16:9'
+    const duration = parseInt(formData.get('duration')?.toString() || '30')
+    const mode = formData.get('mode')?.toString()
+    const template = formData.get('template')?.toString()
+
+    // Single mode fields
+    const containsBoth = formData.get('containsBoth')?.toString() === 'true'
+    const imageDescription = formData.get('imageDescription')?.toString()
+
+    // Character fields
+    const characterPresence = formData.get('characterPresence')?.toString()
+    const characterSource = formData.get('characterSource')?.toString()
+    const selectedAvatarId = formData.get('selectedAvatarId')?.toString()
+    const partialType = formData.get('partialType')?.toString()
+
+    // JSON fields - parse from strings
+    const characterDescriptionsString = formData.get('characterDescriptions')?.toString()
+    const characterDescriptions = characterDescriptionsString ? JSON.parse(characterDescriptionsString) : undefined
+
+    const partialCharacterString = formData.get('partialCharacter')?.toString()
+    const partialCharacter = partialCharacterString ? JSON.parse(partialCharacterString) : undefined
+
+    const dialogLinesString = formData.get('dialogLines')?.toString()
+    const dialogLines = dialogLinesString ? JSON.parse(dialogLinesString) : undefined
+
+    // Dual mode fields
+    const twoImageMode = formData.get('twoImageMode')?.toString()
+    const sceneScriptsString = formData.get('sceneScripts')?.toString()
+    const sceneScripts = sceneScriptsString ? JSON.parse(sceneScriptsString) : undefined
+
+    // Multi mode fields
+    const sceneDescription = formData.get('sceneDescription')?.toString()
+
     // Validate the data
     const validatedData = createUgcAdSchema.parse({
       brand_name, brand_prompt, brand_tone, brand_color_code,
@@ -195,7 +257,23 @@ export async function POST(request: NextRequest) {
       use_custom_product, selected_product_id, generated_json,
       custom_voice_style, custom_tone_of_delivery, custom_language,
       custom_brand_tone, custom_visual_focus, custom_core_angle,
-      custom_camera_rhythm, custom_music_mood
+      custom_camera_rhythm, custom_music_mood,
+      aspect_ratio: aspectRatio,
+      duration,
+      mode,
+      template,
+      contains_both: containsBoth,
+      image_description: imageDescription,
+      character_presence: characterPresence,
+      character_source: characterSource,
+      selected_avatar_id: selectedAvatarId,
+      partial_type: partialType,
+      character_descriptions: characterDescriptions,
+      partial_character: partialCharacter,
+      dialog_lines: dialogLines,
+      two_image_mode: twoImageMode,
+      scene_scripts: sceneScripts,
+      scene_description: sceneDescription,
     })
 
     // Handle file uploads
@@ -298,6 +376,32 @@ export async function POST(request: NextRequest) {
         generated_video_url: generatedVideoUrl,
         storage_path: generatedStoragePath,
         generated_json: validatedData.generated_json,
+        
+        // New fields
+        aspect_ratio: validatedData.aspect_ratio,
+        duration: validatedData.duration,
+        mode: validatedData.mode,
+        template: validatedData.template,
+        
+        // Single mode fields
+        contains_both: validatedData.contains_both,
+        image_description: validatedData.image_description,
+        
+        // Character fields
+        character_presence: validatedData.character_presence,
+        character_source: validatedData.character_source,
+        selected_avatar_id: validatedData.selected_avatar_id,
+        partial_type: validatedData.partial_type,
+        character_descriptions: validatedData.character_descriptions,
+        partial_character: validatedData.partial_character,
+        dialog_lines: validatedData.dialog_lines,
+        
+        // Dual mode fields
+        two_image_mode: validatedData.two_image_mode,
+        scene_scripts: validatedData.scene_scripts,
+        
+        // Multi mode fields
+        scene_description: validatedData.scene_description,
         
         // Metadata
         metadata: {
