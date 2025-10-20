@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
+import { buildUgcAdsEnhancedPrompt } from '@/lib/utils/ugc-ads-prompt-builder'
+import { generateVeo } from '@/lib/kie'
 
 // Cache for 30 seconds
 export const revalidate = 30
@@ -69,7 +71,7 @@ const createUgcAdSchema = z.object({
   
   // New fields
   aspect_ratio: z.enum(['9:16', '16:9', '1:1']).default('16:9'),
-  duration: z.number().int().min(15).max(120).default(30),
+  duration: z.number().int().min(5).max(120).default(30),
   mode: z.enum(['single', 'dual', 'multi']).optional(),
   template: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   
@@ -160,10 +162,17 @@ export async function POST(request: NextRequest) {
 
     // Parse FormData for file uploads
     const formData = await request.formData()
+    const { searchParams } = new URL(request.url)
+    const isDebug = searchParams.get('debug') === '1'
+    const echo = searchParams.get('echo') === '1'
 
-    // Extract all form fields
-    const brand_name = formData.get('brand_name')?.toString() || ''
-    const brand_prompt = formData.get('brand_prompt')?.toString() || ''
+    // Extract all form fields (accept both new UI names and legacy names)
+    const rawConfig = formData.get('config')?.toString()
+    const parsedConfig = rawConfig ? JSON.parse(rawConfig) : undefined
+
+    // Brand
+    let brand_name = formData.get('brand_name')?.toString() || ''
+    let brand_prompt = formData.get('brand_prompt')?.toString() || ''
     const brand_tone = formData.get('brand_tone')?.toString()
     const brand_color_code = formData.get('brand_color_code')?.toString()
     
@@ -181,10 +190,11 @@ export async function POST(request: NextRequest) {
     const story_pattern_interrupt_type = formData.get('story_pattern_interrupt_type')?.toString()
     const story_hook_framework = formData.get('story_hook_framework')?.toString()
     
-    const dialogue_voice_type = formData.get('dialogue_voice_type')?.toString()
-    const dialogue_script = formData.get('dialogue_script')?.toString()
-    const dialogue_tone_of_voice = formData.get('dialogue_tone_of_voice')?.toString()
-    const dialogue_language = formData.get('dialogue_language')?.toString() || 'en'
+    // Dialogue - accept alt keys from new UI
+    const dialogue_voice_type = (formData.get('dialogue_voice_type') || formData.get('voice_style'))?.toString()
+    const dialogue_script = (formData.get('dialogue_script') || formData.get('script'))?.toString()
+    const dialogue_tone_of_voice = (formData.get('dialogue_tone_of_voice') || formData.get('tone_of_delivery'))?.toString()
+    const dialogue_language = (formData.get('dialogue_language') || formData.get('language'))?.toString() || 'en'
     const dialogue_voice_asset_source = formData.get('dialogue_voice_asset_source')?.toString()
     
     const camera_rhythm = formData.get('camera_rhythm')?.toString()
@@ -198,7 +208,7 @@ export async function POST(request: NextRequest) {
     const audio_key_sounds = audio_key_soundsString ? JSON.parse(audio_key_soundsString) : []
     
     const use_custom_product = formData.get('use_custom_product')?.toString() === 'true'
-    const selected_product_id = formData.get('selected_product_id')?.toString()
+    const selected_product_id = (formData.get('selected_product_id') || formData.get('product_id'))?.toString()
     const generated_json = formData.get('generated_json')?.toString()
     
     // Extract custom field values
@@ -218,23 +228,23 @@ export async function POST(request: NextRequest) {
     const template = formData.get('template')?.toString()
 
     // Single mode fields
-    const containsBoth = formData.get('containsBoth')?.toString() === 'true'
-    const imageDescription = formData.get('imageDescription')?.toString()
+    const containsBoth = (formData.get('contains_both') || formData.get('containsBoth'))?.toString() === 'true'
+    const imageDescription = (formData.get('image_description') || formData.get('imageDescription'))?.toString()
 
     // Character fields
-    const characterPresence = formData.get('characterPresence')?.toString()
-    const characterSource = formData.get('characterSource')?.toString()
-    const selectedAvatarId = formData.get('selectedAvatarId')?.toString()
-    const partialType = formData.get('partialType')?.toString()
+    const characterPresence = (formData.get('character_presence') || formData.get('characterPresence'))?.toString()
+    const characterSource = (formData.get('character_source') || formData.get('characterSource'))?.toString()
+    const selectedAvatarId = (formData.get('selected_avatar_id') || formData.get('avatar_id') || formData.get('selectedAvatarId'))?.toString()
+    const partialType = (formData.get('partial_type') || formData.get('partialType'))?.toString()
 
     // JSON fields - parse from strings
-    const characterDescriptionsString = formData.get('characterDescriptions')?.toString()
+    const characterDescriptionsString = (formData.get('character_descriptions') || formData.get('characterDescriptions'))?.toString()
     const characterDescriptions = characterDescriptionsString ? JSON.parse(characterDescriptionsString) : undefined
 
-    const partialCharacterString = formData.get('partialCharacter')?.toString()
+    const partialCharacterString = (formData.get('partial_character') || formData.get('partialCharacter'))?.toString()
     const partialCharacter = partialCharacterString ? JSON.parse(partialCharacterString) : undefined
 
-    const dialogLinesString = formData.get('dialogLines')?.toString()
+    const dialogLinesString = (formData.get('dialog_lines') || formData.get('dialogLines'))?.toString()
     const dialogLines = dialogLinesString ? JSON.parse(dialogLinesString) : undefined
 
     // Dual mode fields
@@ -245,8 +255,15 @@ export async function POST(request: NextRequest) {
     // Multi mode fields
     const sceneDescription = formData.get('sceneDescription')?.toString()
 
-    // Validate the data
-    const validatedData = createUgcAdSchema.parse({
+    // Backfill brand fields from config or dialogue if missing (to satisfy schema)
+    if (!brand_name) brand_name = parsedConfig?.brandDNA?.name || 'UGC Ad'
+    if (!brand_prompt) brand_prompt = dialogue_script || parsedConfig?.productEssence?.heroBenefit || 'UGC ad generation'
+
+    // Validate the data (we may still return success in debug mode)
+    let validatedData: z.infer<typeof createUgcAdSchema> | null = null
+    let validationErrors: any = null
+    try {
+      validatedData = createUgcAdSchema.parse({
       brand_name, brand_prompt, brand_tone, brand_color_code,
       product_name, product_hero_benefit, product_visual_focus, product_environment,
       product_materials, product_transformation_type,
@@ -274,11 +291,122 @@ export async function POST(request: NextRequest) {
       two_image_mode: twoImageMode,
       scene_scripts: sceneScripts,
       scene_description: sceneDescription,
+      })
+    } catch (e) {
+      validationErrors = (e as z.ZodError).errors
+    }
+
+    // In debug mode, skip uploads and DB writes; still resolve assets and build prompt
+    // Resolve assets from prioritized APIs
+    let resolvedProduct: { title?: string; description?: string | null; imageUrl?: string | null } | undefined
+    let resolvedAvatar: { name?: string | null; ethnicity?: string | null; gender?: string | null } | undefined
+    if (selected_product_id) {
+      const { data: prod } = await supabase
+        .from('product_mockups')
+        .select('id,title,description,image_url,imageUrl')
+        .eq('id', selected_product_id)
+        .maybeSingle()
+      if (prod) {
+        resolvedProduct = {
+          title: (prod as any).title,
+          description: (prod as any).description,
+          imageUrl: (prod as any).image_url || (prod as any).imageUrl || null
+        }
+      }
+    }
+    if (selectedAvatarId) {
+      const { data: av } = await supabase
+        .from('avatars_personas')
+        .select('id,name,ethnicity,gender')
+        .eq('id', selectedAvatarId)
+        .maybeSingle()
+      if (av) {
+        resolvedAvatar = {
+          name: (av as any).name,
+          ethnicity: (av as any).ethnicity,
+          gender: (av as any).gender
+        }
+      }
+    }
+
+    // Build multi/dual images context from form data (debug path does not upload)
+    const maxImages = mode === 'multi' ? 3 : 2
+    const imagesDebug: Array<{ index: number; source?: string | null; purpose?: string | null; containsBoth?: boolean; description?: string | null }> = []
+    for (let i = 1; i <= maxImages; i++) {
+      const source = formData.get(`image${i}Source`)?.toString() || undefined
+      const purpose = formData.get(`image${i}Purpose`)?.toString() || undefined
+      const containsBothImage = (formData.get(`image${i}ContainsBoth`)?.toString() || '').toLowerCase() === 'true'
+      const descriptionImage = formData.get(`image${i}Description`)?.toString() || undefined
+      if (source || descriptionImage || purpose) {
+        imagesDebug.push({ index: i, source: source || null, purpose: purpose || null, containsBoth: containsBothImage, description: descriptionImage || null })
+      }
+    }
+
+    // Build enhanced prompt (server-side)
+    const enhancedPrompt = buildUgcAdsEnhancedPrompt({
+      config: parsedConfig,
+      dialogue: {
+        script: dialogue_script || undefined,
+        voiceStyle: dialogue_voice_type || undefined,
+        toneOfDelivery: dialogue_tone_of_voice || undefined,
+        language: dialogue_language || undefined,
+      },
+      aspectRatio: aspectRatio as any,
+      duration,
+      assets: {
+        product: resolvedProduct,
+        avatar: resolvedAvatar,
+      },
+      containsBoth,
+      imageDescription,
+      twoImageMode: twoImageMode as any,
+      sceneDescription: sceneDescription || undefined,
+      images: imagesDebug.map(img => ({
+        source: (img.source as any) || undefined,
+        purpose: img.purpose || undefined,
+        containsBoth: img.containsBoth,
+        description: img.description || undefined,
+      })),
+      sceneScripts: sceneScripts as any,
     })
 
-    // Handle file uploads
+    if (isDebug) {
+      return NextResponse.json({
+        debug: true,
+        enhancedPrompt,
+        normalized:
+          validatedData ?? null,
+        inputs: {
+          aspectRatio,
+          duration,
+          mode,
+          template,
+          containsBoth,
+          imageDescription,
+          characterPresence,
+          characterSource,
+          selectedAvatarId,
+          selected_product_id,
+        },
+        assets: { resolvedProduct, resolvedAvatar },
+        dual: {
+          twoImageMode,
+          sceneScripts,
+          images: imagesDebug.slice(0, 2),
+        },
+        multi: {
+          sceneDescription,
+          images: imagesDebug,
+        },
+        validationErrors,
+      }, { status: 200 })
+    }
+
+    // Handle file uploads (non-debug only)
     let brand_logo_path: string | null = null
     let custom_product_image_path: string | null = null
+    let product_image_path: string | null = null
+    let character_image_path: string | null = null
 
     // Upload brand logo if provided
     const brandLogoFile = formData.get('brand_logo') as File | null
@@ -316,12 +444,153 @@ export async function POST(request: NextRequest) {
       custom_product_image_path = filePath
     }
 
-    // Simulate generated video
-    const generatedVideoFileName = `${uuidv4()}-ugc-ad.mp4`
-    const generatedStoragePath = `renders/ugc-ads/${user.id}/generated/${generatedVideoFileName}`
-    const generatedVideoUrl = `https://example.com/generated_ugc_ad/${generatedVideoFileName}` // Placeholder URL
+    // Upload product image (new UI direct upload)
+    const productImageFile = formData.get('product_image') as File | null
+    if (productImageFile) {
+      const filePath = `renders/ugc-ads/${user.id}/products/${uuidv4()}-${productImageFile.name}`
+      const { error: uploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(filePath, productImageFile, { cacheControl: '3600', upsert: false })
+      if (uploadError) {
+        console.error('Error uploading product image:', uploadError)
+        return NextResponse.json({ error: `Failed to upload product image: ${uploadError.message}` }, { status: 500 })
+      }
+      product_image_path = filePath
+    }
 
-    // Create UGC ad
+    // Upload character image (new UI direct upload)
+    const characterImageFile = formData.get('character_image') as File | null
+    if (characterImageFile) {
+      const filePath = `renders/ugc-ads/${user.id}/characters/${uuidv4()}-${characterImageFile.name}`
+      const { error: uploadError } = await supabase.storage
+        .from('dreamcut')
+        .upload(filePath, characterImageFile, { cacheControl: '3600', upsert: false })
+      if (uploadError) {
+        console.error('Error uploading character image:', uploadError)
+        return NextResponse.json({ error: `Failed to upload character image: ${uploadError.message}` }, { status: 500 })
+      }
+      character_image_path = filePath
+    }
+
+    // validatedData is required for non-debug insert
+    if (!validatedData) {
+      return NextResponse.json({ error: 'Invalid request data', details: validationErrors }, { status: 400 })
+    }
+
+    // Handle dual/multi image uploads and metadata (if any)
+    const collectedImages: Array<{ index: number; source?: string; purpose?: string; containsBoth?: boolean; description?: string; storage_path?: string }> = []
+    const maxUploadImages = mode === 'multi' ? 3 : 2
+    for (let i = 1; i <= maxUploadImages; i++) {
+      const file = formData.get(`image${i}`) as File | null
+      const source = formData.get(`image${i}Source`)?.toString() || undefined
+      const purpose = formData.get(`image${i}Purpose`)?.toString() || undefined
+      const containsBothImage = (formData.get(`image${i}ContainsBoth`)?.toString() || '').toLowerCase() === 'true'
+      const descriptionImage = formData.get(`image${i}Description`)?.toString() || undefined
+
+      let storage_path: string | undefined
+      if (file) {
+        const path = `renders/ugc-ads/${user.id}/dual/${uuidv4()}-${file.name}`
+        const { error: uploadError } = await supabase.storage
+          .from('dreamcut')
+          .upload(path, file, { cacheControl: '3600', upsert: false })
+        if (uploadError) {
+          console.error(`Error uploading dual image ${i}:`, uploadError)
+          return NextResponse.json({ error: `Failed to upload image ${i}: ${uploadError.message}` }, { status: 500 })
+        }
+        storage_path = path
+      }
+
+      if (source || descriptionImage || storage_path || purpose) {
+        collectedImages.push({ index: i, source, purpose, containsBoth: containsBothImage, description: descriptionImage, storage_path })
+      }
+    }
+
+    // Build imageUrls for KIE (must be publicly accessible)
+    const imageUrls: string[] = []
+    if (mode === 'single') {
+      if (product_image_path) {
+        const { data: signed } = await supabase.storage
+          .from('dreamcut')
+          .createSignedUrl(product_image_path, 3600)
+        if (signed?.signedUrl) imageUrls.push(signed.signedUrl)
+      }
+    } else if (mode === 'dual') {
+      // Use first two uploaded dual images, in order
+      const dualImages = collectedImages
+        .sort((a, b) => a.index - b.index)
+        .slice(0, 2)
+      for (const img of dualImages) {
+        if (img.storage_path) {
+          const { data: signed } = await supabase.storage
+            .from('dreamcut')
+            .createSignedUrl(img.storage_path, 3600)
+          if (signed?.signedUrl) imageUrls.push(signed.signedUrl)
+        }
+      }
+    } else if (mode === 'multi') {
+      const multiImages = collectedImages
+        .sort((a, b) => a.index - b.index)
+        .slice(0, 3)
+      for (const img of multiImages) {
+        if (img.storage_path) {
+          const { data: signed } = await supabase.storage
+            .from('dreamcut')
+            .createSignedUrl(img.storage_path, 3600)
+          if (signed?.signedUrl) imageUrls.push(signed.signedUrl)
+        }
+      }
+    }
+
+    // Determine generationType and base model
+    let generationType: 'TEXT_2_VIDEO' | 'FIRST_AND_LAST_FRAMES_2_VIDEO' | 'REFERENCE_2_VIDEO' | undefined
+    if (mode === 'single') {
+      generationType = imageUrls.length >= 1 ? 'FIRST_AND_LAST_FRAMES_2_VIDEO' : 'TEXT_2_VIDEO'
+    } else if (mode === 'dual') {
+      generationType = 'FIRST_AND_LAST_FRAMES_2_VIDEO'
+    } else if (mode === 'multi') {
+      generationType = 'REFERENCE_2_VIDEO'
+    }
+
+    // Prepare payload
+    const kiePayloadPrimary = {
+      prompt: enhancedPrompt,
+      imageUrls: imageUrls.length ? imageUrls : undefined,
+      model: generationType === 'REFERENCE_2_VIDEO' ? 'veo3_fast' as const : 'veo3' as const,
+      generationType,
+      aspectRatio: '16:9' as const,
+      enableTranslation: true,
+    }
+
+    // Primary attempt with veo3 (quality)
+    let kieTaskId: string | null = null
+    try {
+      const genRes = await generateVeo(kiePayloadPrimary)
+      if (genRes.code === 200 && genRes.data?.taskId) {
+        kieTaskId = genRes.data.taskId
+      } else {
+        console.error('[UGC] KIE generate returned non-200', genRes)
+        if (echo) {
+          return NextResponse.json({ error: genRes.msg || 'KIE non-200', enhancedPrompt, kiePayload: kiePayloadPrimary, provider: genRes }, { status: 200 })
+        }
+        throw new Error(genRes.msg || 'KIE generate returned non-200 code')
+      }
+    } catch (e) {
+      console.error('[UGC] KIE primary attempt failed, falling back to veo3_fast', (e as Error).message)
+      // Fallback to veo3_fast when allowed
+      const kiePayloadFallback = { ...kiePayloadPrimary, model: 'veo3_fast' as const }
+      const genRes = await generateVeo(kiePayloadFallback)
+      if (genRes.code === 200 && genRes.data?.taskId) {
+        kieTaskId = genRes.data.taskId
+      } else {
+        console.error('[UGC] KIE fallback also failed', genRes)
+        if (echo) {
+          return NextResponse.json({ error: genRes.msg || 'Failed to create KIE task', enhancedPrompt, kiePayload: kiePayloadFallback, provider: genRes }, { status: 200 })
+        }
+        return NextResponse.json({ error: genRes.msg || 'Failed to create KIE task' }, { status: 502 })
+      }
+    }
+
+    // Create UGC ad (pending state)
     const { data: ugcAd, error } = await supabase
       .from('ugc_ads')
       .insert({
@@ -370,11 +639,14 @@ export async function POST(request: NextRequest) {
         use_custom_product: validatedData.use_custom_product,
         selected_product_id: validatedData.selected_product_id,
         custom_product_image_path,
+        product_image_path,
+        character_image_path,
         
         // Generation State
-        status: 'completed', // Assuming immediate completion for now
-        generated_video_url: generatedVideoUrl,
-        storage_path: generatedStoragePath,
+        status: 'pending',
+        generated_video_url: null,
+        storage_path: null,
+        kie_task_id: kieTaskId,
         generated_json: validatedData.generated_json,
         
         // New fields
@@ -405,14 +677,20 @@ export async function POST(request: NextRequest) {
         
         // Metadata
         metadata: {
-          generation_completed: true,
+          generation_completed: false,
           file_uploads: {
             brand_logo: brand_logo_path ? true : false,
             custom_product: custom_product_image_path ? true : false
-          }
+          },
+          kie: {
+            model_attempt: generationType === 'REFERENCE_2_VIDEO' ? 'veo3_fast' : 'veo3',
+            generationType,
+            imageUrlsCount: imageUrls.length,
+          },
+          requested_duration: duration,
         },
         content: {
-          original_config: {
+          original_config: parsedConfig || {
             brand_name: validatedData.brand_name,
             brand_prompt: validatedData.brand_prompt,
             product_name: validatedData.product_name,
@@ -427,6 +705,16 @@ export async function POST(request: NextRequest) {
             core_angle: validatedData.custom_core_angle,
             camera_rhythm: validatedData.custom_camera_rhythm,
             music_mood: validatedData.custom_music_mood
+          },
+          prompt: {
+            enhanced: enhancedPrompt
+          },
+          twoImageMode: validatedData.two_image_mode,
+          sceneScripts: validatedData.scene_scripts,
+          sceneDescription: validatedData.scene_description,
+          images: collectedImages,
+          kie: {
+            taskId: kieTaskId,
           }
         }
       })
@@ -455,7 +743,11 @@ export async function POST(request: NextRequest) {
       // Decide if this should be a hard fail or just log the error
     }
 
-    return NextResponse.json({ message: 'UGC ad generated and saved successfully', ugcAd }, { status: 201 })
+    const successPayload = { message: 'UGC ad task started', ugcAd, taskId: kieTaskId }
+    if (echo) {
+      return NextResponse.json({ ...successPayload, enhancedPrompt, kiePayload: kiePayloadPrimary }, { status: 201 })
+    }
+    return NextResponse.json(successPayload, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 })

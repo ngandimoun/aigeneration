@@ -67,7 +67,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch talking avatars' }, { status: 500 })
     }
 
-    return NextResponse.json({ talkingAvatars }, { 
+    // Generate fresh signed URLs for videos that have storage_path
+    const talkingAvatarsWithFreshUrls = await Promise.all(
+      (talkingAvatars || []).map(async (avatar) => {
+        if (avatar.storage_path && avatar.status === 'completed') {
+          try {
+            const { data: signedUrl } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(avatar.storage_path, 86400) // 24 hours
+            
+            if (signedUrl?.signedUrl) {
+              return {
+                ...avatar,
+                generated_video_url: signedUrl.signedUrl
+              }
+            }
+          } catch (urlError) {
+            console.error('Error generating signed URL for avatar:', avatar.id, urlError)
+          }
+        }
+        return avatar
+      })
+    )
+
+    return NextResponse.json({ talkingAvatars: talkingAvatarsWithFreshUrls }, { 
       status: 200,
       headers: {
         'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',

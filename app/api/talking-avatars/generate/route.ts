@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { getFalClient } from '@/lib/utils/fal-client'
 
 // Helper to convert null to undefined for Zod optional()
 const nullToUndefined = z.literal('null').transform(() => undefined);
@@ -142,115 +143,181 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const validatedData = createTalkingAvatarSchema.parse(body);
+    const formData = await request.formData()
 
-    // Simulate video generation and get a placeholder URL
-    const generatedVideoFileName = `${uuidv4()}-generated.mp4`;
-    const generatedStoragePath = `renders/talking-avatars/${user.id}/generated/${generatedVideoFileName}`;
-    const generatedVideoUrl = `https://example.com/generated_talking_avatar/${generatedVideoFileName}`; // Placeholder URL
+    const mode = (formData.get('mode')?.toString() || 'single') as 'single' | 'describe' | 'multi'
+    const title = formData.get('title')?.toString() || 'Untitled Talking Avatar'
+    const aspect_ratio = (formData.get('aspect_ratio')?.toString() || '16:9') as '16:9' | '1:1' | '9:16' | '4:3' | '3:4'
 
-    const { data, error } = await supabase
+    // Single mode inputs
+    const use_custom_image = formData.get('use_custom_image')?.toString() === 'true'
+    const selected_avatar_id = formData.get('selected_avatar_id')?.toString() || undefined
+    const customImage = formData.get('customImage') as File | null
+
+    const use_custom_audio = formData.get('use_custom_audio')?.toString() === 'true'
+    const selected_voiceover_id = formData.get('selected_voiceover_id')?.toString() || undefined
+    const audioFile = formData.get('audioFile') as File | null
+
+    // Validate minimal required inputs
+    if (!title.trim()) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
+
+    // Resolve image_url
+    let image_url: string | undefined
+    if (use_custom_image && customImage) {
+      const sanitizedName = customImage.name.replace(/[^a-zA-Z0-9_.-]/g, '_')
+      const imagePath = `renders/talking-avatars/${user.id}/inputs/${uuidv4()}-${sanitizedName}`
+      const { error: uploadErr } = await supabase.storage
+        .from('dreamcut')
+        .upload(imagePath, customImage, { cacheControl: '3600', upsert: false })
+      if (uploadErr) {
+        return NextResponse.json({ error: `Failed to upload image: ${uploadErr.message}` }, { status: 500 })
+      }
+      const { data: signed } = await supabase.storage.from('dreamcut').createSignedUrl(imagePath, 86400)
+      image_url = signed?.signedUrl
+    } else if (!use_custom_image && selected_avatar_id) {
+      // Fetch avatar by id to get an existing image path/url
+      const { data: avatar } = await supabase
+        .from('avatars_personas')
+        .select('generated_images, storage_paths')
+        .eq('id', selected_avatar_id)
+        .single()
+      const candidatePath = avatar?.storage_paths?.[0] as string | undefined
+      if (candidatePath) {
+        const { data: signed } = await supabase.storage.from('dreamcut').createSignedUrl(candidatePath, 86400)
+        image_url = signed?.signedUrl
+      } else if (avatar?.generated_images?.[0]) {
+        image_url = avatar.generated_images[0]
+      }
+    }
+
+    // Resolve audio_url
+    let audio_url: string | undefined
+    if (use_custom_audio && audioFile) {
+      const sanitizedName = audioFile.name.replace(/[^a-zA-Z0-9_.-]/g, '_')
+      const audioPath = `renders/talking-avatars/${user.id}/inputs/${uuidv4()}-${sanitizedName}`
+      const { error: uploadErr } = await supabase.storage
+        .from('dreamcut')
+        .upload(audioPath, audioFile, { cacheControl: '3600', upsert: false })
+      if (uploadErr) {
+        return NextResponse.json({ error: `Failed to upload audio: ${uploadErr.message}` }, { status: 500 })
+      }
+      const { data: signed } = await supabase.storage.from('dreamcut').createSignedUrl(audioPath, 86400)
+      audio_url = signed?.signedUrl
+    } else if (!use_custom_audio && selected_voiceover_id) {
+      const { data: voiceover } = await supabase
+        .from('voiceovers')
+        .select('generated_audio_path, storage_path, content')
+        .eq('id', selected_voiceover_id)
+        .single()
+      const candidateAudioPath = (voiceover?.storage_path || voiceover?.generated_audio_path) as string | undefined
+      if (candidateAudioPath) {
+        const { data: signed } = await supabase.storage.from('dreamcut').createSignedUrl(candidateAudioPath, 86400)
+        audio_url = signed?.signedUrl
+      } else if (voiceover?.content?.audio_url) {
+        audio_url = voiceover.content.audio_url as string
+      }
+    }
+
+    // Basic guards for Single mode: require at least one image and one audio source
+    if (mode === 'single') {
+      if (!image_url) {
+        return NextResponse.json({ error: 'No image provided or found for selected avatar' }, { status: 400 })
+      }
+      if (!audio_url) {
+        return NextResponse.json({ error: 'No audio provided or found for selected voiceover' }, { status: 400 })
+      }
+    }
+
+    // Call fal.ai veed/fabric-1.0 (resolution forced to 720p)
+    const fal = getFalClient()
+    const falResult = await fal.subscribe('veed/fabric-1.0', {
+      input: {
+        image_url,
+        audio_url,
+        resolution: '720p'
+      },
+      logs: true
+    })
+
+    const outputUrl: string | undefined = falResult?.data?.video?.url
+    if (!outputUrl) {
+      return NextResponse.json({ error: 'Failed to generate video' }, { status: 502 })
+    }
+
+    // Download generated video and upload to Supabase Storage
+    const resp = await fetch(outputUrl)
+    if (!resp.ok) {
+      return NextResponse.json({ error: `Failed to download generated video: ${resp.status}` }, { status: 502 })
+    }
+    const arrayBuffer = await resp.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const fileName = `${uuidv4()}-generated.mp4`
+    const storage_path = `renders/talking-avatars/${user.id}/generated/${fileName}`
+    const { error: uploadGenErr } = await supabase.storage
+      .from('dreamcut')
+      .upload(storage_path, buffer, { contentType: 'video/mp4', cacheControl: '3600' })
+    if (uploadGenErr) {
+      return NextResponse.json({ error: `Failed to store generated video: ${uploadGenErr.message}` }, { status: 500 })
+    }
+    const { data: signedVideo } = await supabase.storage.from('dreamcut').createSignedUrl(storage_path, 86400)
+
+    // Persist DB record
+    const { data: inserted, error: insertErr } = await supabase
       .from('talking_avatars')
       .insert([
         {
           user_id: user.id,
-          title: validatedData.title,
-          use_custom_image: validatedData.use_custom_image,
-          custom_image_path: validatedData.custom_image_path,
-          selected_avatar_id: validatedData.selected_avatar_id,
-          use_custom_audio: validatedData.use_custom_audio,
-          custom_audio_path: validatedData.custom_audio_path,
-          audio_duration: validatedData.audio_duration,
-          selected_voiceover_id: validatedData.selected_voiceover_id,
-          aspect_ratio: validatedData.aspect_ratio,
-          resolution: validatedData.resolution,
-          fps: validatedData.fps,
-          max_duration: validatedData.max_duration,
-          facial_expressions: validatedData.facial_expressions,
-          gestures: validatedData.gestures,
-          eye_contact: validatedData.eye_contact,
-          head_movement: validatedData.head_movement,
-          generated_video_url: generatedVideoUrl,
-          storage_path: generatedStoragePath,
-          status: 'completed', // Assuming immediate completion for now
+          title,
+          use_custom_image,
+          selected_avatar_id: selected_avatar_id || null,
+          use_custom_audio,
+          selected_voiceover_id: selected_voiceover_id || null,
+          aspect_ratio,
+          resolution: '720p',
+          fps: 25,
+          max_duration: 60,
+          facial_expressions: true,
+          gestures: true,
+          eye_contact: true,
+          head_movement: true,
+          generated_video_url: signedVideo?.signedUrl || null,
+          storage_path,
+          status: 'completed',
           metadata: {
-            ...validatedData.metadata,
-            mode: validatedData.mode,
-          },
-          content: {
-            // Store mode-specific data
-            ...(validatedData.mode === 'describe' && {
-              main_prompt: validatedData.main_prompt,
-              character_count: validatedData.character_count,
-              characters: validatedData.characters,
-              dialog_lines: validatedData.dialog_lines,
-              environment: validatedData.environment,
-              custom_environment: validatedData.custom_environment,
-              background: validatedData.background,
-              custom_background: validatedData.custom_background,
-              lighting: validatedData.lighting,
-              custom_lighting: validatedData.custom_lighting,
-              background_music: validatedData.background_music,
-              custom_background_music: validatedData.custom_background_music,
-              sound_effects: validatedData.sound_effects,
-              custom_sound_effects: validatedData.custom_sound_effects,
-            }),
-            ...(validatedData.mode === 'multi' && {
-              use_custom_scene_image: validatedData.use_custom_scene_image,
-              scene_image: validatedData.scene_image,
-              selected_scene_avatar_id: validatedData.selected_scene_avatar_id,
-              scene_description: validatedData.scene_description,
-              scene_character_count: validatedData.scene_character_count,
-              scene_characters: validatedData.scene_characters,
-              scene_dialog_lines: validatedData.scene_dialog_lines,
-              scene_environment: validatedData.scene_environment,
-              custom_scene_environment: validatedData.custom_scene_environment,
-              scene_background: validatedData.scene_background,
-              custom_scene_background: validatedData.custom_scene_background,
-              scene_lighting: validatedData.scene_lighting,
-              custom_scene_lighting: validatedData.custom_scene_lighting,
-              scene_background_music: validatedData.scene_background_music,
-              custom_scene_background_music: validatedData.custom_scene_background_music,
-              scene_sound_effects: validatedData.scene_sound_effects,
-              custom_scene_sound_effects: validatedData.custom_scene_sound_effects,
-            }),
-          },
-        },
+            mode,
+            timestamp: new Date().toISOString()
+          }
+        }
       ])
-      .select();
+      .select()
 
-    if (error) {
-      console.error('Error inserting talking_avatar:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertErr) {
+      return NextResponse.json({ error: 'Failed to save talking avatar' }, { status: 500 })
     }
 
-    // Add to library_items with correct schema
-    const { error: libraryError } = await supabase
+    // Add to library
+    await supabase
       .from('library_items')
-      .insert([
-        {
-          user_id: user.id,
-          content_type: 'talking_avatars',  // Changed from item_type
-          content_id: data[0].id,           // Changed from item_id
-          // Removed: title, description, image_url, created_at (not in schema)
-        },
-      ]);
-
-    if (libraryError) {
-      console.error('Error inserting into library_items:', libraryError);
-      // Decide if this should be a hard fail or just log the error
-    }
+      .insert({
+        user_id: user.id,
+        content_type: 'talking_avatars',
+        content_id: inserted?.[0]?.id,
+        date_added_to_library: new Date().toISOString()
+      })
 
     return NextResponse.json({ 
-      message: 'Talking Avatar generated and saved successfully', 
-      data,
-      success: true,
-      videoUrl: generatedVideoUrl
-    }, { status: 200 });
-  } catch (validationError) {
-    console.error('Validation error:', validationError);
-    return NextResponse.json({ error: (validationError as z.ZodError).errors }, { status: 400 });
+      message: 'Talking Avatar generated and saved successfully',
+      talkingAvatar: inserted?.[0] || null,
+      requestId: falResult?.requestId || null
+    }, { status: 201 })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors }, { status: 400 })
+    }
+    console.error('Error generating talking avatar:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 

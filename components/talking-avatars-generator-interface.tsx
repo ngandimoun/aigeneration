@@ -115,7 +115,7 @@ export function TalkingAvatarsGeneratorInterface({
   
   // Basic Settings (shared across modes)
   const [title, setTitle] = useState("")
-  const [aspectRatio, setAspectRatio] = useState<"16:9" | "1:1" | "9:16" | "4:3" | "3:4">("16:9")
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "1:1" | "9:16">("16:9")
   
   // Mode 1: Single Character state
   const [useCustomImage, setUseCustomImage] = useState(false)
@@ -659,29 +659,52 @@ export function TalkingAvatarsGeneratorInterface({
 
     setIsGenerating(true)
     try {
+      if (mode === 'single') {
+        // Build FormData for Single mode so we can send files
+        const formData = new FormData()
+        formData.append('mode', 'single')
+        formData.append('title', title.trim() || 'Untitled Talking Avatar')
+        formData.append('aspect_ratio', aspectRatio)
+        formData.append('use_custom_image', String(useCustomImage))
+        formData.append('use_custom_audio', String(useCustomAudio))
+        if (selectedAvatarId) formData.append('selected_avatar_id', selectedAvatarId)
+        if (selectedVoiceoverId) formData.append('selected_voiceover_id', selectedVoiceoverId)
+        if (useCustomImage && customImage) formData.append('customImage', customImage)
+        if (useCustomAudio && audioFile) formData.append('audioFile', audioFile)
+
+        const response = await fetch('/api/talking-avatars/generate', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate talking avatar')
+        }
+
+        const result = await response.json()
+        setGeneratedVideo(result?.talkingAvatar?.generated_video_url || null)
+        toast({
+          title: 'Talking Avatar Generated!',
+          description: 'Successfully generated your talking avatar video.'
+        })
+        onClose()
+        return
+      }
+
       let generationData: any = {
         mode,
         title: title.trim() || "Untitled Talking Avatar",
         aspect_ratio: aspectRatio,
         metadata: {
-        projectTitle,
+          projectTitle,
           selectedArtifact,
           timestamp: new Date().toISOString()
         }
       }
 
-      // Mode-specific data
-      if (mode === 'single') {
-        generationData = {
-          ...generationData,
-        use_custom_image: useCustomImage,
-        selected_avatar_id: selectedAvatarId || null,
-        use_custom_audio: useCustomAudio,
-        audio_duration: audioDuration || null,
-        selected_voiceover_id: selectedVoiceoverId || null,
-          max_duration: 60 // Fixed 60-second limit for single character mode
-        }
-      } else if (mode === 'describe') {
+      // Mode-specific data (non-single)
+      if (mode === 'describe') {
         generationData = {
           ...generationData,
           main_prompt: mainPrompt,
@@ -1434,9 +1457,7 @@ export function TalkingAvatarsGeneratorInterface({
                   {[
                     { value: "16:9", label: "📺 16:9 (Widescreen)" },
                     { value: "1:1", label: "⬜ 1:1 (Square)" },
-                    { value: "9:16", label: "📱 9:16 (Vertical)" },
-                    { value: "4:3", label: "📺 4:3 (Classic)" },
-                    { value: "3:4", label: "📱 3:4 (Portrait)" }
+                    { value: "9:16", label: "📱 9:16 (Vertical)" }
                   ].map((option) => (
                     <SelectItem key={option.value} value={option.value} className="text-xs">
                       {option.label}
@@ -2461,13 +2482,11 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {[
-                          { value: "16:9", label: "📺 16:9 (Widescreen)" },
-                          { value: "1:1", label: "⬜ 1:1 (Square)" },
-                          { value: "9:16", label: "📱 9:16 (Vertical)" },
-                          { value: "4:3", label: "📺 4:3 (Classic)" },
-                          { value: "3:4", label: "📱 3:4 (Portrait)" }
-                        ].map((option) => (
+                  {[
+                    { value: "16:9", label: "📺 16:9 (Widescreen)" },
+                    { value: "1:1", label: "⬜ 1:1 (Square)" },
+                    { value: "9:16", label: "📱 9:16 (Vertical)" }
+                  ].map((option) => (
                           <SelectItem key={option.value} value={option.value} className="text-xs">
                             {option.label}
                           </SelectItem>
@@ -3081,13 +3100,11 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {[
-                          { value: "16:9", label: "📺 16:9 (Widescreen)" },
-                          { value: "1:1", label: "⬜ 1:1 (Square)" },
-                          { value: "9:16", label: "📱 9:16 (Vertical)" },
-                          { value: "4:3", label: "📺 4:3 (Classic)" },
-                          { value: "3:4", label: "📱 3:4 (Portrait)" }
-                        ].map((option) => (
+                  {[
+                    { value: "16:9", label: "📺 16:9 (Widescreen)" },
+                    { value: "1:1", label: "⬜ 1:1 (Square)" },
+                    { value: "9:16", label: "📱 9:16 (Vertical)" }
+                  ].map((option) => (
                           <SelectItem key={option.value} value={option.value} className="text-xs">
                             {option.label}
                           </SelectItem>

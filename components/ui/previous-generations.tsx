@@ -322,6 +322,60 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
     }
   }
 
+  // Handle video playback
+  const handlePlayVideo = (video: any) => {
+    console.log('🎬 [VIDEO] Attempting to play video:', video.id)
+    
+    const videoUrl = video.generated_video_url
+    if (!videoUrl) {
+      console.error('❌ [VIDEO] No video URL available')
+      toast({
+        title: "Playback failed",
+        description: "Video file not available",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    // Open video in a new tab/window for playback
+    window.open(videoUrl, '_blank')
+    
+    toast({
+      title: "Opening video",
+      description: `Playing ${video.title || 'talking avatar'}...`
+    })
+  }
+
+  // Handle video download
+  const handleDownloadVideo = async (video: any) => {
+    try {
+      const videoUrl = video.generated_video_url
+      if (!videoUrl) {
+        throw new Error('No video URL available')
+      }
+      
+      // Create download link
+      const link = document.createElement('a')
+      link.href = videoUrl
+      link.download = `${video.title || 'talking-avatar'}.mp4`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      toast({
+        title: "Download started",
+        description: `Downloading ${video.title || 'talking avatar'}...`
+      })
+    } catch (error) {
+      console.error('Video download failed:', error)
+      toast({
+        title: "Download failed",
+        description: "Could not download the video file",
+        variant: "destructive"
+      })
+    }
+  }
+
   // Handle avatar download
   const handleDownloadAvatar = async (item: any) => {
     try {
@@ -692,14 +746,39 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
 
     if (isVideoContentType(contentType) && videoUrl) {
       return (
-        <video
-          src={videoUrl}
-          className="w-full h-48 object-cover rounded-t-lg"
-          poster="/placeholder.jpg"
-          muted
-        >
-          Your browser does not support the video tag.
-        </video>
+        <div className="relative w-full h-48 rounded-t-lg overflow-hidden">
+          <video
+            src={videoUrl}
+            className="w-full h-full object-cover"
+            poster="/placeholder.jpg"
+            muted
+            preload="metadata"
+            onError={(e) => {
+              console.error(`❌ Video failed to load for ${contentType}:`, e)
+              // Fallback to placeholder if video fails to load
+              const target = e.target as HTMLVideoElement
+              target.style.display = 'none'
+              const parent = target.parentElement
+              if (parent) {
+                parent.innerHTML = `
+                  <div class="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <svg class="h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                `
+              }
+            }}
+          >
+            Your browser does not support the video tag.
+          </video>
+          {/* Duration overlay for videos */}
+          {item.actual_duration && (
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+              {formatDuration(item.actual_duration)}
+            </div>
+          )}
+        </div>
       )
     } else if (isAudioContentType(contentType) && audioUrl) {
       // Special handling for music jingles with cover images
@@ -1054,7 +1133,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
           {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.isArray(items) ? items.map((item) => (
-              <Card key={item.id} className={`group hover:shadow-lg transition-shadow relative ${(contentType === 'avatars_personas' || contentType === 'product_mockups' || contentType === 'charts_infographics' || contentType === 'voiceovers' || contentType === 'music_jingles' || contentType === 'music_videos') ? '!pt-0' : ''}`}>
+              <Card key={item.id} className={`group hover:shadow-lg transition-shadow relative ${(contentType === 'avatars_personas' || contentType === 'product_mockups' || contentType === 'charts_infographics' || contentType === 'voiceovers' || contentType === 'music_jingles' || contentType === 'music_videos' || contentType === 'talking_avatars') ? '!pt-0' : ''}`}>
                 <div className="relative">
                   {renderMediaPreview(item)}
                   <div className="absolute top-2 right-2 flex gap-1">
@@ -1249,6 +1328,45 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
                       ) : (
                         <Badge variant="destructive" className="text-xs">
                           Audio not available
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Talking Avatars Play/Download Buttons - Only for talking_avatars */}
+                  {contentType === 'talking_avatars' && (
+                    <div className="flex items-center gap-2 mt-3">
+                      {(item.generated_video_url || item.storage_path) ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handlePlayVideo(item)
+                            }}
+                            title="Play video"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownloadVideo(item)
+                            }}
+                            title="Download video"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs">
+                          Video not available
                         </Badge>
                       )}
                     </div>

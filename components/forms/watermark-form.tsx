@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,7 +16,9 @@ import {
   CheckCircle,
   Database
 } from "lucide-react"
-import { WatermarkFormData, DEFAULT_WATERMARK_VALUES, WATERMARK_CONSTRAINTS } from "@/lib/types/watermark"
+import { createClient } from "@/lib/supabase/client"
+import { v4 as uuidv4 } from 'uuid'
+import { WatermarkFormData, DEFAULT_WATERMARK_VALUES, WATERMARK_CONSTRAINTS, WatermarkModelInputs, DEFAULT_WATERMARK_INPUTS } from "@/lib/types/watermark"
 import { useToast } from "@/hooks/use-toast"
 
 interface WatermarkFormProps {
@@ -27,58 +29,133 @@ interface WatermarkFormProps {
 }
 
 export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = true }: WatermarkFormProps) {
-  const [formData, setFormData] = useState<WatermarkFormData>({
-    video_source: 'upload',
-    video_url: '',
-    watermark_text: 'DREAMCUT.AI',
-    font_size: 40
-  })
-
-  const [dragOver, setDragOver] = useState(false)
+  const [formData, setFormData] = useState<WatermarkModelInputs>(DEFAULT_WATERMARK_INPUTS)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
-  const [selectedVideo, setSelectedVideo] = useState<{id: string, title: string, image: string, video_url: string} | null>(null)
-  const [availableVideos, setAvailableVideos] = useState<Array<{id: string, title: string, image: string, video_url: string}>>([])
+  const [videoSource, setVideoSource] = useState<'upload' | 'supabase'>('upload')
+  const [selectedVideo, setSelectedVideo] = useState<{id: string, title: string, image: string, video_url: string, content_type: string} | null>(null)
+  const [availableVideos, setAvailableVideos] = useState<Array<{id: string, title: string, image: string, video_url: string, content_type: string}>>([])
   const [loadingVideos, setLoadingVideos] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
-  // Load videos from Library API when library source is selected
+  // Load videos from API endpoints when supabase source is selected
   useEffect(() => {
-    if (formData.video_source === 'library') {
-      fetchAvailableVideos()
+    if (videoSource === 'supabase') {
+      loadVideosFromAPIs()
     }
-  }, [formData.video_source])
+  }, [videoSource])
 
-  const fetchAvailableVideos = async () => {
+  const loadVideosFromAPIs = async () => {
     setLoadingVideos(true)
     try {
-      const response = await fetch('/api/library?category=motions')
-      if (response.ok) {
-        const data = await response.json()
-        console.log('📊 Library API response:', data)
-        
-        const libraryItems = data.libraryItems || []
-        const videos = libraryItems.map((item: any) => ({
-          id: `${item.content_type}_${item.content_id}`,
-          title: item.title || `Video from ${item.content_type}`,
-          image: item.image || '/placeholder.jpg',
-          video_url: item.video_url || ''
-        })).filter((video: any) => video.video_url && video.video_url.trim() !== '')
-        
-        console.log(`🎬 Total videos loaded from library: ${videos.length}`)
-        setAvailableVideos(videos)
-      } else {
-        console.error('❌ Failed to fetch library:', response.status, response.statusText)
-        toast({
-          title: "Error loading videos",
-          description: "Failed to load videos from your library. Please try again.",
-          variant: "destructive"
+      // Query all 5 API endpoints in parallel with status=completed filter
+      const [ugcAdsRes, talkingAvatarsRes, diverseMotionRes, explainersRes, subtitlesRes] = await Promise.all([
+        fetch('/api/ugc-ads?status=completed'),
+        fetch('/api/talking-avatars?status=completed'),
+        fetch('/api/diverse-motion?status=completed'),
+        fetch('/api/explainers?status=completed'),
+        fetch('/api/subtitles?status=completed')
+      ])
+
+      const [ugcAdsData, talkingAvatarsData, diverseMotionData, explainersData, subtitlesData] = await Promise.all([
+        ugcAdsRes.ok ? ugcAdsRes.json() : { ugc_ads: [] },
+        talkingAvatarsRes.ok ? talkingAvatarsRes.json() : { talkingAvatars: [] },
+        diverseMotionRes.ok ? diverseMotionRes.json() : { productMotions: [] },
+        explainersRes.ok ? explainersRes.json() : { explainers: [] },
+        subtitlesRes.ok ? subtitlesRes.json() : { subtitles: [] }
+      ])
+
+      const videos: Array<{id: string, title: string, image: string, video_url: string, content_type: string}> = []
+
+      // Process UGC Ads
+      if (ugcAdsData.ugc_ads) {
+        ugcAdsData.ugc_ads.forEach((item: any) => {
+          const video_url = item.content?.video_url || item.content?.output_video_url || item.storage_path || ''
+          if (video_url) {
+            videos.push({
+              id: `ugc_ads_${item.id}`,
+              title: item.brand_name || 'UGC Ad',
+              image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+              video_url,
+              content_type: 'ugc_ads'
+            })
+          }
         })
       }
+
+      // Process Talking Avatars
+      if (talkingAvatarsData.talkingAvatars) {
+        talkingAvatarsData.talkingAvatars.forEach((item: any) => {
+          const video_url = item.generated_video_url || item.content?.video_url || item.content?.output_video_url || ''
+          if (video_url) {
+            videos.push({
+              id: `talking_avatars_${item.id}`,
+              title: item.title || 'Talking Avatar',
+              image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+              video_url,
+              content_type: 'talking_avatars'
+            })
+          }
+        })
+      }
+
+      // Process Product Motions (Diverse Motion)
+      if (diverseMotionData.productMotions) {
+        diverseMotionData.productMotions.forEach((item: any) => {
+          const video_url = item.content?.video_url || item.content?.output_video_url || ''
+          if (video_url) {
+            videos.push({
+              id: `product_motions_${item.id}`,
+              title: item.product_name || item.product_category || 'Product Motion',
+              image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+              video_url,
+              content_type: 'product_motions'
+            })
+          }
+        })
+      }
+
+      // Process Explainers
+      if (explainersData.explainers) {
+        explainersData.explainers.forEach((item: any) => {
+          const video_url = item.content?.video_url || item.content?.output_video_url || ''
+          if (video_url) {
+            videos.push({
+              id: `explainers_${item.id}`,
+              title: item.title || 'Explainer',
+              image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+              video_url,
+              content_type: 'explainers'
+            })
+          }
+        })
+      }
+
+      // Process Subtitles
+      if (subtitlesData.subtitles) {
+        subtitlesData.subtitles.forEach((item: any) => {
+          const video_url = item.content?.video_url || item.content?.output_video_url || ''
+          if (video_url) {
+            videos.push({
+              id: `subtitles_${item.id}`,
+              title: item.title || 'Subtitled Video',
+              image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+              video_url,
+              content_type: 'subtitles'
+            })
+          }
+        })
+      }
+
+      console.log(`🎬 Total videos loaded from APIs: ${videos.length}`)
+      setAvailableVideos(videos)
     } catch (error) {
-      console.error('❌ Error loading videos from library:', error)
+      console.error('❌ Error loading videos from APIs:', error)
       toast({
         title: "Error loading videos",
-        description: "Failed to load videos from your library. Please try again.",
+        description: "Failed to load videos from your content. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -86,26 +163,60 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
     }
   }
 
-  const handleInputChange = (field: keyof WatermarkFormData, value: any) => {
+  const handleInputChange = (field: keyof WatermarkModelInputs, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleVideoSourceChange = (source: 'upload' | 'library') => {
-    handleInputChange("video_source", source)
+  // Helper function to upload video to Supabase
+  const uploadVideoToSupabase = async (file: File): Promise<string> => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) throw new Error('User not authenticated')
+
+    // Upload video file to Supabase storage
+    const fileName = `${uuidv4()}-${file.name}`
+    const filePath = `renders/watermarks/${user.id}/inputs/${fileName}`
+    
+    const { error: uploadError } = await supabase.storage
+      .from('dreamcut')
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: '3600'
+      })
+
+    if (uploadError) {
+      throw new Error(`Failed to upload video: ${uploadError.message}`)
+    }
+
+    // Generate signed URL for the uploaded video
+    const { data: signedData } = await supabase.storage
+      .from('dreamcut')
+      .createSignedUrl(filePath, 86400)
+
+    if (!signedData?.signedUrl) {
+      throw new Error('Failed to generate signed URL for video')
+    }
+
+    return signedData.signedUrl
+  }
+
+  const handleVideoSourceChange = (source: 'upload' | 'supabase') => {
+    setVideoSource(source)
     if (source === 'upload') {
       setSelectedVideo(null)
       setVideoPreview(null)
-      handleInputChange("video_url", "")
+      handleInputChange("video_file_input", "")
     } else {
       setVideoPreview(null)
-      handleInputChange("video_url", "")
+      handleInputChange("video_file_input", "")
     }
   }
 
-  const handleVideoSelect = (video: {id: string, title: string, image: string, video_url: string}) => {
+  const handleVideoSelect = (video: {id: string, title: string, image: string, video_url: string, content_type: string}) => {
     setSelectedVideo(video)
     setVideoPreview(video.video_url)
-    handleInputChange("video_url", video.video_url)
+    handleInputChange("video_file_input", video.video_url)
   }
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,67 +224,88 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
     if (file) {
       const url = URL.createObjectURL(file)
       setVideoPreview(url)
-      handleInputChange("video_url", url)
+      handleInputChange("video_file_input", file)
     }
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }
-
-  const handleDragLeave = () => {
-    setDragOver(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    
-    const files = Array.from(e.dataTransfer.files)
-    const videoFile = files.find(file => file.type.startsWith('video/'))
-    
-    if (videoFile) {
-      const url = URL.createObjectURL(videoFile)
-      setVideoPreview(url)
-      handleInputChange("video_url", url)
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.video_url?.trim()) {
+  const handleGenerate = async () => {
+    // Validation
+    if (videoSource === 'supabase' && !selectedVideo) {
       toast({
-        title: "Error",
-        description: "Please select or upload a video file",
+        title: "Please select a video",
+        description: "Choose a video from your content library.",
         variant: "destructive"
       })
       return
     }
 
-    if (!formData.watermark_text?.trim()) {
+    if (videoSource === 'upload' && !formData.video_file_input) {
       toast({
-        title: "Error", 
-        description: "Please enter watermark text",
+        title: "Please upload a video",
+        description: "Choose a video file to add watermark to.",
         variant: "destructive"
       })
       return
     }
 
-    // Create FormData for file uploads
-    const submitData = new FormData()
-    submitData.append('video_source', formData.video_source)
-    submitData.append('video_url', formData.video_url)
-    submitData.append('watermark_text', formData.watermark_text)
-    submitData.append('font_size', formData.font_size.toString())
-    
-    // Add video file if it's an upload
-    if (formData.video_source === 'upload' && formData.video_file) {
-      submitData.append('video_file', formData.video_file)
-    }
+    setIsGenerating(true)
+    try {
+      // Prepare the data
+      let videoUrl: string
+      
+      if (videoSource === 'supabase') {
+        videoUrl = selectedVideo?.video_url || ''
+      } else {
+        // Handle file upload
+        if (formData.video_file_input instanceof File) {
+          videoUrl = await uploadVideoToSupabase(formData.video_file_input)
+        } else {
+          videoUrl = formData.video_file_input as string
+        }
+      }
 
-    onSubmit(submitData)
+      const generationData = {
+        ...formData,
+        title: `Watermark Project - ${new Date().toLocaleDateString()}`,
+        video_file_input: videoUrl
+      }
+
+      // Call API
+      const response = await fetch('/api/watermarks/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(generationData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate watermark')
+      }
+
+      const result = await response.json()
+      console.log('Watermark generated:', result)
+
+      // Success toast
+      toast({
+        title: "Watermark Generated!",
+        description: "Successfully generated your watermarked video.",
+      })
+
+      // Close form
+      onCancel()
+      
+    } catch (error) {
+      console.error('Generation failed:', error)
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate watermark. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
 
@@ -192,7 +324,7 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4">
 
         {/* Video Input */}
         <Card className="border-slate-200 shadow-sm">
@@ -211,7 +343,7 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  variant={formData.video_source === 'upload' ? 'default' : 'outline'}
+                  variant={videoSource === 'upload' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => handleVideoSourceChange('upload')}
                   className="w-full h-9 text-xs font-medium"
@@ -220,9 +352,9 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
                 </Button>
                 <Button
                   type="button"
-                  variant={formData.video_source === 'library' ? 'default' : 'outline'}
+                  variant={videoSource === 'supabase' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleVideoSourceChange('library')}
+                  onClick={() => handleVideoSourceChange('supabase')}
                   className="w-full h-9 text-xs font-medium"
                 >
                   📚 From Library
@@ -231,43 +363,38 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
             </div>
 
             {/* Video Upload */}
-            {formData.video_source === 'upload' && (
-              <div
-                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                  dragOver 
-                    ? "border-primary bg-primary/5" 
-                    : "border-muted-foreground/25 hover:border-muted-foreground/50"
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <p className="text-xs font-medium mb-1">📁 Drop video file here</p>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Supports MP4, MOV, AVI, MKV
-                </p>
-                <Input
+            {videoSource === 'upload' && (
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 sm:p-4 text-center hover:border-muted-foreground/50 transition-colors">
+                <input
+                  ref={videoInputRef}
                   type="file"
-                  accept=".mp4,.mov,.avi,.mkv"
+                  accept="video/*"
                   onChange={handleVideoUpload}
                   className="hidden"
                   id="video-upload"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('video-upload')?.click()}
-                  className="h-8 text-xs"
-                >
-                  📤 Choose File
-                </Button>
+                <label htmlFor="video-upload" className="cursor-pointer">
+                  {videoPreview ? (
+                    <div className="space-y-2">
+                      <video 
+                        src={videoPreview} 
+                        className="w-full h-20 sm:h-24 object-cover rounded-md mx-auto"
+                        controls
+                      />
+                      <p className="text-xs text-muted-foreground">Click to change video</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Video className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground mx-auto" />
+                      <p className="text-xs sm:text-sm text-muted-foreground">Click to upload video</p>
+                    </div>
+                  )}
+                </label>
               </div>
             )}
 
-
-            {/* Library Selection */}
-            {formData.video_source === 'library' && (
+            {/* Supabase Videos Section */}
+            {videoSource === 'supabase' && (
               <div className="space-y-3">
                 {loadingVideos ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -329,10 +456,10 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
                               <p className="text-sm font-semibold text-foreground truncate mb-0.5">
                                 {video.title}
                               </p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Video className="h-3 w-3" />
-                                <span>Motion video</span>
-                              </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Video className="h-3 w-3" />
+                                  <span>{video.content_type.replace('_', ' ')}</span>
+                                </div>
                             </div>
                           </div>
                         </div>
@@ -342,9 +469,9 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Database className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm font-medium">No videos found in your library</p>
-                    <p className="text-xs mt-1">Create videos in your Motions library first:</p>
-                    <p className="text-xs text-muted-foreground/80">UGC Ads, Talking Avatars, Product Motion, Explainers</p>
+                    <p className="text-sm font-medium">No videos found in your content</p>
+                    <p className="text-xs mt-1">Create videos in these generators first:</p>
+                    <p className="text-xs text-muted-foreground/80">UGC Ads, Talking Avatars, Product Motion, Explainers, Subtitles</p>
                   </div>
                 )}
               </div>
@@ -430,17 +557,18 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={isLoading}
+            disabled={isGenerating}
             className="w-full sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 h-9 text-sm"
           >
             ❌ Cancel
           </Button>
           <Button
-            type="submit"
-            disabled={isLoading || !formData.video_url || !formData.watermark_text}
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating || !formData.video_file_input || !formData.watermark_text}
             className="w-full sm:w-auto bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 h-9 text-sm"
           >
-            {isLoading ? (
+            {isGenerating ? (
               <>
                 ⏳ Processing...
               </>
@@ -451,7 +579,7 @@ export function WatermarkForm({ onSubmit, onCancel, isLoading = false, isOpen = 
             )}
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   )
 }

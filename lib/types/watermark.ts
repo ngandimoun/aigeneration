@@ -1,5 +1,41 @@
-// Watermark generation types for Replicate API and database
+// Types describing the watermark model's inputs (mirroring subtitle pattern)
+export type WatermarkModelInputs = {
+  // Model inputs
+  video_file_input: File | string; // required
+  watermark_text: string; // default: "DREAMCUT.AI"
+  font_size: number; // default: 40, range: 1-500
+}
 
+// Sensible defaults reflecting the model version's published defaults
+export const DEFAULT_WATERMARK_INPUTS: Readonly<WatermarkModelInputs> = {
+  video_file_input: "" as unknown as File, // fill at runtime
+  watermark_text: "DREAMCUT.AI",
+  font_size: 40
+} as const;
+
+// Form sections for rendering
+export const WATERMARK_FORM_SECTIONS = [
+  {
+    title: "Upload",
+    fields: ["video_file_input"]
+  },
+  {
+    title: "Watermark Settings",
+    fields: ["watermark_text", "font_size"]
+  }
+] as const;
+
+// Validation constraints
+export const WATERMARK_CONSTRAINTS = {
+  FONT_SIZE_MIN: 1,
+  FONT_SIZE_MAX: 500,
+  FONT_SIZE_DEFAULT: 40,
+  WATERMARK_TEXT_MAX_LENGTH: 100,
+  TITLE_MAX_LENGTH: 100,
+  DESCRIPTION_MAX_LENGTH: 500
+} as const;
+
+// Legacy types for backward compatibility
 export interface WatermarkInputs {
   // Video input
   video: string // URL or file path
@@ -76,13 +112,3 @@ export const DEFAULT_WATERMARK_VALUES: Partial<WatermarkFormData> = {
   watermark_text: 'DREAMCUT.AI',
   font_size: 40
 }
-
-// Validation constraints
-export const WATERMARK_CONSTRAINTS = {
-  FONT_SIZE_MIN: 1,
-  FONT_SIZE_MAX: 500,
-  FONT_SIZE_DEFAULT: 40,
-  WATERMARK_TEXT_MAX_LENGTH: 100,
-  TITLE_MAX_LENGTH: 100,
-  DESCRIPTION_MAX_LENGTH: 500
-} as const

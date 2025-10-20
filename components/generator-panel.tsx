@@ -45,11 +45,13 @@ import { Plus, FolderPlus, Globe, Lock } from "lucide-react"
 import { AutocaptionModelInputs } from "@/lib/types/subtitles"
 import { VideoTranslationInputs } from "@/lib/types/video-translation"
 import { createClient } from "@/lib/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 export function GeneratorPanel() {
   const [isMounted, setIsMounted] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const { getDisplayTitle, selectedSection, showProjectForm, setShowProjectForm, setSelectedSection } = useNavigation()
+  const { toast } = useToast()
   const supabase = createClient()
   
   // États locaux pour l'interface de génération d'images (Illustration, Avatars & Personas, Product Mockups, Concept Worlds, et Charts & Infographics)
@@ -489,34 +491,6 @@ export function GeneratorPanel() {
         return (
           <SubtitleForm
             isOpen={showProjectForm}
-            onSubmit={async (subtitleData: AutocaptionModelInputs) => {
-              try {
-                const response = await fetch('/api/subtitles', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    ...subtitleData,
-                    title: `Subtitle Project - ${new Date().toLocaleDateString()}`,
-                    description: `Video subtitle generation with ${subtitleData.emoji_enrichment ? 'emoji enrichment' : 'standard'} styling`
-                  }),
-                })
-
-                if (!response.ok) {
-                  throw new Error('Failed to create subtitle project')
-                }
-
-                const result = await response.json()
-                console.log('🎬 Subtitle project saved:', result)
-                setShowProjectForm(false)
-                
-                // Optionally show a success message or redirect
-              } catch (error) {
-                console.error('Error saving subtitle project:', error)
-                // Handle error (show toast, etc.)
-              }
-            }}
             onCancel={() => setShowProjectForm(false)}
             isLoading={false}
           />
@@ -541,29 +515,9 @@ export function GeneratorPanel() {
           <WatermarkForm
             isOpen={showProjectForm}
             onSubmit={async (formData) => {
-              try {
-                // Add title and description to FormData
-                formData.append('title', `Watermark Project - ${new Date().toLocaleDateString()}`)
-                formData.append('description', 'Video watermark generation project')
-                
-                const response = await fetch('/api/watermarks', {
-                  method: 'POST',
-                  body: formData
-                })
-
-                if (!response.ok) {
-                  throw new Error('Failed to create watermark project')
-                }
-
-                const result = await response.json()
-                console.log('🎬 Watermark project saved:', result)
-                setShowProjectForm(false)
-                
-                // Optionally show a success message or redirect
-              } catch (error) {
-                console.error('Error saving watermark project:', error)
-                // Handle error (show toast, etc.)
-              }
+              // This is now handled internally by the WatermarkForm component
+              // The form calls /api/watermarks/generate directly
+              setShowProjectForm(false)
             }}
             onCancel={() => setShowProjectForm(false)}
             isLoading={false}

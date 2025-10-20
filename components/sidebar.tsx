@@ -306,18 +306,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'music-videos'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('music-videos')
-                onMobileClose()
-              }}
+              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
+              disabled
             >
               <Film className="h-4 w-4 shrink-0" />
               <span>Music Videos</span>
+              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
             </Button>
             <Button
               variant="ghost"

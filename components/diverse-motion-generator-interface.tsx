@@ -501,6 +501,7 @@ export function DiverseMotionGeneratorInterface({
   const [visualStyle, setVisualStyle] = useState<VisualStyle>("Cinematic")
   const [customVisualStyle, setCustomVisualStyle] = useState("")
   const [duration, setDuration] = useState([10]) // 5-120 seconds (up to 2 minutes)
+  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('16:9')
   
   // Category-specific fields - Data Visualizations
   const [chartType, setChartType] = useState<string>("Line Chart")
@@ -2236,6 +2237,7 @@ export function DiverseMotionGeneratorInterface({
         emotional_tone: emotionalTone === 'Custom' ? customEmotionalTone : emotionalTone,
         visual_style: visualStyle === 'Custom' ? customVisualStyle : visualStyle,
         duration: duration[0],
+        aspect_ratio: aspectRatio,
         
         // Multi-asset support
         assets: (mode !== 'none' && mode !== 'single') ? assets : null,
@@ -2562,6 +2564,23 @@ export function DiverseMotionGeneratorInterface({
                     <p className="text-xs text-muted-foreground mt-1">
                       * Only the Prompt field is required. All other fields are optional.
                     </p>
+                  </div>
+                  
+                  {/* Aspect Ratio */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                      📐 Aspect Ratio
+                    </label>
+                    <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select aspect ratio..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                        <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                        <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   {/* Template Dropdown */}
@@ -3575,6 +3594,23 @@ export function DiverseMotionGeneratorInterface({
                     </p>
                   </div>
                   
+                  {/* Aspect Ratio */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                      📐 Aspect Ratio
+                    </label>
+                    <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select aspect ratio..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                        <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                        <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   {/* Asset Upload Section */}
                   <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
                     <label className="block text-sm font-medium text-green-600 dark:text-green-400 mb-3">
@@ -4526,6 +4562,23 @@ export function DiverseMotionGeneratorInterface({
                         <p className="text-xs text-muted-foreground mt-1">
                           * Only the Prompt field is required. All other fields are optional.
                         </p>
+                      </div>
+                      
+                      {/* Aspect Ratio */}
+                      <div>
+                        <label className="block text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                          📐 Aspect Ratio
+                        </label>
+                        <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select aspect ratio..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                            <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                            <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -5606,6 +5659,23 @@ export function DiverseMotionGeneratorInterface({
                         <p className="text-xs text-muted-foreground mt-1">
                           * Only the Prompt field is required. All other fields are optional.
                         </p>
+                      </div>
+                      
+                      {/* Aspect Ratio */}
+                      <div>
+                        <label className="block text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                          📐 Aspect Ratio
+                        </label>
+                        <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select aspect ratio..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                            <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                            <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>

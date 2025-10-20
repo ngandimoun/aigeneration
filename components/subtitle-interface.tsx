@@ -15,7 +15,10 @@ import {
   AlertCircle,
   Loader2,
   Trash2,
-  Edit
+  Edit,
+  X,
+  Calendar,
+  RefreshCw
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
@@ -118,24 +121,148 @@ export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfacePr
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[600px] bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/20 dark:via-amber-950/20 dark:to-orange-950/20 rounded-lg p-8">
-      <div className="text-center max-w-md space-y-6">
-        {/* Icône attractive */}
-        <div className="relative inline-block">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 blur-2xl opacity-30 animate-pulse"></div>
-          <FileText className="relative h-24 w-24 text-transparent bg-gradient-to-r from-yellow-500 via-amber-600 to-orange-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+            Subtitle Projects
+          </h2>
+          <p className="text-muted-foreground">
+            Manage your generated subtitle videos
+          </p>
         </div>
-        
-        {/* Titre accrocheur */}
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
-          Add Subtitles to Your Videos
-        </h2>
-        
-        {/* Message engageant */}
-        <p className="text-muted-foreground text-lg">
-          Make your content accessible with professional subtitles. Fast, accurate, and easy.
-        </p>
+        <Button onClick={onClose} variant="outline">
+          <X className="h-4 w-4 mr-2" />
+          Close
+        </Button>
       </div>
+
+      {/* Projects Grid */}
+      {subtitleProjects.length === 0 ? (
+        <div className="flex items-center justify-center min-h-[400px] bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/20 dark:via-amber-950/20 dark:to-orange-950/20 rounded-lg p-8">
+          <div className="text-center max-w-md space-y-6">
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 blur-2xl opacity-30 animate-pulse"></div>
+              <FileText className="relative h-24 w-24 text-transparent bg-gradient-to-r from-yellow-500 via-amber-600 to-orange-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+            </div>
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+              No Subtitle Projects Yet
+            </h3>
+            <p className="text-muted-foreground">
+              Generate your first subtitle project to see it here.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {subtitleProjects.map((project) => (
+            <Card key={project.id} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate">{project.title}</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground mt-1">
+                      {project.description}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    {getStatusIcon(project.status)}
+                    {getStatusBadge(project.status)}
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                {/* Video Player */}
+                {project.status === 'completed' && project.content?.video_url && (
+                  <div className="relative">
+                    <video
+                      src={project.content.video_url}
+                      controls
+                      className="w-full h-48 object-cover rounded-lg"
+                      poster="/placeholder.jpg"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+
+                {/* Project Details */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDate(project.created_at)}</span>
+                  </div>
+                  
+                  {project.emoji_enrichment && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span className="text-lg">🎯</span>
+                      <span>Emoji enrichment enabled</span>
+                    </div>
+                  )}
+                  
+                  {project.keyword_emphasis && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span className="text-lg">💡</span>
+                      <span>Keyword emphasis enabled</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  {project.status === 'completed' && project.content?.video_url && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => window.open(project.content.video_url, '_blank')}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          const link = document.createElement('a')
+                          link.href = project.content.video_url
+                          link.download = `${project.title}-subtitles.mp4`
+                          link.click()
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                    </>
+                  )}
+                  
+                  {project.status === 'failed' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        // TODO: Implement retry functionality
+                        toast({
+                          title: "Retry",
+                          description: "Retry functionality coming soon",
+                        })
+                      }}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

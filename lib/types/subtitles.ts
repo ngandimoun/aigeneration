@@ -3,9 +3,9 @@ export type AutocaptionModelInputs = {
   // Model inputs
   video_file_input: File | string; // required
   transcript_file_input?: File | string;
-  output_video: boolean;           // default: true
-  output_transcript: boolean;      // default: true
-  subs_position: string;           // default: "bottom75"
+  // REMOVED: output_video - always true on backend
+  // REMOVED: output_transcript - always true on backend
+  subs_position: "bottom75" | "center" | "top" | "bottom" | "left" | "right"; // default: "bottom75"
   color: string;                   // default: "white"
   highlight_color: string;         // default: "yellow"
   fontsize: number;                // default: 7
@@ -17,6 +17,7 @@ export type AutocaptionModelInputs = {
   kerning: number;                 // default: -5
   right_to_left: boolean;          // default: false (Arial only)
   translate: boolean;              // default: false
+  language?: string;               // default: "auto"
 
   // Custom pipeline extras (not part of the model, handled in app)
   emoji_enrichment?: boolean;      // default: false
@@ -31,8 +32,8 @@ export type AutocaptionModelInputs = {
 export const DEFAULT_AUTOCAPTION_INPUTS: Readonly<AutocaptionModelInputs> = {
   video_file_input: "" as unknown as File, // fill at runtime
   transcript_file_input: undefined,
-  output_video: true,
-  output_transcript: true,
+  // REMOVED: output_video - always true on backend
+  // REMOVED: output_transcript - always true on backend
   subs_position: "bottom75",
   color: "white",
   highlight_color: "yellow",
@@ -45,6 +46,7 @@ export const DEFAULT_AUTOCAPTION_INPUTS: Readonly<AutocaptionModelInputs> = {
   kerning: -5,
   right_to_left: false,
   translate: false,
+  language: "auto",
 
   // Custom UX extras
   emoji_enrichment: false,
@@ -64,8 +66,7 @@ export const AUTOCAPTION_FORM_SECTIONS = [
   {
     title: "Core Options",
     fields: [
-      "output_video",
-      "output_transcript",
+      // REMOVED: "output_video", "output_transcript" - always true on backend
       "subs_position",
       "fontsize",
       "MaxChars",
@@ -107,6 +108,30 @@ export const KEYWORD_STYLES = [
   { value: "ASTERISKS", label: "✱ Asterisks" }
 ] as const;
 
+// Supported languages for caption transcription
+export const SUPPORTED_LANGUAGES = [
+  { value: "auto", label: "🌐 Auto-detect" },
+  { value: "en", label: "🇺🇸 English" },
+  { value: "es", label: "🇪🇸 Spanish" },
+  { value: "fr", label: "🇫🇷 French" },
+  { value: "de", label: "🇩🇪 German" },
+  { value: "it", label: "🇮🇹 Italian" },
+  { value: "pt", label: "🇵🇹 Portuguese" },
+  { value: "ru", label: "🇷🇺 Russian" },
+  { value: "zh", label: "🇨🇳 Chinese" },
+  { value: "ja", label: "🇯🇵 Japanese" },
+  { value: "ko", label: "🇰🇷 Korean" },
+  { value: "ar", label: "🇸🇦 Arabic" },
+  { value: "hi", label: "🇮🇳 Hindi" },
+  { value: "nl", label: "🇳🇱 Dutch" },
+  { value: "sv", label: "🇸🇪 Swedish" },
+  { value: "no", label: "🇳🇴 Norwegian" },
+  { value: "da", label: "🇩🇰 Danish" },
+  { value: "fi", label: "🇫🇮 Finnish" },
+  { value: "pl", label: "🇵🇱 Polish" },
+  { value: "tr", label: "🇹🇷 Turkish" }
+] as const;
+
 // Preset configurations
 export const PRESETS = [
   { 
@@ -125,7 +150,7 @@ export const PRESETS = [
     config: { 
       fontsize: 4, 
       MaxChars: 10, 
-      subs_position: "bottom50",
+      subs_position: "bottom75",
       color: "white",
       stroke_color: "black",
       stroke_width: 3

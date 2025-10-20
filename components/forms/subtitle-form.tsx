@@ -34,32 +34,35 @@ import {
   AlertCircle,
   CheckCircle,
   Play,
-  Database
+  Database,
+  Loader2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { v4 as uuidv4 } from 'uuid'
 import { 
   AutocaptionModelInputs, 
   DEFAULT_AUTOCAPTION_INPUTS, 
   EMOJI_STRATEGIES, 
   KEYWORD_STYLES, 
-  PRESETS 
+  PRESETS,
+  SUPPORTED_LANGUAGES
 } from "@/lib/types/subtitles"
 
 interface SubtitleFormProps {
-  onSubmit: (data: AutocaptionModelInputs) => void
   onCancel: () => void
   isLoading?: boolean
   isOpen?: boolean
 }
 
-export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = true }: SubtitleFormProps) {
+export function SubtitleForm({ onCancel, isLoading = false, isOpen = true }: SubtitleFormProps) {
   const [formData, setFormData] = useState<AutocaptionModelInputs>(DEFAULT_AUTOCAPTION_INPUTS)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false) // AI features disabled
   const [videoSource, setVideoSource] = useState<'upload' | 'supabase'>('upload')
-  const [selectedVideo, setSelectedVideo] = useState<{id: string, title: string, image: string, video_url: string} | null>(null)
-  const [availableVideos, setAvailableVideos] = useState<Array<{id: string, title: string, image: string, video_url: string}>>([])
+  const [selectedVideo, setSelectedVideo] = useState<{id: string, title: string, image: string, video_url: string, content_type: string} | null>(null)
+  const [availableVideos, setAvailableVideos] = useState<Array<{id: string, title: string, image: string, video_url: string, content_type: string}>>([])
   const [loadingVideos, setLoadingVideos] = useState(false)
   const [emojiMapEntries, setEmojiMapEntries] = useState<Array<{ key: string; value: string }>>([
     { key: "fire", value: "🔥" },
@@ -69,43 +72,104 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
   const [keywordsInput, setKeywordsInput] = useState("")
   const [selectedPreset, setSelectedPreset] = useState<string>("")
   const [customFont, setCustomFont] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
   
   const videoInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
-  // Load videos from Library API
+  // Load videos from API endpoints
   useEffect(() => {
-    const loadVideosFromLibrary = async () => {
+    const loadVideosFromAPIs = async () => {
       setLoadingVideos(true)
       try {
-        const response = await fetch('/api/library?category=motions')
-        if (response.ok) {
-          const data = await response.json()
-          console.log('📊 Library API response:', data)
-          
-          const libraryItems = data.libraryItems || []
-          const videos = libraryItems.map((item: any) => ({
-            id: `${item.content_type}_${item.content_id}`,
-            title: item.title || `Video from ${item.content_type}`,
-            image: item.image || '/placeholder.jpg',
-            video_url: item.video_url || ''
-          })).filter((video: any) => video.video_url && video.video_url.trim() !== '')
-          
-          console.log(`🎬 Total videos loaded from library: ${videos.length}`)
-          setAvailableVideos(videos)
-        } else {
-          console.error('❌ Failed to fetch library:', response.status, response.statusText)
-          toast({
-            title: "Error loading videos",
-            description: "Failed to load videos from your library. Please try again.",
-            variant: "destructive"
+        // Query all 4 API endpoints in parallel with status=completed filter
+        const [ugcAdsRes, talkingAvatarsRes, diverseMotionRes, explainersRes] = await Promise.all([
+          fetch('/api/ugc-ads?status=completed'),
+          fetch('/api/talking-avatars?status=completed'),
+          fetch('/api/diverse-motion?status=completed'),
+          fetch('/api/explainers?status=completed')
+        ])
+
+        const [ugcAdsData, talkingAvatarsData, diverseMotionData, explainersData] = await Promise.all([
+          ugcAdsRes.ok ? ugcAdsRes.json() : { ugc_ads: [] },
+          talkingAvatarsRes.ok ? talkingAvatarsRes.json() : { talkingAvatars: [] },
+          diverseMotionRes.ok ? diverseMotionRes.json() : { productMotions: [] },
+          explainersRes.ok ? explainersRes.json() : { explainers: [] }
+        ])
+
+        const videos: Array<{id: string, title: string, image: string, video_url: string, content_type: string}> = []
+
+        // Process UGC Ads
+        if (ugcAdsData.ugc_ads) {
+          ugcAdsData.ugc_ads.forEach((item: any) => {
+            const video_url = item.content?.video_url || item.content?.output_video_url || item.storage_path || ''
+            if (video_url) {
+              videos.push({
+                id: `ugc_ads_${item.id}`,
+                title: item.brand_name || 'UGC Ad',
+                image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+                video_url,
+                content_type: 'ugc_ads'
+              })
+            }
           })
         }
+
+        // Process Talking Avatars
+        if (talkingAvatarsData.talkingAvatars) {
+          talkingAvatarsData.talkingAvatars.forEach((item: any) => {
+            const video_url = item.generated_video_url || item.content?.video_url || item.content?.output_video_url || ''
+            if (video_url) {
+              videos.push({
+                id: `talking_avatars_${item.id}`,
+                title: item.title || 'Talking Avatar',
+                image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+                video_url,
+                content_type: 'talking_avatars'
+              })
+            }
+          })
+        }
+
+        // Process Product Motions (Diverse Motion)
+        if (diverseMotionData.productMotions) {
+          diverseMotionData.productMotions.forEach((item: any) => {
+            const video_url = item.content?.video_url || item.content?.output_video_url || ''
+            if (video_url) {
+              videos.push({
+                id: `product_motions_${item.id}`,
+                title: item.product_name || item.product_category || 'Product Motion',
+                image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+                video_url,
+                content_type: 'product_motions'
+              })
+            }
+          })
+        }
+
+        // Process Explainers
+        if (explainersData.explainers) {
+          explainersData.explainers.forEach((item: any) => {
+            const video_url = item.content?.video_url || item.content?.output_video_url || ''
+            if (video_url) {
+              videos.push({
+                id: `explainers_${item.id}`,
+                title: item.title || 'Explainer',
+                image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
+                video_url,
+                content_type: 'explainers'
+              })
+            }
+          })
+        }
+
+        console.log(`🎬 Total videos loaded from APIs: ${videos.length}`)
+        setAvailableVideos(videos)
       } catch (error) {
-        console.error('❌ Error loading videos from library:', error)
+        console.error('❌ Error loading videos from APIs:', error)
         toast({
           title: "Error loading videos",
-          description: "Failed to load videos from your library. Please try again.",
+          description: "Failed to load videos from your content. Please try again.",
           variant: "destructive"
         })
       } finally {
@@ -114,12 +178,46 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
     }
 
     if (videoSource === 'supabase') {
-      loadVideosFromLibrary()
+      loadVideosFromAPIs()
     }
   }, [videoSource])
 
   const handleInputChange = (field: keyof AutocaptionModelInputs, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Helper function to upload video to Supabase
+  const uploadVideoToSupabase = async (file: File): Promise<string> => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) throw new Error('User not authenticated')
+
+    // Upload video file to Supabase storage
+    const fileName = `${uuidv4()}-${file.name}`
+    const filePath = `renders/subtitles/${user.id}/inputs/${fileName}`
+    
+    const { error: uploadError } = await supabase.storage
+      .from('dreamcut')
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: '3600'
+      })
+
+    if (uploadError) {
+      throw new Error(`Failed to upload video: ${uploadError.message}`)
+    }
+
+    // Generate signed URL for the uploaded video
+    const { data: signedData } = await supabase.storage
+      .from('dreamcut')
+      .createSignedUrl(filePath, 86400)
+
+    if (!signedData?.signedUrl) {
+      throw new Error('Failed to generate signed URL for video')
+    }
+
+    return signedData.signedUrl
   }
 
   const handleVideoSourceChange = (source: 'upload' | 'supabase') => {
@@ -134,7 +232,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
     }
   }
 
-  const handleVideoSelect = (video: {id: string, title: string, image: string, video_url: string}) => {
+  const handleVideoSelect = (video: {id: string, title: string, image: string, video_url: string, content_type: string}) => {
     setSelectedVideo(video)
     setVideoPreview(video.video_url)
     handleInputChange("video_file_input", video.video_url)
@@ -155,7 +253,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
         if (isPortrait) {
           handleInputChange("fontsize", 4)
           handleInputChange("MaxChars", 10)
-          handleInputChange("subs_position", "bottom50")
+          handleInputChange("subs_position", "bottom75")
         }
       }
     }
@@ -196,9 +294,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
     handleInputChange("keywords", keywords)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+  const handleGenerate = async () => {
     // Update emoji map from entries
     const emojiMap: Record<string, string> = {}
     emojiMapEntries.forEach(entry => {
@@ -213,16 +309,83 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
       handleInputChange("font", customFont)
     }
 
-    if (!formData.video_file_input) {
+    // Validation
+    if (videoSource === 'supabase' && !selectedVideo) {
       toast({
-        title: "Video Required",
-        description: "Please upload a video file or provide a URL.",
+        title: "Please select a video",
+        description: "Choose a video from your content library.",
         variant: "destructive"
       })
       return
     }
 
-    onSubmit(formData)
+    if (videoSource === 'upload' && !formData.video_file_input) {
+      toast({
+        title: "Please upload a video",
+        description: "Choose a video file to add subtitles to.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      // Prepare the data
+      let videoUrl: string
+      
+      if (videoSource === 'supabase') {
+        videoUrl = selectedVideo?.video_url || ''
+      } else {
+        // Handle file upload
+        if (formData.video_file_input instanceof File) {
+          videoUrl = await uploadVideoToSupabase(formData.video_file_input)
+        } else {
+          videoUrl = formData.video_file_input as string
+        }
+      }
+
+      const generationData = {
+        ...formData,
+        title: `Subtitle Project - ${new Date().toLocaleDateString()}`,
+        video_file_input: videoUrl
+      }
+
+      // Call API
+      const response = await fetch('/api/subtitles/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(generationData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate subtitles')
+      }
+
+      const result = await response.json()
+      console.log('Subtitles generated:', result)
+
+      // Success toast
+      toast({
+        title: "Subtitles Generated!",
+        description: "Successfully generated your subtitled video.",
+      })
+
+      // Close form
+      onCancel()
+      
+    } catch (error) {
+      console.error('Generation failed:', error)
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate subtitles. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
@@ -237,7 +400,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
         
         <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex-1 overflow-y-auto scrollbar-hover">
 
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <div className="space-y-3 sm:space-y-4">
         {/* Step 1: Upload */}
         <Card>
           <CardHeader className="pb-2 sm:pb-3">
@@ -374,7 +537,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
                                 </p>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <Video className="h-3 w-3" />
-                                  <span>Motion video</span>
+                                  <span>{video.content_type.replace('_', ' ')}</span>
                                 </div>
                               </div>
                             </div>
@@ -385,8 +548,8 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <Database className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-sm font-medium">No videos found in your library</p>
-                      <p className="text-xs mt-1">Create videos in your Motions library first:</p>
+                      <p className="text-sm font-medium">No videos found in your content</p>
+                      <p className="text-xs mt-1">Create videos in these generators first:</p>
                       <p className="text-xs text-muted-foreground/80">UGC Ads, Talking Avatars, Product Motion, Explainers</p>
                     </div>
                   )}
@@ -429,25 +592,7 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
             </div>
 
             {/* Output Type */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Output Type</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="output-video"
-                  checked={formData.output_video}
-                  onCheckedChange={(checked) => handleInputChange("output_video", checked)}
-                />
-                <Label htmlFor="output-video" className="text-sm">Render captioned video</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="output-transcript"
-                  checked={formData.output_transcript}
-                  onCheckedChange={(checked) => handleInputChange("output_transcript", checked)}
-                />
-                <Label htmlFor="output-transcript" className="text-sm">Also return transcript JSON</Label>
-              </div>
-            </div>
+            {/* Output Type section removed - output_video and output_transcript are now always true on backend */}
 
             {/* Font & Size */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
@@ -622,203 +767,76 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
             </div>
 
             {/* Language & Direction */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="right-to-left"
-                  checked={formData.right_to_left}
-                  onCheckedChange={(checked) => handleInputChange("right_to_left", checked)}
-                />
-                <Label htmlFor="right-to-left" className="text-sm">Right-to-left</Label>
+            <div className="space-y-3">
+              <div className="space-y-1 max-w-xs">
+                <Label htmlFor="highlight-color" className="text-sm">✨ Highlight Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="highlight-color"
+                    value={formData.highlight_color}
+                    onChange={(e) => handleInputChange("highlight_color", e.target.value)}
+                    placeholder="yellow"
+                    className="h-8"
+                  />
+                  <input
+                    type="color"
+                    value={formData.highlight_color === "yellow" ? "#ffff00" : formData.highlight_color}
+                    onChange={(e) => handleInputChange("highlight_color", e.target.value)}
+                    className="w-8 h-8 rounded border"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Used for the model's highlight style
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="translate"
-                  checked={formData.translate}
-                  onCheckedChange={(checked) => handleInputChange("translate", checked)}
-                />
-                <Label htmlFor="translate" className="text-sm">Translate to English</Label>
+
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="right-to-left"
+                    checked={formData.right_to_left}
+                    onCheckedChange={(checked) => handleInputChange("right_to_left", checked)}
+                  />
+                  <Label htmlFor="right-to-left" className="text-sm">Right-to-left</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="translate"
+                    checked={formData.translate}
+                    onCheckedChange={(checked) => handleInputChange("translate", checked)}
+                  />
+                  <Label htmlFor="translate" className="text-sm">Translate to English</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Only Arial fonts supported when RTL is on
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Only Arial fonts supported when RTL is on
-              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Step 3: Advanced Options */}
-        <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-          <Card>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-2 sm:pb-3">
-                <CardTitle className="flex items-center justify-between text-base sm:text-lg">
-                  <div className="flex items-center gap-2">
-                    <Wand2 className="h-4 w-4" />
-                    Step 3: Advanced Options
-                  </div>
-                  {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  Power user settings and AI enhancements
-                </CardDescription>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-3 sm:space-y-4">
-                {/* Highlight Color */}
-                <div className="space-y-1 max-w-xs">
-                  <Label htmlFor="highlight-color" className="text-sm">✨ Highlight Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="highlight-color"
-                      value={formData.highlight_color}
-                      onChange={(e) => handleInputChange("highlight_color", e.target.value)}
-                      placeholder="yellow"
-                      className="h-8"
-                    />
-                    <input
-                      type="color"
-                      value={formData.highlight_color === "yellow" ? "#ffff00" : formData.highlight_color}
-                      onChange={(e) => handleInputChange("highlight_color", e.target.value)}
-                      className="w-8 h-8 rounded border"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Used for the model's highlight style
-                  </p>
-                </div>
+        {/* Step 3: Advanced Options - TEMPORARILY DISABLED */}
+        {/* AI features removed to simplify and focus on basic subtitle generation */}
+        <Card className="opacity-50">
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Wand2 className="h-4 w-4" />
+              Step 3: Advanced Options
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              AI enhancements temporarily disabled - coming soon!
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-4 text-muted-foreground">
+              <Wand2 className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">AI Features Coming Soon</p>
+              <p className="text-xs mt-1">Emoji enrichment and keyword emphasis will be available in a future update</p>
+            </div>
+          </CardContent>
+        </Card>
 
-                {/* Emoji Enrichment */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="emoji-enrichment"
-                      checked={formData.emoji_enrichment}
-                      onCheckedChange={(checked) => handleInputChange("emoji_enrichment", checked)}
-                    />
-                    <Label htmlFor="emoji-enrichment" className="text-sm">🎯 Add Emojis to Captions (AI-powered)</Label>
-                  </div>
-                  
-                  {formData.emoji_enrichment && (
-                    <div className="space-y-2 pl-4">
-                      <div className="space-y-1">
-                        <Label className="text-sm">Emoji Strategy</Label>
-                        <Select
-                          value={formData.emoji_strategy}
-                          onValueChange={(value) => handleInputChange("emoji_strategy", value as "AI" | "manualMap")}
-                        >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {EMOJI_STRATEGIES.map((strategy) => (
-                              <SelectItem key={strategy.value} value={strategy.value}>
-                                {strategy.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {formData.emoji_strategy === "manualMap" && (
-                        <div className="space-y-2">
-                          <Label className="text-sm">Custom Emoji Map</Label>
-                          {emojiMapEntries.map((entry, index) => (
-                            <div key={index} className="flex gap-2">
-                              <Input
-                                placeholder="keyword"
-                                value={entry.key}
-                                onChange={(e) => updateEmojiMapEntry(index, 'key', e.target.value)}
-                                className="h-8"
-                              />
-                              <Input
-                                placeholder="emoji"
-                                value={entry.value}
-                                onChange={(e) => updateEmojiMapEntry(index, 'value', e.target.value)}
-                                className="h-8"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => removeEmojiMapEntry(index)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs"
-                            onClick={addEmojiMapEntry}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add Entry
-                          </Button>
-                        </div>
-                      )}
-                      
-                      <p className="text-xs text-muted-foreground">
-                        Adds relevant emojis next to words. Slightly increases processing time
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Keyword Emphasis */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="keyword-emphasis"
-                      checked={formData.keyword_emphasis}
-                      onCheckedChange={(checked) => handleInputChange("keyword_emphasis", checked)}
-                    />
-                    <Label htmlFor="keyword-emphasis" className="text-sm">💡 Emphasize Important Words</Label>
-                  </div>
-                  
-                  {formData.keyword_emphasis && (
-                    <div className="space-y-2 pl-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="keywords" className="text-sm">Keywords (comma-separated)</Label>
-                        <Input
-                          id="keywords"
-                          value={keywordsInput}
-                          onChange={(e) => handleKeywordsChange(e.target.value)}
-                          placeholder="AI, powerful, fast"
-                          className="h-8"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-sm">Emphasis Style</Label>
-                        <Select
-                          value={formData.keyword_style}
-                          onValueChange={(value) => handleInputChange("keyword_style", value as "CAPS" | "EMOJI_WRAP" | "ASTERISKS")}
-                        >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {KEYWORD_STYLES.map((style) => (
-                              <SelectItem key={style.value} value={style.value}>
-                                {style.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        </form>
+        </div>
         </div>
 
         <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 border-t bg-muted/30 flex-shrink-0">
@@ -827,20 +845,20 @@ export function SubtitleForm({ onSubmit, onCancel, isLoading = false, isOpen = t
               Cancel
             </Button>
             <Button 
-              type="submit" 
-              disabled={isLoading || !formData.video_file_input} 
-              className="h-9 w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={handleSubmit}
+              type="button" 
+              disabled={isGenerating || isLoading} 
+              className="h-9 w-full sm:w-auto bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+              onClick={handleGenerate}
             >
-              {isLoading ? (
+              {isGenerating ? (
                 <>
-                  <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating Subtitles...
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Captions
+                  Generate Subtitled Video
                 </>
               )}
             </Button>

@@ -19,10 +19,14 @@ const createProductMotionSchema = z.object({
   core_moment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   emotional_tone: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   visual_style: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  duration: z.number().min(5).max(15).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  duration: z.union([z.number(), z.string()]).optional().nullable().transform(e => {
+    if (e === '' || e === null || e === undefined) return undefined;
+    return typeof e === 'string' ? Number(e) : e;
+  }).pipe(z.number().min(5).max(15).optional()).or(nullToUndefined),
+  aspect_ratio: z.enum(['9:16', '16:9', '1:1']).optional().nullable(),
   
   // Visual Context
-  environment: z.enum(['Studio white', 'Urban twilight', 'Forest dawn', 'Black marble', 'Custom']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  environment: z.union([z.enum(['Studio white', 'Urban twilight', 'Forest dawn', 'Black marble', 'Custom']), z.literal('')]).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   custom_environment: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   lighting_mood: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   material_focus: z.array(z.string()).optional(),
@@ -31,21 +35,33 @@ const createProductMotionSchema = z.object({
   
   // Motion & Energy
   reveal_type: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  camera_energy: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  camera_energy: z.union([z.number(), z.string()]).optional().nullable().transform(e => {
+    if (e === '' || e === null || e === undefined) return undefined;
+    return typeof e === 'string' ? Number(e) : e;
+  }).pipe(z.number().min(0).max(100).optional()).or(nullToUndefined),
   loop_mode: z.boolean().optional(),
-  hook_intensity: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  end_emotion: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  hook_intensity: z.union([z.number(), z.string()]).optional().nullable().transform(e => {
+    if (e === '' || e === null || e === undefined) return undefined;
+    return typeof e === 'string' ? Number(e) : e;
+  }).pipe(z.number().min(0).max(100).optional()).or(nullToUndefined),
+  end_emotion: z.union([z.number(), z.string()]).optional().nullable().transform(e => {
+    if (e === '' || e === null || e === undefined) return undefined;
+    return typeof e === 'string' ? Number(e) : e;
+  }).pipe(z.number().min(0).max(100).optional()).or(nullToUndefined),
   
   // Audio DNA
   sound_mode: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   sound_mood: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   key_effects: z.array(z.string()).optional(),
-  mix_curve: z.number().min(0).max(100).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  mix_curve: z.union([z.number(), z.string()]).optional().nullable().transform(e => {
+    if (e === '' || e === null || e === undefined) return undefined;
+    return typeof e === 'string' ? Number(e) : e;
+  }).pipe(z.number().min(0).max(100).optional()).or(nullToUndefined),
   
   // Brand Touch
   accent_color_sync: z.boolean().optional(),
   accent_color: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
-  logo_moment: z.enum(['Morph From Form', 'Fade-In', 'Hover', 'None']).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
+  logo_moment: z.union([z.enum(['Morph From Form', 'Fade-In', 'Hover', 'None']), z.literal('')]).optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   text_constraint: z.boolean().optional(),
   
   // Category-specific fields - Data Visualizations
@@ -109,6 +125,7 @@ export async function POST(request: NextRequest) {
           emotional_tone: validatedData.emotional_tone,
           visual_style: validatedData.visual_style,
           duration: validatedData.duration,
+          aspect_ratio: validatedData.aspect_ratio,
           
           // Visual Context
           environment: validatedData.environment,

@@ -56,3 +56,4 @@ COMMENT ON COLUMN ugc_ads.aspect_ratio IS 'Video aspect ratio: 9:16 (vertical), 
 COMMENT ON COLUMN ugc_ads.character_descriptions IS 'Structured character design data for single mode (array of character objects)';
 COMMENT ON COLUMN ugc_ads.partial_character IS 'Structured partial character data for single mode';
 COMMENT ON COLUMN ugc_ads.dialog_lines IS 'Turn-by-turn conversation data for multi-character scenarios';
+

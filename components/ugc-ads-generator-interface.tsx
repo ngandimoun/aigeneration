@@ -970,9 +970,26 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
       const result = await response.json()
       
       toast({
-        title: "Success!",
-        description: "Your UGC ad has been generated successfully!",
+        title: "UGC ad task started",
+        description: "We're polling status. It will appear in your library when ready.",
       })
+
+      // Minimal polling to finalize (30s x 10 attempts)
+      try {
+        const ugcId = result.ugcAd?.id
+        if (ugcId) {
+          let attempts = 0
+          const poll = async () => {
+            attempts++
+            const res = await fetch(`/api/kie/veo/status?ugcId=${ugcId}`, { method: 'GET' })
+            if (!res.ok) return
+            const status = await res.json()
+            if (status.status === 'completed' || status.status === 'failed') return
+            if (attempts < 10) setTimeout(poll, 30000)
+          }
+          setTimeout(poll, 30000)
+        }
+      } catch {}
       
       // Handle success (redirect, show result, etc.)
       console.log('Generated UGC ad:', result)
@@ -2557,6 +2574,24 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
+                  variant={duration === 5 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(5)}
+                  className="h-8 text-xs"
+                >
+                  ⚡ 5s
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 8 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(8)}
+                  className="h-8 text-xs"
+                >
+                  ⚡ 8s
+                </Button>
+                <Button
+                  type="button"
                   variant={duration === 15 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(15)}
@@ -2628,43 +2663,16 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Aspect Ratio
               </label>
               
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  variant={aspectRatio === '9:16' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('9:16')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-6 h-10 border-2 border-current rounded"></div>
-                  <span className="text-xs">9:16</span>
-                  <span className="text-[10px] text-muted-foreground">Vertical</span>
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant={aspectRatio === '16:9' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('16:9')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-10 h-6 border-2 border-current rounded"></div>
-                  <span className="text-xs">16:9</span>
-                  <span className="text-[10px] text-muted-foreground">Horizontal</span>
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant={aspectRatio === '1:1' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('1:1')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-8 h-8 border-2 border-current rounded"></div>
-                  <span className="text-xs">1:1</span>
-                  <span className="text-[10px] text-muted-foreground">Square</span>
-                </Button>
-              </div>
+              <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select aspect ratio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                  <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                  <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                </SelectContent>
+              </Select>
               
               {aspectRatio === '1:1' && (
                 <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
@@ -4003,6 +4011,24 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
+                  variant={duration === 5 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(5)}
+                  className="h-8 text-xs"
+                >
+                  ⚡ 5s
+                </Button>
+                <Button
+                  type="button"
+                  variant={duration === 8 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDuration(8)}
+                  className="h-8 text-xs"
+                >
+                  ⚡ 8s
+                </Button>
+                <Button
+                  type="button"
                   variant={duration === 15 ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setDuration(15)}
@@ -4074,43 +4100,16 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Aspect Ratio
               </label>
               
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  variant={aspectRatio === '9:16' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('9:16')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-6 h-10 border-2 border-current rounded"></div>
-                  <span className="text-xs">9:16</span>
-                  <span className="text-[10px] text-muted-foreground">Vertical</span>
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant={aspectRatio === '16:9' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('16:9')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-10 h-6 border-2 border-current rounded"></div>
-                  <span className="text-xs">16:9</span>
-                  <span className="text-[10px] text-muted-foreground">Horizontal</span>
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant={aspectRatio === '1:1' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('1:1')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-8 h-8 border-2 border-current rounded"></div>
-                  <span className="text-xs">1:1</span>
-                  <span className="text-[10px] text-muted-foreground">Square</span>
-                </Button>
-              </div>
+              <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select aspect ratio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                  <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                  <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                </SelectContent>
+              </Select>
               
               {aspectRatio === '1:1' && (
                 <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
@@ -5432,43 +5431,16 @@ export function UGCAdsGeneratorInterface({ onClose, projectTitle }: UGCAdsGenera
                 Aspect Ratio
               </label>
               
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  variant={aspectRatio === '9:16' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('9:16')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-6 h-10 border-2 border-current rounded"></div>
-                  <span className="text-xs">9:16</span>
-                  <span className="text-[10px] text-muted-foreground">Vertical</span>
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant={aspectRatio === '16:9' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('16:9')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-10 h-6 border-2 border-current rounded"></div>
-                  <span className="text-xs">16:9</span>
-                  <span className="text-[10px] text-muted-foreground">Horizontal</span>
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant={aspectRatio === '1:1' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setAspectRatio('1:1')}
-                  className="h-16 flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="w-8 h-8 border-2 border-current rounded"></div>
-                  <span className="text-xs">1:1</span>
-                  <span className="text-[10px] text-muted-foreground">Square</span>
-                </Button>
-              </div>
+              <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select aspect ratio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
+                  <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
+                  <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                </SelectContent>
+              </Select>
               
               {aspectRatio === '1:1' && (
                 <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
