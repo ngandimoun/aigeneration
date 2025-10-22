@@ -1,0 +1,81 @@
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  imageUrls?: string[]
+  currentSection?: string
+  metadata?: {
+    promptType?: string
+    assetType?: string
+    rating?: number
+    copied?: boolean
+  }
+  createdAt: string
+}
+
+export interface ChatConversation {
+  id: string
+  lastMessage: string
+  lastMessageAt: string
+  messageCount: number
+}
+
+export interface ChatbotContextType {
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
+  conversationId: string | null
+  setConversationId: (id: string | null) => void
+  messages: ChatMessage[]
+  setMessages: (messages: ChatMessage[]) => void
+  currentSection: string
+  isLoading: boolean
+  setIsLoading: (loading: boolean) => void
+}
+
+export interface SendMessageRequest {
+  message: string
+  imageFiles?: File[]
+  imageUrls?: string[] // For library images
+  currentSection: string
+  conversationId?: string
+}
+
+export interface SendMessageResponse {
+  success: boolean
+  message?: ChatMessage
+  conversationId?: string
+  error?: string
+}
+
+export interface ChatHistoryResponse {
+  success: boolean
+  messages?: ChatMessage[]
+  error?: string
+}
+
+export interface ConversationsResponse {
+  success: boolean
+  conversations?: ChatConversation[]
+  error?: string
+}
+
+export interface ImageUploadResponse {
+  success: boolean
+  url?: string
+  error?: string
+}
+
+export interface PromptGenerationRequest {
+  imageFiles?: File[]
+  imageUrls?: string[]
+  instructions: string
+  assetType?: string
+  currentSection: string
+}
+
+export interface PromptGenerationResponse {
+  success: boolean
+  prompt?: string
+  suggestions?: string[]
+  error?: string
+}

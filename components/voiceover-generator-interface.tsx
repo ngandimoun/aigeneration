@@ -43,6 +43,7 @@ import {
 import { OPENAI_VOICES, type OpenAIVoice } from "@/lib/openai/text-to-speech"
 import { useToast} from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useCacheContext } from "@/hooks/use-cache-context"
 import { cn } from "@/lib/utils"
 import { buildOpenAIInstructions } from "@/lib/utils/openai-voice-instructions-builder"
 
@@ -345,6 +346,7 @@ const AUDIO_QUALITY_OPTIONS = [
 export function VoiceoverGeneratorInterface({ onClose, projectTitle }: VoiceoverGeneratorInterfaceProps) {
   const { toast } = useToast()
   const { user } = useAuth()
+  const { invalidateSection } = useCacheContext()
   
   // Voiceover Configuration
   const [prompt, setPrompt] = useState("")
@@ -549,6 +551,9 @@ export function VoiceoverGeneratorInterface({ onClose, projectTitle }: Voiceover
         title: "Voiceover generated successfully!",
         description: `Your voiceover has been saved to your library.`
       })
+
+      // Invalidate cache to refresh the voiceovers section
+      await invalidateSection('voiceovers')
 
       // Refresh the library to show the new voiceover
       mutate('/api/voiceovers')

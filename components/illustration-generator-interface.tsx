@@ -46,6 +46,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useCacheContext } from "@/hooks/use-cache-context"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
 import { getSupportedAspectRatios } from '@/lib/utils/aspect-ratio-utils'
@@ -320,6 +321,7 @@ const ALL_ASPECT_RATIOS = [
 export function IllustrationGeneratorInterface({ onClose, projectTitle, projectData }: IllustrationGeneratorInterfaceProps) {
   const { toast } = useToast()
   const { user } = useAuth()
+  const { invalidateSection } = useCacheContext()
 
   // Entry & Intent
   const [title, setTitle] = useState("")
@@ -666,7 +668,8 @@ export function IllustrationGeneratorInterface({ onClose, projectTitle, projectD
         duration: 5000,
       })
 
-          // Previous generations will auto-refresh on next visit
+      // Invalidate cache to refresh the illustrations section
+      await invalidateSection('illustrations')
 
       onClose()
 

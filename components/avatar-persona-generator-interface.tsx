@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useCacheContext } from "@/hooks/use-cache-context"
 import { GenerationLoading } from "@/components/ui/generation-loading"
 import { GenerationError } from "@/components/ui/generation-error"
 
@@ -1424,6 +1425,7 @@ const AspectRatioIcon = ({ ratio }: { ratio: string }) => {
 
 export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: AvatarPersonaGeneratorInterfaceProps) {
   const { user } = useAuth()
+  const { invalidateSection } = useCacheContext()
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
   const model = "Nano-banana" // Hardcoded for avatar generation
@@ -1849,6 +1851,9 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       
       // Show success message
       toast.success(`Avatar/persona "${result.avatar.title}" created successfully!`)
+      
+      // Invalidate cache to refresh the avatars section
+      await invalidateSection('avatars_personas')
       
       // Close the interface
       onClose()

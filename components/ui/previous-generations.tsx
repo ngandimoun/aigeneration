@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress"
 import { getContentTypeInfo, getContentTypeDisplayName, getContentTypeApiRoute, isVideoContentType, isAudioContentType, isImageContentType } from "@/lib/types/content-types"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useSectionCache } from "@/hooks/use-section-cache"
 import { mutate } from "swr"
 
 // Utility function to format duration in seconds to MM:SS format
@@ -41,9 +42,6 @@ interface PreviousGenerationsProps {
 }
 
 export function PreviousGenerations({ contentType, userId, className = "" }: PreviousGenerationsProps) {
-  const [items, setItems] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string>("")
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
   const [isBulkAdding, setIsBulkAdding] = useState(false)
   const [isCheckingStatus, setIsCheckingStatus] = useState(false)
@@ -61,122 +59,13 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
   const { toast } = useToast()
   const { user } = useAuth()
 
+  // Use the new section cache hook
+  const { data: items = [], error, isLoading: loading, mutate } = useSectionCache(contentType, userId)
 
   const contentInfo = getContentTypeInfo(contentType)
   const displayName = getContentTypeDisplayName(contentType)
   const apiRoute = getContentTypeApiRoute(contentType)
 
-  const fetchItems = async () => {
-    if (!userId) return
-
-    try {
-      setLoading(true)
-      setError("")
-      console.log(`📚 PreviousGenerations: Fetching ${contentType} from ${apiRoute}`)
-
-      // Fetch from section-specific API route
-      const response = await fetch(apiRoute)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch from ${apiRoute}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      
-      // Extract the array from the wrapped response
-      // API routes return data wrapped in objects with keys like {watermarks: [...], illustrations: [...]}
-      const getResponseKey = (contentType: string): string => {
-        // Map content types to their API response keys
-        const keyMap: Record<string, string> = {
-          'watermarks': 'watermarks',
-          'video_translations': 'videoTranslations', 
-          'subtitles': 'subtitles',
-          'illustrations': 'illustrations',
-          'explainers': 'explainers',
-          'avatars_personas': 'avatars',
-          'product_mockups': 'productMockups',
-          'concept_worlds': 'conceptWorlds',
-          'charts_infographics': 'chartsInfographics',
-          'voices_creations': 'voiceCreations',
-          'voiceovers': 'voiceovers',
-          'music_jingles': 'musicJingles',
-          'music_videos': 'musicVideos',
-          'sound_fx': 'soundFx',
-          'talking_avatars': 'talkingAvatars',
-          'social_cuts': 'socialCuts',
-          'diverse_motion_single': 'diverseMotionSingle',
-          'diverse_motion_dual': 'diverseMotionDual'
-        }
-        return keyMap[contentType] || contentType
-      }
-      
-      const responseKey = getResponseKey(contentType)
-      const extractedItems = data[responseKey]
-      
-      // Ensure we always have an array, even if the API response is malformed
-      const items = Array.isArray(extractedItems) ? extractedItems : []
-      
-      console.log(`📚 PreviousGenerations: Found ${items.length} items from ${apiRoute} (key: ${responseKey})`)
-      console.log(`📚 PreviousGenerations: API response structure:`, {
-        hasResponseKey: !!data[responseKey],
-        responseKey,
-        extractedItemsType: typeof extractedItems,
-        extractedItemsIsArray: Array.isArray(extractedItems),
-        extractedItemsLength: Array.isArray(extractedItems) ? extractedItems.length : 'N/A'
-      })
-      
-      if (items.length > 0) {
-        console.log(`📊 Sample item data for ${contentType}:`, items[0])
-        
-        // Log appropriate fields based on content type
-        if (isAudioContentType(contentType)) {
-          console.log(`🎵 Generated audio for ${contentType}:`, items[0].generated_audio_path)
-          console.log(`📁 Storage path for ${contentType}:`, items[0].storage_path)
-        } else if (isVideoContentType(contentType)) {
-          console.log(`🎬 Generated video for ${contentType}:`, items[0].generated_video_url)
-          console.log(`📁 Storage path for ${contentType}:`, items[0].storage_path)
-        } else {
-          console.log(`🖼️ Generated images for ${contentType}:`, items[0].generated_images)
-          console.log(`📁 Storage paths for ${contentType}:`, items[0].storage_paths)
-        }
-      }
-
-      // For voice creations, deduplicate by generation_batch_id
-      let deduplicatedItems = items
-      if (contentType === 'voices_creations' && Array.isArray(items) && items.length > 0) {
-        const groupedByBatch = new Map()
-        
-        for (const item of items) {
-          const batchId = item.metadata?.generation_batch_id || item.id // Use item.id if no batch ID
-          
-          if (!groupedByBatch.has(batchId)) {
-            groupedByBatch.set(batchId, item)
-          } else {
-            // If this item is marked as primary, replace the existing one
-            if (item.metadata?.is_primary === true) {
-              groupedByBatch.set(batchId, item)
-            }
-          }
-        }
-        
-        deduplicatedItems = Array.from(groupedByBatch.values())
-        console.log(`🎵 Deduplicated voice creations: ${items.length} → ${deduplicatedItems.length}`)
-      }
-
-      setItems(deduplicatedItems)
-    } catch (error) {
-      console.error(`Error fetching ${contentType} from ${apiRoute}:`, error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch items')
-      // Ensure items is always an array even on error
-      setItems([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchItems()
-  }, [userId, contentType, apiRoute])
 
   // Delete item
   const deleteItem = async (itemId: string) => {
@@ -195,7 +84,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       })
 
       // Refresh the list
-      fetchItems()
+      mutate()
     } catch (error) {
       console.error('Error deleting item:', error)
       toast({
@@ -542,7 +431,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       })
 
       // Refresh the list to show updated status
-      fetchItems()
+      mutate()
 
     } catch (error) {
       console.error('❌ [BULK ADD] Error:', error)
@@ -575,7 +464,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
         })
         
         // Refresh the items to show updated status
-        fetchItems()
+        mutate()
       } else {
         throw new Error(result.message || 'Status check failed')
       }
@@ -612,7 +501,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
         })
         
         // Refresh the items to show updated status
-        fetchItems()
+        mutate()
       } else {
         throw new Error(result.message || 'Recovery failed')
       }
@@ -667,7 +556,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
         })
         
         // Refresh the items to show updated status
-        fetchItems()
+        mutate()
       } else {
         throw new Error(result.message || 'Batch recovery failed')
       }
@@ -917,7 +806,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
       const data = await response.json()
       
       if (data.status === 'completed') {
-        mutate(`/api/${item.content_type}`)
+        mutate()
         toast({
           title: "Success!",
           description: "Audio recovered successfully.",
@@ -1133,7 +1022,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
           <Button
             variant="ghost"
             size="sm"
-            onClick={fetchItems}
+            onClick={() => mutate()}
             title="Refresh previous generations"
             className="h-8 w-8 p-0"
           >
@@ -1154,7 +1043,7 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
         <div className="flex items-center justify-center h-32">
           <div className="text-center">
             <p className="text-sm text-destructive mb-2">Failed to load previous generations</p>
-            <Button onClick={fetchItems} variant="outline" size="sm">
+            <Button onClick={() => mutate()} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>

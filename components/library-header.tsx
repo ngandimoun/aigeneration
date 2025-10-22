@@ -80,8 +80,8 @@ export function LibraryHeader() {
     fetcher,
     {
       revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 10000, // 10 seconds deduplication
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 1 minute deduplication
       errorRetryCount: 3,
       errorRetryInterval: 1000,
       onSuccess: (data) => {

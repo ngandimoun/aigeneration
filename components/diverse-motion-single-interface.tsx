@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+import { useSectionCache } from "@/hooks/use-section-cache"
 import { 
   X, 
   Sparkles, 
@@ -77,7 +78,6 @@ export function DiverseMotionSingleInterface({
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showLibraryModal, setShowLibraryModal] = useState(false)
   const [selectedLibraryAsset, setSelectedLibraryAsset] = useState<any>(null)
-  const [loadingLibraryAssets, setLoadingLibraryAssets] = useState(false)
   const [libraryAssets, setLibraryAssets] = useState<any[]>([])
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -85,89 +85,59 @@ export function DiverseMotionSingleInterface({
   const { toast } = useToast()
   const { user } = useAuth()
 
-  // Fetch library items from three content types
+  // Use section cache hooks for library data
+  const { data: avatarsData = [], isLoading: loadingAvatars } = useSectionCache('avatars_personas', user?.id || null)
+  const { data: productMockupsData = [], isLoading: loadingProductMockups } = useSectionCache('product_mockups', user?.id || null)
+  const { data: chartsData = [], isLoading: loadingCharts } = useSectionCache('charts_infographics', user?.id || null)
+
+  const loadingLibraryAssets = loadingAvatars || loadingProductMockups || loadingCharts
+
+  // Combine library assets from all three content types
   useEffect(() => {
-    const loadLibraryAssets = async () => {
-      if (!user) return
-      
-      setLoadingLibraryAssets(true)
-      try {
-        // Query all 3 API endpoints in parallel
-        const [avatarsRes, productMockupsRes, chartsRes] = await Promise.all([
-          fetch('/api/avatars'),
-          fetch('/api/product-mockups'),
-          fetch('/api/charts-infographics')
-        ])
+    const assets: Array<{id: string, title: string, image: string, content_type: string}> = []
 
-        const [avatarsData, productMockupsData, chartsData] = await Promise.all([
-          avatarsRes.ok ? avatarsRes.json() : { avatars: [] },
-          productMockupsRes.ok ? productMockupsRes.json() : { productMockups: [] },
-          chartsRes.ok ? chartsRes.json() : { chartsInfographics: [] }
-        ])
-
-        const assets: Array<{id: string, title: string, image: string, content_type: string}> = []
-
-        // Process Avatars & Personas
-        if (avatarsData.avatars) {
-          avatarsData.avatars.forEach((item: any) => {
-            const image = item.generated_images?.[0] || item.content?.image || item.content?.images?.[0] || ''
-            if (image) {
-              assets.push({
-                id: `avatars_personas_${item.id}`,
-                title: item.title || 'Avatar',
-                image,
-                content_type: 'avatars_personas'
-              })
-            }
-          })
-        }
-
-        // Process Product Mockups
-        if (productMockupsData.productMockups) {
-          productMockupsData.productMockups.forEach((item: any) => {
-            const image = item.generated_images?.[0] || item.content?.image || item.content?.images?.[0] || ''
-            if (image) {
-              assets.push({
-                id: `product_mockups_${item.id}`,
-                title: item.title || 'Product Mockup',
-                image,
-                content_type: 'product_mockups'
-              })
-            }
-          })
-        }
-
-        // Process Charts & Infographics
-        if (chartsData.chartsInfographics) {
-          chartsData.chartsInfographics.forEach((item: any) => {
-            const image = item.generated_images?.[0] || item.content?.image || item.content?.images?.[0] || ''
-            if (image) {
-              assets.push({
-                id: `charts_infographics_${item.id}`,
-                title: item.title || 'Chart',
-                image,
-                content_type: 'charts_infographics'
-              })
-            }
-          })
-        }
-
-        console.log(`📚 Total library assets loaded: ${assets.length}`)
-        setLibraryAssets(assets)
-      } catch (error) {
-        console.error('Error loading library assets:', error)
-        toast({
-          title: "Error loading library",
-          description: "Failed to load assets from your library.",
-          variant: "destructive"
+    // Process Avatars & Personas
+    avatarsData.forEach((item: any) => {
+      const image = item.generated_images?.[0] || item.content?.image || item.content?.images?.[0] || ''
+      if (image) {
+        assets.push({
+          id: `avatars_personas_${item.id}`,
+          title: item.title || 'Avatar',
+          image,
+          content_type: 'avatars_personas'
         })
-      } finally {
-        setLoadingLibraryAssets(false)
       }
-    }
+    })
 
-    loadLibraryAssets()
-  }, [user, toast])
+    // Process Product Mockups
+    productMockupsData.forEach((item: any) => {
+      const image = item.generated_images?.[0] || item.content?.image || item.content?.images?.[0] || ''
+      if (image) {
+        assets.push({
+          id: `product_mockups_${item.id}`,
+          title: item.title || 'Product Mockup',
+          image,
+          content_type: 'product_mockups'
+        })
+      }
+    })
+
+    // Process Charts & Infographics
+    chartsData.forEach((item: any) => {
+      const image = item.generated_images?.[0] || item.content?.image || item.content?.images?.[0] || ''
+      if (image) {
+        assets.push({
+          id: `charts_infographics_${item.id}`,
+          title: item.title || 'Chart',
+          image,
+          content_type: 'charts_infographics'
+        })
+      }
+    })
+
+    console.log(`📚 Total library assets loaded: ${assets.length}`)
+    setLibraryAssets(assets)
+  }, [avatarsData, productMockupsData, chartsData])
 
   const motionTypes = [
     { value: "smooth", label: "Smooth" },

@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, ReactNode, useCallback } from "react"
+import { CacheProvider } from "./use-cache-context"
 
 interface NavigationContextType {
   selectedSection: string
@@ -207,9 +208,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <NavigationContext.Provider value={value}>
-      {children}
-    </NavigationContext.Provider>
+    <CacheProvider>
+      <NavigationContext.Provider value={value}>
+        {children}
+      </NavigationContext.Provider>
+    </CacheProvider>
   )
 }
 
