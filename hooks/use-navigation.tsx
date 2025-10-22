@@ -147,16 +147,14 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return "Sound FX"
       case "explainers":
         return "Explainers"
-      case "ugc-ads":
-        return "UGC Ads"
-      case "diverse-motion":
-        return "Diverse Motion"
-      case "cinematic-clips":
-        return "Cinematic Clips"
       case "social-cuts":
         return "Social Cuts"
       case "talking-avatars":
         return "Talking Avatars"
+      case "diverse-motion-single":
+        return "Diverse Motion - Single Asset"
+      case "diverse-motion-dual":
+        return "Diverse Motion - Dual Asset"
       case "thumbnails-covers":
         return "Thumbnails & Covers"
       case "storyboards-scripts":

@@ -166,30 +166,6 @@ export const CONTENT_TYPE_MAP: Record<string, ContentTypeInfo> = {
     isAudio: false,
     isImage: false
   },
-  'ugc_ads': {
-    table: 'ugc_ads',
-    apiRoute: '/api/ugc-ads',
-    displayName: 'UGC Ads',
-    category: 'motions',
-    icon: 'Megaphone',
-    description: 'User-generated content ads',
-    fileExtension: 'mp4',
-    isVideo: true,
-    isAudio: false,
-    isImage: false
-  },
-  'product_motions': {
-    table: 'product_motions',
-    apiRoute: '/api/diverse-motion',
-    displayName: 'Diverse Motion',
-    category: 'motions',
-    icon: 'Zap',
-    description: 'Diverse motion graphics',
-    fileExtension: 'mp4',
-    isVideo: true,
-    isAudio: false,
-    isImage: false
-  },
   'talking_avatars': {
     table: 'talking_avatars',
     apiRoute: '/api/talking-avatars',
@@ -202,13 +178,25 @@ export const CONTENT_TYPE_MAP: Record<string, ContentTypeInfo> = {
     isAudio: false,
     isImage: false
   },
-  'cinematic_clips': {
-    table: 'cinematic_clips',
-    apiRoute: '/api/cinematic-clips',
-    displayName: 'Cinematic Clips',
+  'diverse_motion_single': {
+    table: 'diverse_motion_single',
+    apiRoute: '/api/diverse-motion/single',
+    displayName: 'Diverse Motion - Single Asset',
     category: 'motions',
-    icon: 'Film',
-    description: 'Cinematic video clips',
+    icon: 'Layers',
+    description: 'Single asset motion videos',
+    fileExtension: 'mp4',
+    isVideo: true,
+    isAudio: false,
+    isImage: false
+  },
+  'diverse_motion_dual': {
+    table: 'diverse_motion_dual',
+    apiRoute: '/api/diverse-motion/dual',
+    displayName: 'Diverse Motion - Dual Asset',
+    category: 'motions',
+    icon: 'Layers',
+    description: 'Dual asset motion videos',
     fileExtension: 'mp4',
     isVideo: true,
     isAudio: false,

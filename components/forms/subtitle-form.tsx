@@ -82,38 +82,19 @@ export function SubtitleForm({ onCancel, isLoading = false, isOpen = true }: Sub
     const loadVideosFromAPIs = async () => {
       setLoadingVideos(true)
       try {
-        // Query all 4 API endpoints in parallel with status=completed filter
-        const [ugcAdsRes, talkingAvatarsRes, diverseMotionRes, explainersRes] = await Promise.all([
-          fetch('/api/ugc-ads?status=completed'),
+        // Query all 2 API endpoints in parallel with status=completed filter
+        const [talkingAvatarsRes, explainersRes] = await Promise.all([
           fetch('/api/talking-avatars?status=completed'),
-          fetch('/api/diverse-motion?status=completed'),
           fetch('/api/explainers?status=completed')
         ])
 
-        const [ugcAdsData, talkingAvatarsData, diverseMotionData, explainersData] = await Promise.all([
-          ugcAdsRes.ok ? ugcAdsRes.json() : { ugc_ads: [] },
+        const [talkingAvatarsData, explainersData] = await Promise.all([
           talkingAvatarsRes.ok ? talkingAvatarsRes.json() : { talkingAvatars: [] },
-          diverseMotionRes.ok ? diverseMotionRes.json() : { productMotions: [] },
           explainersRes.ok ? explainersRes.json() : { explainers: [] }
         ])
 
         const videos: Array<{id: string, title: string, image: string, video_url: string, content_type: string}> = []
 
-        // Process UGC Ads
-        if (ugcAdsData.ugc_ads) {
-          ugcAdsData.ugc_ads.forEach((item: any) => {
-            const video_url = item.content?.video_url || item.content?.output_video_url || item.storage_path || ''
-            if (video_url) {
-              videos.push({
-                id: `ugc_ads_${item.id}`,
-                title: item.brand_name || 'UGC Ad',
-                image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
-                video_url,
-                content_type: 'ugc_ads'
-              })
-            }
-          })
-        }
 
         // Process Talking Avatars
         if (talkingAvatarsData.talkingAvatars) {
@@ -131,21 +112,6 @@ export function SubtitleForm({ onCancel, isLoading = false, isOpen = true }: Sub
           })
         }
 
-        // Process Product Motions (Diverse Motion)
-        if (diverseMotionData.productMotions) {
-          diverseMotionData.productMotions.forEach((item: any) => {
-            const video_url = item.content?.video_url || item.content?.output_video_url || ''
-            if (video_url) {
-              videos.push({
-                id: `product_motions_${item.id}`,
-                title: item.product_name || item.product_category || 'Product Motion',
-                image: item.content?.image || item.content?.images?.[0] || '/placeholder.jpg',
-                video_url,
-                content_type: 'product_motions'
-              })
-            }
-          })
-        }
 
         // Process Explainers
         if (explainersData.explainers) {

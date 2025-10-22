@@ -51,8 +51,14 @@ dreamcut/
     │       ├── logo/
     │       └── generated/
     ├── diverse-motion/
-    │   └── {user_id}/
-    │       └── generated/
+    │   ├── single/
+    │   │   └── {user_id}/
+    │   │       ├── assets/
+    │   │       └── generated/
+    │   └── dual/
+    │       └── {user_id}/
+    │           ├── assets/
+    │           └── generated/
     ├── sound-fx/
     │   └── {user_id}/
     │       ├── references/
@@ -107,7 +113,8 @@ dreamcut/
 |--------------|-------|---------------------|----------------|
 | **Explainers** | `explainers` | `renders/explainers/{user_id}/{job_id}.mp4` | `storage_path` (TEXT) |
 | **UGC Ads** | `ugc_ads` | `renders/ugc-ads/{user_id}/generated/` | `storage_path` (TEXT) |
-| **Diverse Motion** | `product_motions` | `renders/diverse-motion/{user_id}/generated/` | `storage_path` (TEXT) |
+| **Diverse Motion Single** | `diverse_motion_single` | `renders/diverse-motion/single/{user_id}/generated/` | `storage_path` (TEXT) |
+| **Diverse Motion Dual** | `diverse_motion_dual` | `renders/diverse-motion/dual/{user_id}/generated/` | `storage_path` (TEXT) |
 | **Talking Avatars** | `talking_avatars` | `renders/talking-avatars/{user_id}/generated/` | `storage_path` (TEXT) |
 
 ### Edit Category

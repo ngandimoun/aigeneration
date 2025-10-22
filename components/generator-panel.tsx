@@ -8,8 +8,6 @@ import { AvatarPersonaGeneratorInterface } from "@/components/avatar-persona-gen
 import { VideoGeneratorInterface } from "@/components/video-generator-interface"
 import { ExplainerGeneratorInterface } from "@/components/explainer-generator-interface"
 import { ExplainerVideoLibrary } from "@/components/explainer-video-library"
-import { UGCAdsGeneratorInterface } from "@/components/ugc-ads-generator-interface"
-import { DiverseMotionGeneratorInterface } from "@/components/diverse-motion-generator-interface"
 import { ProductMockupGeneratorInterface } from "@/components/product-mockup-generator-interface"
 import { ChartsInfographicsGeneratorInterface } from "@/components/charts-infographics-generator-interface"
 import { ConceptWorldsGeneratorInterface } from "@/components/concept-worlds-generator-interface"
@@ -17,6 +15,8 @@ import { VoiceCreationInterface } from "@/components/voice-creation-interface"
 import { VoiceoverGeneratorInterface } from "@/components/voiceover-generator-interface"
 import { SoundFxInterface } from "@/components/sound-fx-interface"
 import { TalkingAvatarsGeneratorInterface } from "@/components/talking-avatars-generator-interface"
+import { DiverseMotionSingleInterface } from "@/components/diverse-motion-single-interface"
+import { DiverseMotionDualInterface } from "@/components/diverse-motion-dual-interface"
 import { MusicJingleGeneratorInterface } from "@/components/music-jingle-generator-interface"
 import { MusicVideoGeneratorInterface } from "@/components/music-video-generator-interface"
 import { IllustrationForm } from "@/components/forms/illustration-form"
@@ -25,9 +25,6 @@ import { ProductMockupsForm } from "@/components/forms/product-mockups-form"
 import { ConceptWorldsForm } from "@/components/forms/concept-worlds-form"
 import { ChartsInfographicsForm } from "@/components/forms/charts-infographics-form"
 import { ExplainersForm } from "@/components/forms/explainers-form"
-import { UGCAdsForm } from "@/components/forms/ugc-ads-form"
-import { ProductMotionForm } from "@/components/forms/product-motion-form"
-import { CinematicClipsForm } from "@/components/forms/cinematic-clips-form"
 import { SocialCutsForm } from "@/components/forms/social-cuts-form"
 import { TalkingAvatarsForm } from "@/components/forms/talking-avatars-form"
 import { ComicsForm } from "@/components/forms/comics-form"
@@ -83,12 +80,16 @@ export function GeneratorPanel() {
   const [showTalkingAvatars, setShowTalkingAvatars] = useState(false)
   const [selectedTalkingAvatarProject, setSelectedTalkingAvatarProject] = useState<{title: string, image: string, description: string} | null>(null)
   
+  // États locaux pour l'interface de génération de diverse motion
+  const [showDiverseMotionSingle, setShowDiverseMotionSingle] = useState(false)
+  const [showDiverseMotionDual, setShowDiverseMotionDual] = useState(false)
+  
 
   // Sections qui supportent la génération d'images
   const imageGenerationSections = ['illustration', 'avatars-personas', 'product-mockups', 'concept-worlds', 'charts-infographics', 'comics']
   
   // Sections qui supportent la génération vidéo
-  const videoGenerationSections = ['explainers', 'social-cuts', 'cinematic-clips', 'diverse-motion', 'ugc-ads']
+  const videoGenerationSections = ['explainers', 'social-cuts']
   
   // Sections qui supportent la création de voix
   const voiceCreationSections = ['voice-creation']
@@ -106,10 +107,13 @@ export function GeneratorPanel() {
   const musicVideoSections = ['music-videos']
   
   // Sections qui supportent les nouveaux formulaires
-  const newFormSections = ['ugc-ads', 'diverse-motion', 'cinematic-clips', 'social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound', 'add-watermark', 'video-translate']
+  const newFormSections = ['social-cuts', 'talking-avatars', 'comics', 'add-subtitles', 'add-sound', 'add-watermark', 'video-translate']
   
   // Sections qui supportent la génération de talking avatars
   const talkingAvatarsSections = ['talking-avatars']
+  
+  // Sections qui supportent la génération de diverse motion
+  const diverseMotionSections = ['diverse-motion-single', 'diverse-motion-dual']
   
   // Helper functions
   const isImageGenerationSection = (section: string) => imageGenerationSections.includes(section)
@@ -125,7 +129,8 @@ export function GeneratorPanel() {
   const isMusicJingleSection = (section: string) => musicJingleSections.includes(section)
   const isNewFormSection = (section: string) => newFormSections.includes(section)
   const isTalkingAvatarsSection = (section: string) => talkingAvatarsSections.includes(section)
-  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection) || selectedSection === 'explainers') && selectedSection !== 'social-cuts' && selectedSection !== 'cinematic-clips' && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
+  const isDiverseMotionSection = (section: string) => diverseMotionSections.includes(section)
+  const shouldShowNewProjectButton = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection) || selectedSection === 'explainers' || isDiverseMotionSection(selectedSection)) && selectedSection !== 'social-cuts' && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showDiverseMotionSingle && !showDiverseMotionDual && !showMusicJingleGenerator
   const shouldShowProjectGrid = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && false && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
   const shouldShowEmptyState = () => (isImageGenerationSection(selectedSection) || isNewFormSection(selectedSection)) && true && !showProjectForm && !showImageGenerator && !showVideoGenerator && !showVoiceCreation && !showVoiceover && !showSoundFx && !showTalkingAvatars && !showMusicJingleGenerator
 
@@ -223,18 +228,6 @@ export function GeneratorPanel() {
     } else if (selectedSection === 'explainers') {
       // For explainers section, do nothing - we show video library directly
       // No need to open artifact details or generator
-    } else if (selectedSection === 'ugc-ads') {
-      // For ugc-ads section, show project details in MainContent AND open generator
-      // setSelectedArtifact removed
-      setSelectedVideoProject(artifact)
-      setVideoGeneratorSection(selectedSection)
-      setShowVideoGenerator(true)
-    } else if (selectedSection === 'diverse-motion') {
-      // For product-motion section, show project details in MainContent AND open generator
-      // setSelectedArtifact removed
-      setSelectedVideoProject(artifact)
-      setVideoGeneratorSection(selectedSection)
-      setShowVideoGenerator(true)
     } else if (selectedSection === 'talking-avatars') {
       // For talking-avatars section, show project details in MainContent AND open generator
       // setSelectedArtifact removed
@@ -267,7 +260,7 @@ export function GeneratorPanel() {
     setShowVideoGenerator(false)
     setSelectedVideoProject(null)
     setVideoGeneratorSection(null)
-    if (selectedSection === 'explainers' || selectedSection === 'ugc-ads' || selectedSection === 'diverse-motion') {
+    if (selectedSection === 'explainers') {
       // setSelectedArtifact removed
     }
   }
@@ -308,10 +301,6 @@ export function GeneratorPanel() {
           return "bg-gradient-to-r from-lime-400 via-green-500 to-emerald-500 hover:from-lime-500 hover:via-green-600 hover:to-emerald-600"
         case 'explainers':
           return "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600"
-        case 'ugc-ads':
-          return "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600"
-        case 'diverse-motion':
-          return "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600"
         case 'talking-avatars':
           return "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600"
         default:
@@ -328,8 +317,6 @@ export function GeneratorPanel() {
         case 'charts-infographics': return 'New Chart'
         case 'comics': return 'New Comic'
         case 'explainers': return 'New Explainer'
-        case 'ugc-ads': return 'New Ad'
-        case 'diverse-motion': return 'New Motion'
         case 'talking-avatars': return 'New Avatar'
         case 'add-subtitles': return 'New Subtitle'
         case 'add-watermark': return 'New Watermark'
@@ -372,20 +359,14 @@ export function GeneratorPanel() {
             setSelectedVideoProject({ title: 'New Explainer Video', image: '', description: '' })
             setVideoGeneratorSection('explainers')
             setShowVideoGenerator(true)
-          } else if (selectedSection === 'ugc-ads') {
-            // Créer un projet temporaire pour ouvrir le générateur UGC Ads
-            setSelectedVideoProject({ title: 'New UGC Ad', image: '', description: '' })
-            setVideoGeneratorSection('ugc-ads')
-            setShowVideoGenerator(true)
-          } else if (selectedSection === 'diverse-motion') {
-            // Créer un projet temporaire pour ouvrir le générateur Product in Motion
-            setSelectedVideoProject({ title: 'New Product Motion', image: '', description: '' })
-            setVideoGeneratorSection('diverse-motion')
-            setShowVideoGenerator(true)
           } else if (selectedSection === 'talking-avatars') {
             // Créer un projet temporaire pour ouvrir le générateur Talking Avatars
             setSelectedTalkingAvatarProject({ title: 'New Talking Avatar', image: '', description: '' })
             setShowTalkingAvatars(true)
+          } else if (selectedSection === 'diverse-motion-single') {
+            setShowDiverseMotionSingle(true)
+          } else if (selectedSection === 'diverse-motion-dual') {
+            setShowDiverseMotionDual(true)
           } else {
             setShowProjectForm(true)
           }
@@ -441,27 +422,6 @@ export function GeneratorPanel() {
       case 'explainers':
         return (
           <ExplainersForm
-            onSave={async () => {}}
-            onCancel={() => setShowProjectForm(false)}
-          />
-        )
-      case 'ugc-ads':
-        return (
-          <UGCAdsForm
-            onSave={async () => {}}
-            onCancel={() => setShowProjectForm(false)}
-          />
-        )
-      case 'diverse-motion':
-        return (
-          <ProductMotionForm
-            onSave={async () => {}}
-            onCancel={() => setShowProjectForm(false)}
-          />
-        )
-      case 'cinematic-clips':
-        return (
-          <CinematicClipsForm
             onSave={async () => {}}
             onCancel={() => setShowProjectForm(false)}
           />
@@ -661,17 +621,6 @@ export function GeneratorPanel() {
                 onClose={handleCloseVideoGenerator}
                 projectTitle={selectedVideoProject.title}
               />
-            ) : selectedSection === 'ugc-ads' ? (
-              <UGCAdsGeneratorInterface 
-                onClose={handleCloseVideoGenerator}
-                projectTitle={selectedVideoProject.title}
-              />
-            ) : selectedSection === 'diverse-motion' ? (
-              <DiverseMotionGeneratorInterface 
-                onClose={handleCloseVideoGenerator}
-                projectTitle={selectedVideoProject.title}
-                selectedArtifact={selectedVideoProject as any}
-              />
             ) : (
               <VideoGeneratorInterface 
                 onClose={handleCloseVideoGenerator}
@@ -794,6 +743,22 @@ export function GeneratorPanel() {
           />
         )}
 
+        {/* Diverse Motion Single Interface */}
+        {showDiverseMotionSingle && (
+          <DiverseMotionSingleInterface
+            onClose={() => setShowDiverseMotionSingle(false)}
+            projectTitle="New Diverse Motion - Single Asset"
+          />
+        )}
+
+        {/* Diverse Motion Dual Interface */}
+        {showDiverseMotionDual && (
+          <DiverseMotionDualInterface
+            onClose={() => setShowDiverseMotionDual(false)}
+            projectTitle="New Diverse Motion - Dual Asset"
+          />
+        )}
+
         {/* Subtitle Interface */}
         {selectedSection === 'add-subtitles' && !showProjectForm && (
           <SubtitleInterface 
@@ -849,7 +814,7 @@ export function GeneratorPanel() {
                     id: video.id,
                     title: video.title,
                     image: video.video_url || '/placeholder.jpg',
-                    description: video.description,
+                    description: (video as any).description || 'Explainer video',
                     section: 'explainers',
                     type: 'explainer',
                     isPublic: false,
@@ -885,7 +850,7 @@ export function GeneratorPanel() {
         )}
         
         
-        {shouldShowEmptyState() && selectedSection !== 'explainers' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && selectedSection !== 'add-watermark' && selectedSection !== 'social-cuts' && selectedSection !== 'cinematic-clips' && (
+        {shouldShowEmptyState() && selectedSection !== 'explainers' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && selectedSection !== 'add-watermark' && selectedSection !== 'social-cuts' && (
           <EmptyState message="No projects yet. Create your first project!" />
         )}
         
@@ -909,25 +874,6 @@ export function GeneratorPanel() {
           </div>
         )}
         
-        {shouldShowEmptyState() && selectedSection === 'cinematic-clips' && (
-          <div className="text-center py-12">
-            <div className="max-w-lg mx-auto">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                <span className="text-2xl">🎬</span>
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Coming Soon
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Cinematic Clips feature is currently in development.
-              </p>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-xs font-medium">
-                <span>🚧</span>
-                <span>Under Construction</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Music Video Generator Interface */}
         {showMusicVideoGenerator && (

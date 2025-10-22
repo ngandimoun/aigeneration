@@ -32,8 +32,6 @@ const CONTENT_TYPES = [
   { value: 'music_jingles', label: 'Music & Jingles', category: 'Audios' },
   { value: 'sound_fx', label: 'Sound FX', category: 'Audios' },
   { value: 'explainers', label: 'Explainers', category: 'Motions' },
-  { value: 'ugc_ads', label: 'UGC Ads', category: 'Motions' },
-  { value: 'product_motions', label: 'Product in Motion', category: 'Motions' },
   { value: 'talking_avatars', label: 'Talking Avatars', category: 'Motions' },
   { value: 'subtitles', label: 'Subtitles', category: 'Edit' },
   { value: 'watermarks', label: 'Watermarks', category: 'Edit' },

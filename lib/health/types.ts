@@ -92,8 +92,6 @@ export const EXPECTED_TABLES = [
   'music_jingles',
   'sound_fx',
   'explainers',
-  'ugc_ads',
-  'product_motions',
   'talking_avatars',
   'subtitles',
   'watermarks',
@@ -110,12 +108,10 @@ export const EXPECTED_STORAGE_FOLDERS = [
   'illustrations',
   'music-jingles',
   'product-mockups',
-  'diverse-motion',
   'sound-fx',
   'subtitles',
   'talking-avatars',
   'translations',
-  'ugc-ads',
   'voice-creation',
   'voiceovers',
   'watermarks'
@@ -124,7 +120,7 @@ export const EXPECTED_STORAGE_FOLDERS = [
 export const CONTENT_TYPE_MAPPINGS = {
   visuals: ['comics', 'illustrations', 'avatars_personas', 'product_mockups', 'concept_worlds', 'charts_infographics'],
   audios: ['voices_creations', 'voiceovers', 'music_jingles', 'sound_fx'],
-  motions: ['explainers', 'ugc_ads', 'product_motions', 'talking_avatars'],
+  motions: ['explainers', 'talking_avatars'],
   edit: ['subtitles', 'watermarks', 'video_translations']
 } as const
 
@@ -140,8 +136,6 @@ export const TABLE_TO_FOLDER_MAP: Record<string, string> = {
   'music_jingles': 'music-jingles',
   'sound_fx': 'sound-fx',
   'explainers': 'explainers',
-  'ugc_ads': 'ugc-ads',
-  'product_motions': 'diverse-motion',
   'talking_avatars': 'talking-avatars',
   'subtitles': 'subtitles',
   'watermarks': 'watermarks',

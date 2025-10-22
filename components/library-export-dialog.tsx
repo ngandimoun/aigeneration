@@ -33,7 +33,7 @@ export function LibraryExportDialog({ open, onOpenChange }: LibraryExportDialogP
   const categories = [
     { id: 'visuals', label: 'Visuals', description: 'Comics, illustrations, avatars, product mockups' },
     { id: 'audios', label: 'Audios', description: 'Voice creations, music, sound effects' },
-    { id: 'motions', label: 'Motions', description: 'Explainers, UGC ads, cinematic clips' },
+    { id: 'motions', label: 'Motions', description: 'Explainers, talking avatars' },
     { id: 'edit', label: 'Edit Utils', description: 'Subtitles, watermarks, translations' }
   ]
 

@@ -395,26 +395,6 @@ export function MainContent() {
           </div>
         )}
 
-        {/* Cinematic Clips section - Coming Soon */}
-        {selectedSection === 'cinematic-clips' && (
-          <div className="text-center py-16">
-            <div className="max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                <span className="text-4xl">🎬</span>
-              </div>
-              <h2 className="text-3xl font-bold text-foreground mb-4">
-                Cinematic Clips
-              </h2>
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                Create stunning cinematic video clips with professional effects and dramatic storytelling.
-              </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm font-medium">
-                <span>🚧</span>
-                <span>Coming Soon</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Explainers section - Previous Generations */}
         {selectedSection === 'explainers' && (
@@ -521,6 +501,26 @@ export function MainContent() {
           </div>
         )}
 
+        {/* Diverse Motion Single section - Previous Generations */}
+        {selectedSection === 'diverse-motion-single' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="diverse_motion_single" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
+        {/* Diverse Motion Dual section - Previous Generations */}
+        {selectedSection === 'diverse-motion-dual' && (
+          <div className="space-y-6">
+            <PreviousGenerations 
+              contentType="diverse_motion_dual" 
+              userId={user?.id || ''} 
+            />
+          </div>
+        )}
+
         {/* Talking Avatars section - Project details or Attention Message (OLD) */}
         {false && selectedSection === 'talking-avatars' && (
           false ? (
@@ -589,90 +589,6 @@ export function MainContent() {
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Sparkles className="h-3 w-3" />
                   <span>Click "New Project" to create your first talking avatar</span>
-                </div>
-              </div>
-            </div>
-          )
-        )}
-
-        {/* Product in Motion section - Previous Generations */}
-        {selectedSection === 'diverse-motion' && (
-          <div className="space-y-6">
-            <PreviousGenerations 
-              contentType="product_motions" 
-              userId={user?.id || ''} 
-            />
-          </div>
-        )}
-
-        {/* Product in Motion section - Project details or Attention Message (OLD) */}
-        {false && selectedSection === 'diverse-motion' && (
-          false ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Project Image */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <img 
-                    src={"/placeholder.jpg"} 
-                    alt={"Placeholder Title"}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-                
-                {/* Project Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {"Placeholder Title"}
-                    </h2>
-                  </div>
-                  
-                  {/* Project Status */}
-                  <div className="flex items-center gap-2">
-                    {false ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
-                        <Globe className="h-4 w-4" />
-                        Public
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
-                        <Lock className="h-4 w-4" />
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Project Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {"Placeholder description"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center">
-                  <span className="text-2xl">🎬</span>
-                </div>
-                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-                  🎬 Product in Motion
-                </h2>
-                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-cyan-800 font-medium">
-                    🚀 Showcase your products with stunning motion graphics and 3D animations!
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  Create dynamic product showcases with smooth animations, 360° rotations, and cinematic effects. 
-                  Perfect for e-commerce, marketing campaigns, and product presentations.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Click "New Project" to animate your first product</span>
                 </div>
               </div>
             </div>
@@ -778,90 +694,6 @@ export function MainContent() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* UGC Ads section - Previous Generations */}
-        {selectedSection === 'ugc-ads' && (
-          <div className="space-y-6">
-            <PreviousGenerations 
-              contentType="ugc_ads" 
-              userId={user?.id || ''} 
-            />
-          </div>
-        )}
-
-        {/* UGC Ads section - Project details or Attention Message (OLD) */}
-        {false && selectedSection === 'ugc-ads' && (
-          false ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Project Image */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <img 
-                    src={"/placeholder.jpg"} 
-                    alt={"Placeholder Title"}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-                
-                {/* Project Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {"Placeholder Title"}
-                    </h2>
-                  </div>
-                  
-                  {/* Project Status */}
-                  <div className="flex items-center gap-2">
-                    {false ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
-                        <Globe className="h-4 w-4" />
-                        Public
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
-                        <Lock className="h-4 w-4" />
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Project Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {"Placeholder description"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
-                  <span className="text-2xl">📱</span>
-                </div>
-                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent">
-                  📱 UGC Ads
-                </h2>
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-emerald-800 font-medium">
-                    💫 Create authentic user-generated content ads that drive real engagement!
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  Generate authentic-looking user-generated content for social media ads with realistic scenarios, 
-                  natural testimonials, and engaging storytelling that converts.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Click "New Project" to create your first UGC ad</span>
-                </div>
-              </div>
-            </div>
-          )
         )}
 
       </div>

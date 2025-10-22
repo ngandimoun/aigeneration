@@ -47,6 +47,9 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
   const [isBulkAdding, setIsBulkAdding] = useState(false)
   const [isCheckingStatus, setIsCheckingStatus] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
+  const [selectedVideoItem, setSelectedVideoItem] = useState<any>(null)
   const [isRecovering, setIsRecovering] = useState(false)
   const [isBatchRecovering, setIsBatchRecovering] = useState(false)
   const [batchRecoveryProgress, setBatchRecoveryProgress] = useState(0)
@@ -99,11 +102,10 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
           'music_jingles': 'musicJingles',
           'music_videos': 'musicVideos',
           'sound_fx': 'soundFx',
-          'ugc_ads': 'ugcAds',
-          'product_motions': 'productMotions',
           'talking_avatars': 'talkingAvatars',
-          'cinematic_clips': 'cinematicClips',
-          'social_cuts': 'socialCuts'
+          'social_cuts': 'socialCuts',
+          'diverse_motion_single': 'diverseMotionSingle',
+          'diverse_motion_dual': 'diverseMotionDual'
         }
         return keyMap[contentType] || contentType
       }
@@ -475,6 +477,44 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
     }
   }
 
+  // Handle video download for diverse motion
+  const handleDownloadDiverseMotionVideo = async (item: any) => {
+    const videoUrl = item.generated_video_url || item.video_url || item.media_url || item.url
+    if (!videoUrl) {
+      toast({
+        title: "Download failed",
+        description: "Video URL not available",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(videoUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.title || 'video'}.mp4`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast({
+        title: "Download started",
+        description: "Your video is being downloaded",
+      })
+    } catch (error) {
+      console.error('Error downloading video:', error)
+      toast({
+        title: "Download failed",
+        description: "Failed to download video. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
   // Handle bulk add to ElevenLabs library
   const handleBulkAddToLibrary = async () => {
     console.log('📚 [BULK ADD] Starting bulk add to ElevenLabs library...')
@@ -655,9 +695,9 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
 
   // Get media icon based on content type
   const getMediaIcon = (item: any) => {
-    const videoUrl = item.video_url || item.media_url || item.url
-    const audioUrl = item.audio_url || item.media_url || item.url
-    const imageUrl = item.image_url || item.image || item.media_url || item.url
+    const videoUrl = item.generated_video_url || item.video_url || item.media_url || item.url
+    const audioUrl = item.generated_audio_path || item.audio_url || item.media_url || item.url
+    const imageUrl = item.generated_image_url || item.image_url || item.image || item.media_url || item.url
 
     if (isVideoContentType(contentType) && videoUrl) {
       return <Play className="h-4 w-4" />
@@ -672,9 +712,9 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
   // Render media preview
   const renderMediaPreview = (item: any) => {
     // API routes return different field names, so we need to check multiple possibilities
-    let videoUrl = item.video_url || item.media_url || item.url
-    let audioUrl = item.audio_url || item.media_url || item.url
-    let imageUrl = item.image_url || item.image || item.media_url || item.url
+    let videoUrl = item.generated_video_url || item.video_url || item.media_url || item.url
+    let audioUrl = item.generated_audio_path || item.audio_url || item.media_url || item.url
+    let imageUrl = item.generated_image_url || item.image_url || item.image || item.media_url || item.url
     
     // Handle different content types with their specific image fields
     if (contentType === 'product_mockups' || contentType === 'illustrations' || contentType === 'avatars_personas' || contentType === 'concept_worlds' || contentType === 'charts_infographics') {
@@ -1372,6 +1412,47 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
                     </div>
                   )}
                   
+                  {/* Video Play/Download Buttons - For video content types */}
+                  {isVideoContentType(contentType) && contentType !== 'talking_avatars' && (
+                    <div className="flex items-center gap-2 mt-3">
+                      {(item.generated_video_url || item.video_url || item.media_url || item.url) ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedVideo(item.generated_video_url || item.video_url || item.media_url || item.url)
+                              setSelectedVideoItem(item)
+                              setShowVideoModal(true)
+                            }}
+                            title="Play video"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownloadDiverseMotionVideo(item)
+                            }}
+                            title="Download video"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs">
+                          Video not available
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  
                   {/* Voice Previews Section - Only for voice creations */}
                   {contentType === 'voices_creations' && item.content?.all_previews && (
                     <div className="mt-3 space-y-2">
@@ -1498,6 +1579,41 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
               alt="Avatar full size"
               className="w-full h-auto max-h-[85vh] object-contain bg-muted rounded-lg"
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Player Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] p-6 bg-background border-border">
+          <DialogTitle className="text-lg font-semibold mb-4">
+            {selectedVideoItem?.title || 'Video Player'}
+          </DialogTitle>
+          {selectedVideo && (
+            <div className="relative w-full bg-black rounded-lg overflow-hidden">
+              <video
+                src={selectedVideo}
+                controls
+                autoPlay
+                className="w-full max-h-[70vh]"
+                onError={(e) => {
+                  console.error('Video playback error:', e)
+                  toast({
+                    title: "Playback error",
+                    description: "Failed to load video. Please try again.",
+                    variant: "destructive"
+                  })
+                }}
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          )}
+          {selectedVideoItem?.prompt && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p className="font-medium mb-1">Prompt:</p>
+              <p>{selectedVideoItem.prompt}</p>
+            </div>
           )}
         </DialogContent>
       </Dialog>

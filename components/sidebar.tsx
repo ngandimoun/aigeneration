@@ -12,7 +12,6 @@ import {
   PanelLeft,
   User,
   Edit,
-  Layers,
   Video,
   Music,
   Image,
@@ -39,6 +38,7 @@ import {
   Droplets,
   Plus,
   Languages,
+  Layers,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -63,6 +63,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
   const [isVisualsOpen, setIsVisualsOpen] = useState(false)
   const [isMixedAssetsOpen, setIsMixedAssetsOpen] = useState(false)
   const [isMotionsOpen, setIsMotionsOpen] = useState(false)
+  const [isDiverseMotionOpen, setIsDiverseMotionOpen] = useState(false)
   const [isAudiosOpen, setIsAudiosOpen] = useState(false)
   const [isEditUtilitiesOpen, setIsEditUtilitiesOpen] = useState(false)
 
@@ -363,36 +364,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             <Button
               variant="ghost"
               className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'ugc-ads'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('ugc-ads')
-                onMobileClose()
-              }}
-            >
-              <Megaphone className="h-4 w-4 shrink-0" />
-              <span>UGC Ads</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
-                selectedSection === 'diverse-motion'
-                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
-                  : 'text-sidebar-foreground hover:bg-accent'
-              }`}
-              onClick={() => {
-                setSelectedSection('diverse-motion')
-                onMobileClose()
-              }}
-            >
-              <Zap className="h-4 w-4 shrink-0" />
-              <span>Diverse Motion</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start gap-3 text-xs ${
                 selectedSection === 'talking-avatars'
                   ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
                   : 'text-sidebar-foreground hover:bg-accent'
@@ -407,20 +378,71 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
-              disabled
+              className={`w-full justify-start gap-3 text-xs ${
+                selectedSection === 'diverse-motion-single' || selectedSection === 'diverse-motion-dual'
+                  ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                  : 'text-sidebar-foreground hover:bg-accent'
+              }`}
+              onClick={() => {
+                if (!isCollapsed) {
+                  setIsDiverseMotionOpen(!isDiverseMotionOpen)
+                }
+                onMobileClose()
+              }}
             >
-              <PlayCircle className="h-4 w-4 shrink-0" />
-              <span>Explainers</span>
-              <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
+              <Layers className="h-4 w-4 shrink-0" />
+              <span>Diverse Motion</span>
+              {!isCollapsed && (
+                isDiverseMotionOpen ? (
+                  <ChevronDown className="h-3 w-3 ml-auto" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 ml-auto" />
+                )
+              )}
             </Button>
+            
+            {/* Diverse Motion Submenu */}
+            {!isCollapsed && isDiverseMotionOpen && (
+              <div className="ml-8 mt-1 space-y-1">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start gap-3 text-xs ${
+                    selectedSection === 'diverse-motion-single'
+                      ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                      : 'text-sidebar-foreground hover:bg-accent'
+                  }`}
+                  onClick={() => {
+                    setSelectedSection('diverse-motion-single')
+                    onMobileClose()
+                  }}
+                >
+                  <Layers className="h-3 w-3 shrink-0" />
+                  <span>Single Asset</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start gap-3 text-xs ${
+                    selectedSection === 'diverse-motion-dual'
+                      ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white'
+                      : 'text-sidebar-foreground hover:bg-accent'
+                  }`}
+                  onClick={() => {
+                    setSelectedSection('diverse-motion-dual')
+                    onMobileClose()
+                  }}
+                >
+                  <Layers className="h-3 w-3 shrink-0" />
+                  <span>Dual Asset</span>
+                </Button>
+              </div>
+            )}
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-xs text-muted-foreground cursor-not-allowed opacity-60"
               disabled
             >
-              <Film className="h-4 w-4 shrink-0" />
-              <span>Cinematic Clips</span>
+              <PlayCircle className="h-4 w-4 shrink-0" />
+              <span>Explainers</span>
               <span className="ml-auto text-xs text-muted-foreground">Coming Soon</span>
             </Button>
             <Button
