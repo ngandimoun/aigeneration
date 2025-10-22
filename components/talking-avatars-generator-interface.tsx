@@ -28,6 +28,7 @@ import {
   Download,
   RefreshCw,
   MessageCircle,
+  AlertTriangle,
   FileAudio,
   FileImage,
   Users,
@@ -59,6 +60,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { checkForSensitiveTopics, hasHighRiskTopics, SensitiveTopicMatch } from "@/lib/utils/sensitive-topics-filter"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { filterFilledFields } from "@/lib/utils/prompt-builder"
@@ -117,6 +119,13 @@ export function TalkingAvatarsGeneratorInterface({
   const [title, setTitle] = useState("")
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "1:1" | "9:16">("16:9")
   
+  // Force 16:9 aspect ratio for multi mode (REFERENCE_2_VIDEO requirement)
+  useEffect(() => {
+    if (mode === 'multi' && aspectRatio !== '16:9') {
+      setAspectRatio('16:9')
+    }
+  }, [mode, aspectRatio])
+  
   // Mode 1: Single Character state
   const [useCustomImage, setUseCustomImage] = useState(false)
   const [customImage, setCustomImage] = useState<File | null>(null)
@@ -133,7 +142,15 @@ export function TalkingAvatarsGeneratorInterface({
   
   // Mode 2: Describe & Create state
   const [mainPrompt, setMainPrompt] = useState("")
+  const [mainPromptWarnings, setMainPromptWarnings] = useState<SensitiveTopicMatch[]>([])
   const [characterCount, setCharacterCount] = useState(1)
+
+  // Sensitive topics validation handlers
+  const handleMainPromptChange = (value: string) => {
+    setMainPrompt(value)
+    const warnings = checkForSensitiveTopics(value)
+    setMainPromptWarnings(warnings)
+  }
   const [characters, setCharacters] = useState<Array<{
     id: string
     name: string
@@ -223,15 +240,25 @@ export function TalkingAvatarsGeneratorInterface({
   const [customBackgroundMusic, setCustomBackgroundMusic] = useState("")
   const [soundEffects, setSoundEffects] = useState("")
   const [customSoundEffects, setCustomSoundEffects] = useState("")
-  const [describeMaxDuration, setDescribeMaxDuration] = useState<number>(148) // Fixed 1-148 seconds (≈ 2 min 28 s)
   
   // Mode 3: Multi-Character Scene state
-  const [useCustomSceneImage, setUseCustomSceneImage] = useState(false)
-  const [sceneImage, setSceneImage] = useState<File | null>(null)
-  const [sceneImagePreview, setSceneImagePreview] = useState<string | null>(null)
-  const [selectedSceneAvatarId, setSelectedSceneAvatarId] = useState<string>("")
+  const [sceneSlots, setSceneSlots] = useState<Array<{
+    id: string
+    source: 'library' | 'upload'
+    file?: File
+    preview?: string
+    avatarId?: string
+  }>>([{ id: '1', source: 'library' }])
   const [sceneDescription, setSceneDescription] = useState("")
+  const [sceneDescriptionWarnings, setSceneDescriptionWarnings] = useState<SensitiveTopicMatch[]>([])
   const [sceneCharacterCount, setSceneCharacterCount] = useState(1)
+
+  // Sensitive topics validation handlers for Multi Avatar
+  const handleSceneDescriptionChange = (value: string) => {
+    setSceneDescription(value)
+    const warnings = checkForSensitiveTopics(value)
+    setSceneDescriptionWarnings(warnings)
+  }
   const [sceneCharacters, setSceneCharacters] = useState<Array<{
     id: string
     name: string
@@ -348,7 +375,7 @@ export function TalkingAvatarsGeneratorInterface({
     }
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, slotId?: string) => {
     const file = event.target.files?.[0]
     if (file) {
       if (!file.type.startsWith('image/')) {
@@ -374,10 +401,13 @@ export function TalkingAvatarsGeneratorInterface({
       const preview = URL.createObjectURL(file)
       setCustomImagePreview(preview)
       setUseCustomImage(true)
-      } else if (mode === 'multi') {
-        setSceneImage(file)
+      } else if (mode === 'multi' && slotId) {
         const preview = URL.createObjectURL(file)
-        setSceneImagePreview(preview)
+        setSceneSlots(prev => prev.map(slot => 
+          slot.id === slotId 
+            ? { ...slot, file, preview, source: 'upload' as const }
+            : slot
+        ))
       }
     }
   }
@@ -419,13 +449,6 @@ export function TalkingAvatarsGeneratorInterface({
     setUseCustomImage(false)
   }
 
-  const removeSceneImage = () => {
-    if (sceneImagePreview) {
-      URL.revokeObjectURL(sceneImagePreview)
-    }
-    setSceneImage(null)
-    setSceneImagePreview(null)
-  }
 
   const removeAudio = () => {
     if (audioPreview) {
@@ -585,20 +608,16 @@ export function TalkingAvatarsGeneratorInterface({
   }
 
   const validateMode3 = () => {
-    // Check scene image (either uploaded or selected from library)
-    if (!useCustomSceneImage && !selectedSceneAvatarId) {
+    // Check that at least one scene slot is filled
+    const hasValidSlots = sceneSlots.some(slot => 
+      (slot.source === 'library' && slot.avatarId) || 
+      (slot.source === 'upload' && slot.file)
+    )
+    
+    if (!hasValidSlots) {
       toast({
         title: "Please choose your scene",
-        description: "Select an avatar from your library or upload an image.",
-        variant: "destructive"
-      })
-      return false
-    }
-
-    if (useCustomSceneImage && !sceneImage) {
-      toast({
-        title: "Please upload your scene",
-        description: "Upload an image with multiple people to continue.",
+        description: "Select avatars from your library or upload images for at least one slot.",
         variant: "destructive"
       })
       return false
@@ -653,6 +672,37 @@ export function TalkingAvatarsGeneratorInterface({
       case 'multi':
         isValid = validateMode3()
         break
+    }
+
+    // Check for sensitive topics before proceeding
+    if (isValid) {
+      if (mode === 'describe') {
+        const highRiskInPrompt = hasHighRiskTopics(mainPrompt)
+        const highRiskInDialogue = dialogLines.some(line => hasHighRiskTopics(line.text))
+        
+        if (highRiskInPrompt || highRiskInDialogue) {
+          toast({
+            title: "Sensitive Content Detected",
+            description: "Your prompt contains topics that may violate content policies. Please revise to avoid: airports, security, weapons, government facilities, etc.",
+            variant: "destructive",
+            duration: 10000
+          })
+          return
+        }
+      } else if (mode === 'multi') {
+        const highRiskInScene = hasHighRiskTopics(sceneDescription)
+        const highRiskInDialogue = sceneDialogLines.some(line => hasHighRiskTopics(line.text))
+        
+        if (highRiskInScene || highRiskInDialogue) {
+          toast({
+            title: "Sensitive Content Detected",
+            description: "Your scene description contains topics that may violate content policies. Please revise to avoid: airports, security, weapons, government facilities, etc.",
+            variant: "destructive",
+            duration: 10000
+          })
+          return
+        }
+      }
     }
 
     if (!isValid) return
@@ -712,39 +762,77 @@ export function TalkingAvatarsGeneratorInterface({
           characters: characters,
           dialog_lines: dialogLines,
           environment: environment,
+          custom_environment: customEnvironment,
           background: background,
+          custom_background: customBackground,
           lighting: lighting,
+          custom_lighting: customLighting,
           background_music: backgroundMusic,
+          custom_background_music: customBackgroundMusic,
           sound_effects: soundEffects,
-          max_duration: describeMaxDuration
+          custom_sound_effects: customSoundEffects
         }
       } else if (mode === 'multi') {
-        generationData = {
-          ...generationData,
-          use_custom_scene_image: useCustomSceneImage,
-          scene_image: sceneImage,
-          selected_scene_avatar_id: selectedSceneAvatarId,
-          scene_description: sceneDescription,
-          scene_character_count: sceneCharacterCount,
-          scene_characters: sceneCharacters,
-          scene_dialog_lines: sceneDialogLines,
-          scene_environment: sceneEnvironment,
-          custom_scene_environment: customSceneEnvironment,
-          scene_background: sceneBackground,
-          custom_scene_background: customSceneBackground,
-          scene_lighting: sceneLighting,
-          custom_scene_lighting: customSceneLighting,
-          scene_background_music: sceneBackgroundMusic,
-          custom_scene_background_music: customSceneBackgroundMusic,
-          scene_sound_effects: sceneSoundEffects,
-          custom_scene_sound_effects: customSceneSoundEffects,
-          max_duration: multiMaxDuration
+        // Build FormData for multi mode (like single mode)
+        const formData = new FormData()
+        formData.append('mode', 'multi')
+        formData.append('title', title.trim() || 'Untitled Talking Avatar')
+        formData.append('aspect_ratio', aspectRatio)
+
+        // Serialize scene slots - handle both library avatars and uploaded files
+        sceneSlots.forEach((slot, index) => {
+          if (slot.source === 'library' && slot.avatarId) {
+            formData.append(`scene_slot_${index}_source`, 'library')
+            formData.append(`scene_slot_${index}_avatar_id`, slot.avatarId)
+          } else if (slot.source === 'upload' && slot.file) {
+            formData.append(`scene_slot_${index}_source`, 'upload')
+            formData.append(`scene_slot_${index}_file`, slot.file)
+          }
+        })
+
+        // Add other multi mode fields as strings/JSON
+        formData.append('scene_description', sceneDescription)
+        formData.append('scene_character_count', sceneCharacterCount.toString())
+        formData.append('scene_characters', JSON.stringify(sceneCharacters))
+        formData.append('scene_dialog_lines', JSON.stringify(sceneDialogLines))
+        formData.append('scene_environment', sceneEnvironment)
+        formData.append('custom_scene_environment', customSceneEnvironment)
+        formData.append('scene_background', sceneBackground)
+        formData.append('custom_scene_background', customSceneBackground)
+        formData.append('scene_lighting', sceneLighting)
+        formData.append('custom_scene_lighting', customSceneLighting)
+        formData.append('scene_background_music', sceneBackgroundMusic)
+        formData.append('custom_scene_background_music', customSceneBackgroundMusic)
+        formData.append('scene_sound_effects', sceneSoundEffects)
+        formData.append('custom_scene_sound_effects', customSceneSoundEffects)
+        formData.append('max_duration', multiMaxDuration.toString())
+
+        console.log("Generating talking avatar with FormData for multi mode")
+
+        // Call the API with FormData
+        const response = await fetch('/api/talking-avatars/generate', {
+          method: 'POST',
+          body: formData, // No Content-Type header - browser sets it with boundary
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate talking avatar')
         }
+
+        const result = await response.json()
+        setGeneratedVideo(result?.talkingAvatar?.generated_video_url || null)
+        toast({
+          title: 'Talking Avatar Generated!',
+          description: 'Successfully generated your group scene video.'
+        })
+        onClose()
+        return
       }
 
       console.log("Generating talking avatar with:", generationData)
 
-      // Call the API
+      // Call the API for describe mode (JSON)
       const response = await fetch('/api/talking-avatars/generate', {
         method: 'POST',
         headers: {
@@ -761,23 +849,29 @@ export function TalkingAvatarsGeneratorInterface({
       const result = await response.json()
       console.log("Talking avatar generation result:", result)
       
-      if (result.success) {
-        setGeneratedVideo(result.videoUrl)
+      if (result.talkingAvatar?.generated_video_url) {
+        setGeneratedVideo(result.talkingAvatar.generated_video_url)
         
         toast({
           title: "Talking Avatar Generated!",
           description: "Successfully generated your talking avatar video.",
         })
+        onClose()
       } else {
         throw new Error(result.error || 'Generation failed')
       }
       
     } catch (error) {
       console.error('Generation failed:', error)
+      
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate talking avatar. Please try again."
+      const isContentPolicy = errorMessage.includes('Content Policy')
+      
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate talking avatar. Please try again.",
-        variant: "destructive"
+        title: isContentPolicy ? "Content Policy Issue" : "Generation Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: isContentPolicy ? 10000 : 5000 // Longer duration for content policy errors
       })
     } finally {
       setIsGenerating(false)
@@ -813,9 +907,9 @@ export function TalkingAvatarsGeneratorInterface({
       case 'single':
         return "Use existing avatars or upload your own - Up to 60 seconds"
       case 'describe':
-        return "AI creates everything from your text description - Up to 148 seconds (≈ 2 min 28 s)"
+        return "AI creates everything from your text description"
       case 'multi':
-        return "Upload a scene with multiple people - Up to 148 seconds (≈ 2 min 28 s)"
+        return "Select or upload up to 3 avatars for your scene"
       default:
         return ""
     }
@@ -960,6 +1054,44 @@ export function TalkingAvatarsGeneratorInterface({
         parseInt(line.characterId) <= count
       ))
     }
+  }
+
+  // Scene slots helper functions
+  const addSceneSlot = () => {
+    if (sceneSlots.length < 3) {
+      const newId = (sceneSlots.length + 1).toString()
+      setSceneSlots(prev => [...prev, { id: newId, source: 'library' }])
+    }
+  }
+
+  const removeSceneSlot = (slotId: string) => {
+    if (sceneSlots.length > 1) {
+      setSceneSlots(prev => prev.filter(slot => slot.id !== slotId))
+    }
+  }
+
+  const updateSceneSlotSource = (slotId: string, source: 'library' | 'upload') => {
+    setSceneSlots(prev => prev.map(slot => 
+      slot.id === slotId 
+        ? { ...slot, source, file: undefined, preview: undefined, avatarId: undefined }
+        : slot
+    ))
+  }
+
+  const updateSceneSlotAvatar = (slotId: string, avatarId: string) => {
+    setSceneSlots(prev => prev.map(slot => 
+      slot.id === slotId 
+        ? { ...slot, avatarId, source: 'library' as const, file: undefined, preview: undefined }
+        : slot
+    ))
+  }
+
+  const removeSceneSlotImage = (slotId: string) => {
+    setSceneSlots(prev => prev.map(slot => 
+      slot.id === slotId 
+        ? { ...slot, file: undefined, preview: undefined, source: 'library' as const, avatarId: undefined }
+        : slot
+    ))
   }
 
   const updateSceneCharacter = (index: number, field: string, value: string) => {
@@ -1488,13 +1620,32 @@ export function TalkingAvatarsGeneratorInterface({
               <label className="text-xs font-medium text-foreground">Describe what happens in your video... <span className="text-red-500">*</span></label>
               <Textarea
                 value={mainPrompt}
-                onChange={(e) => setMainPrompt(e.target.value)}
+                onChange={(e) => handleMainPromptChange(e.target.value)}
                 placeholder="Describe the character, what they say, the setting, and any actions or emotions..."
                 className="min-h-[100px] text-xs resize-none"
               />
               <div className="text-xs text-muted-foreground">
                 Character count: {mainPrompt.length}/500
               </div>
+              {mainPromptWarnings.length > 0 && (
+                <div className="space-y-2">
+                  {mainPromptWarnings.map((warning, index) => (
+                    <div key={index} className={`flex items-start gap-2 text-xs p-2 rounded-md ${
+                      warning.severity === 'high' 
+                        ? 'bg-red-50 border border-red-200 text-red-700' 
+                        : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+                    }`}>
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium">
+                          {warning.severity === 'high' ? 'High Risk' : 'Warning'}: {warning.keyword}
+                        </div>
+                        <div className="text-xs opacity-80">{warning.suggestion}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Number of Characters */}
@@ -1885,11 +2036,9 @@ export function TalkingAvatarsGeneratorInterface({
                             <SelectItem value="traditional">🏮 Traditional</SelectItem>
                             <SelectItem value="vintage">📻 Vintage</SelectItem>
                             <SelectItem value="futuristic">🚀 Futuristic</SelectItem>
-                            <SelectItem value="military">🎖️ Military</SelectItem>
                             <SelectItem value="medical">⚕️ Medical</SelectItem>
                             <SelectItem value="chef">👨‍🍳 Chef/Culinary</SelectItem>
                             <SelectItem value="construction">👷 Construction</SelectItem>
-                            <SelectItem value="police">👮 Police/Security</SelectItem>
                             <SelectItem value="firefighter">🚒 Firefighter</SelectItem>
                             <SelectItem value="pilot">✈️ Pilot</SelectItem>
                             <SelectItem value="academic">🎓 Academic</SelectItem>
@@ -2254,7 +2403,6 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectItem value="store">🏪 Store/Shop</SelectItem>
                         <SelectItem value="factory">🏭 Factory</SelectItem>
                         <SelectItem value="warehouse">📦 Warehouse</SelectItem>
-                        <SelectItem value="airport">✈️ Airport</SelectItem>
                         <SelectItem value="hotel">🏨 Hotel</SelectItem>
                         <SelectItem value="library">📚 Library</SelectItem>
                         <SelectItem value="museum">🏛️ Museum</SelectItem>
@@ -2495,24 +2643,6 @@ export function TalkingAvatarsGeneratorInterface({
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-foreground">Duration (1-148 seconds)</label>
-                    <div className="space-y-2">
-                <Slider
-                        value={[describeMaxDuration]}
-                        onValueChange={(value) => setDescribeMaxDuration(value[0])}
-                  min={1}
-                        max={148}
-                  step={1}
-                        className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1s</span>
-                        <span className="font-medium text-foreground">{describeMaxDuration}s (≈ {Math.floor(describeMaxDuration / 60)}m {describeMaxDuration % 60}s)</span>
-                  <span>148s</span>
-                </div>
-              </div>
-            </div>
           </div>
         </CollapsibleContent>
         </Collapsible>
@@ -2536,170 +2666,213 @@ export function TalkingAvatarsGeneratorInterface({
               <label className="text-xs font-medium text-foreground">Scene Description <span className="text-red-500">*</span></label>
               <Textarea
                 value={sceneDescription}
-                onChange={(e) => setSceneDescription(e.target.value)}
+                onChange={(e) => handleSceneDescriptionChange(e.target.value)}
                 placeholder="Describe the action, mood, and what's happening in this scene..."
                 className="min-h-[80px] text-xs resize-none"
               />
-            </div>
-
-            {/* Scene Image Selection */}
-            <div className="space-y-3">
-              <label className="text-xs font-medium text-foreground">Choose Your Scene <span className="text-red-500">*</span></label>
-              
-              {/* Toggle between Library and Upload */}
-              <div className="flex gap-2 mb-3">
-                <Button
-                  variant={!useCustomSceneImage ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setUseCustomSceneImage(false)}
-                  className="text-xs"
-                >
-                  From Library
-                </Button>
-                <Button
-                  variant={useCustomSceneImage ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setUseCustomSceneImage(true)}
-                  className="text-xs"
-                >
-                  Upload Image
-                </Button>
-              </div>
-
-              {!useCustomSceneImage ? (
-                // Library Selection
-                <div className="space-y-3">
-                  {loadingAvatars ? (
-                    <div className="text-xs text-muted-foreground">Loading avatars...</div>
-                  ) : (
-                    <Select value={selectedSceneAvatarId} onValueChange={setSelectedSceneAvatarId}>
-                      <SelectTrigger className="w-full h-8 text-xs">
-                        <SelectValue placeholder="Select an avatar..." />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {availableAvatars.map((avatar) => {
-                          const imageUrl = getAvatarImageUrl(avatar)
-                          return (
-                            <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
-                              <div className="flex items-center gap-3">
-                                {imageUrl && (
-                                  <img 
-                                    src={imageUrl} 
-                                    alt={avatar.title}
-                                    className="w-6 h-6 object-cover rounded"
-                                  />
-                                )}
-                                <div>
-                                  <div className="font-medium">{avatar.title}</div>
-                                  {(avatar.roleArchetype || avatar.role_archetype) && (
-                                    <div className="text-muted-foreground text-xs">{avatar.roleArchetype || avatar.role_archetype}</div>
-                                  )}
-                                </div>
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  
-                  {selectedSceneAvatarId && (() => {
-                    const selectedAvatar = availableAvatars.find(a => a.id === selectedSceneAvatarId)
-                    const avatarImageUrl = selectedAvatar ? getAvatarImageUrl(selectedAvatar) : null
-                    return (
-                      <div className="p-3 bg-muted/30 rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          {avatarImageUrl ? (
-                            <img 
-                              src={avatarImageUrl} 
-                              alt={selectedAvatar?.title || 'Selected avatar'} 
-                              className="w-12 h-12 object-cover rounded border"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                target.src = '/placeholder-avatar.jpg'
-                              }}
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded border bg-muted/50 flex items-center justify-center">
-                              <User className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-foreground">
-                              {selectedAvatar?.title || 'Unknown Avatar'}
-                            </div>
-                            {(selectedAvatar?.roleArchetype || selectedAvatar?.role_archetype) && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {selectedAvatar.roleArchetype || selectedAvatar.role_archetype}
-                              </div>
-                            )}
-                            {selectedAvatar?.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {selectedAvatar.description}
-                              </p>
-                            )}
-                          </div>
+              {sceneDescriptionWarnings.length > 0 && (
+                <div className="space-y-2">
+                  {sceneDescriptionWarnings.map((warning, index) => (
+                    <div key={index} className={`flex items-start gap-2 text-xs p-2 rounded-md ${
+                      warning.severity === 'high' 
+                        ? 'bg-red-50 border border-red-200 text-red-700' 
+                        : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+                    }`}>
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium">
+                          {warning.severity === 'high' ? 'High Risk' : 'Warning'}: {warning.keyword}
                         </div>
-                      </div>
-                    )
-                  })()}
-                </div>
-              ) : (
-                // Upload Image
-                <div>
-                  {!sceneImage ? (
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
-                      <div className="flex flex-col items-center gap-2">
-                        <Users className="h-8 w-8 text-muted-foreground" />
-                        <div className="text-sm">
-                          <span className="font-medium text-foreground">Upload Scene Image</span>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            JPG, JPEG, PNG (max 10MB) - Can include multiple people
-                          </p>
-                        </div>
-                        <Input
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          ref={sceneImageInputRef}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => sceneImageInputRef.current?.click()}
-                          className="text-xs"
-                        >
-                          <Upload className="h-3 w-3 mr-1" />
-                          Choose Image
-                        </Button>
+                        <div className="text-xs opacity-80">{warning.suggestion}</div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <img 
-                          src={sceneImagePreview || ''} 
-                          alt="Scene image preview" 
-                          className="w-full h-48 object-cover rounded-lg border"
-                        />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Scene Slots Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-foreground">Choose Your Scene <span className="text-red-500">*</span></label>
+                {sceneSlots.length < 3 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addSceneSlot}
+                    className="text-xs h-6"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Slot
+                  </Button>
+                )}
+              </div>
+              
+              {/* Scene Slots Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sceneSlots.map((slot, index) => (
+                  <div key={slot.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Slot {index + 1}</span>
+                      {sceneSlots.length > 1 && (
                         <Button
-                          variant="destructive"
+                          type="button"
+                          variant="ghost"
                           size="sm"
-                          onClick={removeSceneImage}
-                          className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                          onClick={() => removeSceneSlot(slot.id)}
+                          className="text-xs h-5 w-5 p-0 text-destructive hover:text-destructive"
                         >
                           <X className="h-3 w-3" />
                         </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {sceneImage.name} ({(sceneImage.size / 1024 / 1024).toFixed(2)} MB)
-                      </p>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
+                    
+                    {/* Toggle between Library and Upload */}
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant={slot.source === 'library' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => updateSceneSlotSource(slot.id, 'library')}
+                        className="text-xs h-6 flex-1"
+                      >
+                        Library
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={slot.source === 'upload' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => updateSceneSlotSource(slot.id, 'upload')}
+                        className="text-xs h-6 flex-1"
+                      >
+                        Upload
+                      </Button>
+                    </div>
+
+                    {slot.source === 'library' ? (
+                      // Library Selection
+                      <div className="space-y-2">
+                        {loadingAvatars ? (
+                          <div className="text-xs text-muted-foreground">Loading...</div>
+                        ) : (
+                          <Select 
+                            value={slot.avatarId || ""} 
+                            onValueChange={(value) => updateSceneSlotAvatar(slot.id, value)}
+                          >
+                            <SelectTrigger className="w-full h-8 text-xs">
+                              <SelectValue placeholder="Select avatar..." />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                              {availableAvatars.map((avatar) => {
+                                const imageUrl = getAvatarImageUrl(avatar)
+                                return (
+                                  <SelectItem key={avatar.id} value={avatar.id} className="text-xs">
+                                    <div className="flex items-center gap-2">
+                                      {imageUrl && (
+                                        <img 
+                                          src={imageUrl} 
+                                          alt={avatar.title}
+                                          className="w-4 h-4 object-cover rounded"
+                                        />
+                                      )}
+                                      <span className="truncate">{avatar.title}</span>
+                                    </div>
+                                  </SelectItem>
+                                )
+                              })}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        
+                        {slot.avatarId && (() => {
+                          const selectedAvatar = availableAvatars.find(a => a.id === slot.avatarId)
+                          const avatarImageUrl = selectedAvatar ? getAvatarImageUrl(selectedAvatar) : null
+                          return (
+                            <div className="p-2 bg-muted/30 rounded border">
+                              <div className="flex items-center gap-2">
+                                {avatarImageUrl ? (
+                                  <img 
+                                    src={avatarImageUrl} 
+                                    alt={selectedAvatar?.title || 'Selected avatar'} 
+                                    className="w-8 h-8 object-cover rounded"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement
+                                      target.src = '/placeholder-avatar.jpg'
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded bg-muted/50 flex items-center justify-center">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-medium text-foreground truncate">
+                                    {selectedAvatar?.title || 'Unknown Avatar'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    ) : (
+                      // Upload Image
+                      <div>
+                        {!slot.file ? (
+                          <div className="border-2 border-dashed border-muted-foreground/25 rounded p-3 text-center hover:border-muted-foreground/50 transition-colors">
+                            <div className="flex flex-col items-center gap-1">
+                              <Upload className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-xs font-medium text-foreground">Upload Image</span>
+                              <p className="text-xs text-muted-foreground">
+                                JPG, PNG (max 10MB)
+                              </p>
+                              <Input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png"
+                                onChange={(e) => handleImageUpload(e, slot.id)}
+                                className="hidden"
+                                id={`scene-upload-${slot.id}`}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => document.getElementById(`scene-upload-${slot.id}`)?.click()}
+                                className="text-xs h-6"
+                              >
+                                Choose
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <img 
+                                src={slot.preview || ''} 
+                                alt="Scene image preview" 
+                                className="w-full h-24 object-cover rounded border"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeSceneSlotImage(slot.id)}
+                                className="absolute -top-1 -right-1 h-5 w-5 p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {slot.file.name}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Number of Characters */}
@@ -2910,7 +3083,6 @@ export function TalkingAvatarsGeneratorInterface({
                         <SelectItem value="gym">💪 Gym</SelectItem>
                         <SelectItem value="library">📚 Library</SelectItem>
                         <SelectItem value="hotel">🏨 Hotel</SelectItem>
-                        <SelectItem value="airport">✈️ Airport</SelectItem>
                         <SelectItem value="custom">✏️ Custom</SelectItem>
                       </SelectContent>
                     </Select>
@@ -3113,24 +3285,6 @@ export function TalkingAvatarsGeneratorInterface({
                     </Select>
       </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-foreground">Duration (1-148 seconds)</label>
-                    <div className="space-y-2">
-                      <Slider
-                        value={[multiMaxDuration]}
-                        onValueChange={(value) => setMultiMaxDuration(value[0])}
-                        min={1}
-                        max={148}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>1s</span>
-                        <span className="font-medium text-foreground">{multiMaxDuration}s (≈ {Math.floor(multiMaxDuration / 60)}m {multiMaxDuration % 60}s)</span>
-                        <span>148s</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </CollapsibleContent>
             </Collapsible>

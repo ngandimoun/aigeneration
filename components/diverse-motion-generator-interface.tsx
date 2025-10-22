@@ -78,7 +78,7 @@ interface DiverseMotionGeneratorInterfaceProps {
 }
 
 // Motion DNA Types
-type ProductCategory = "Data Visualizations" | "Infographic" | "Logo Animation" | "UI/UX Element" | "Cinematic Videos"
+type ProductCategory = "Data Visualizations" | "Infographic" | "Logo Animation" | "UI/UX Element" | "Cinematic Videos" | "Ads and UGC"
 
 // Helper function to get accepted file types based on category
 const getAcceptedFileTypes = (category: ProductCategory): string => {
@@ -93,6 +93,8 @@ const getAcceptedFileTypes = (category: ProductCategory): string => {
       return "image/*,video/*" // Images et vidéos
     case "Cinematic Videos":
       return "video/*" // Vidéos uniquement
+    case "Ads and UGC":
+      return "image/*,video/*" // Images and videos for ads/UGC
     default:
       return "image/*,video/*"
   }
@@ -111,21 +113,23 @@ const getHelpText = (category: ProductCategory): string => {
       return "Supported: JPG, PNG, MP4, MOV (Max 50MB)"
     case "Cinematic Videos":
       return "Supported: MP4, MOV, AVI (Max 50MB)"
+    case "Ads and UGC":
+      return "Supported: JPG, PNG, MP4, MOV (Max 50MB)"
     default:
       return "Supported: JPG, PNG, GIF, MP4, MOV (Max 50MB)"
   }
 }
 type Mode = 'none' | 'single' | 'dual' | 'multi'
-type EmotionalTone = "Epic" | "Elegant" | "Calm" | "Poetic" | "Powerful" | "Custom"
-type VisualStyle = "Photoreal" | "Cinematic" | "Stylized CG" | "Watercolor Softness" | "Custom"
+type EmotionalTone = "Epic" | "Elegant" | "Calm" | "Poetic" | "Powerful" | "Energetic" | "Custom"
+type VisualStyle = "Photoreal" | "Cinematic" | "Stylized CG" | "Watercolor Softness" | "Modern" | "Custom"
 type Environment = "Studio white" | "Urban twilight" | "Forest dawn" | "Black marble" | "Custom"
-type LightingMood = "Soft Daylight" | "Glossy Specular" | "Backlit Sunset" | "High-Contrast Spot" | "Custom"
+type LightingMood = "Soft Daylight" | "Glossy Specular" | "Backlit Sunset" | "High-Contrast Spot" | "Natural daylight" | "Custom"
 type MaterialFocus = "Glass" | "Metal" | "Liquid" | "Fabric" | "All"
 type CameraType = "Macro Precision" | "Orbit Reveal" | "Tracking Pull-Back" | "Custom"
 type FrameRate = "Slow Motion 120 fps" | "Cinematic 60 fps" | "Standard 30 fps" | "Custom"
 type RevealType = "Assemble" | "Morph" | "Emerge" | "Disintegrate → Form" | "Morph From Form" | "Slide" | "Custom"
 type SoundMode = "SFX only" | "Music driven" | "Hybrid" | "Custom"
-type SoundMood = "Ambient minimal" | "Percussive energy" | "Cinematic warm" | "Custom"
+type SoundMood = "Ambient minimal" | "Percussive energy" | "Cinematic warm" | "Energetic" | "Custom"
 type LogoMoment = "Morph From Form" | "Fade-In" | "Hover" | "None"
 
 // Template Types
@@ -167,6 +171,14 @@ const TEMPLATE_MAP: Record<ProductCategory, Template[]> = {
     { id: "explanation-video", name: "Explanation Video", description: "Educational and tutorial content", icon: "📚" },
     { id: "movie-clip", name: "Movie Clip", description: "Dramatic and narrative scenes", icon: "🎬" },
     { id: "lifestyle-scene", name: "Lifestyle Scene", description: "Everyday and aspirational moments", icon: "🌟" }
+  ],
+  "Ads and UGC": [
+    { id: "product-showcase", name: "Product Showcase", description: "Highlight product features and benefits", icon: "📦" },
+    { id: "testimonial-ad", name: "Testimonial Ad", description: "Customer reviews and experiences", icon: "💬" },
+    { id: "tutorial-ad", name: "Tutorial Ad", description: "How-to and educational content", icon: "🎓" },
+    { id: "before-after", name: "Before/After", description: "Transformation and results", icon: "⚖️" },
+    { id: "unboxing", name: "Unboxing", description: "Product reveal and first impressions", icon: "📦" },
+    { id: "day-in-life", name: "Day-in-Life", description: "Authentic lifestyle content", icon: "📅" }
   ]
 }
 
@@ -458,7 +470,57 @@ const CATEGORY_CONFIGS: Record<ProductCategory, CategoryConfig> = {
     icon: "🎬",
     color: "orange",
     description: "Cinematic scenes with storytelling and dramatic elements"
+  },
+  "Ads and UGC": {
+    fields: ["contentFormat", "platformOptimization", "toneStyle", "ctaType", "creatorPersona", "pacingAds", "hookStyle"],
+    icon: "📱",
+    color: "yellow",
+    description: "Advertising content and user-generated style videos"
   }
+}
+
+// Environment preview data
+const ENVIRONMENT_PREVIEWS: Record<string, { color: string, gradient: string, description: string }> = {
+  "Studio white": { 
+    color: "#FFFFFF", 
+    gradient: "from-gray-50 to-white",
+    description: "Clean, professional backdrop"
+  },
+  "Forest dawn": { 
+    color: "#4A7C59", 
+    gradient: "from-green-600 to-yellow-500",
+    description: "Natural, warm morning light"
+  },
+  "Urban twilight": { 
+    color: "#1E3A8A", 
+    gradient: "from-blue-900 to-purple-600",
+    description: "Modern city atmosphere"
+  },
+  "Desert sunset": { 
+    color: "#F59E0B", 
+    gradient: "from-orange-500 to-red-600",
+    description: "Warm, dramatic lighting"
+  },
+  "Ocean mist": { 
+    color: "#0EA5E9", 
+    gradient: "from-cyan-400 to-blue-600",
+    description: "Cool, ethereal mood"
+  },
+  "Custom": { 
+    color: "#6B7280", 
+    gradient: "from-gray-400 to-gray-600",
+    description: "Your custom environment"
+  }
+}
+
+// Lighting preview data
+const LIGHTING_PREVIEWS: Record<string, { icon: string, description: string }> = {
+  "Soft Daylight": { icon: "☀️", description: "Even, natural illumination" },
+  "Glossy Specular": { icon: "✨", description: "Shiny, reflective highlights" },
+  "Backlit Sunset": { icon: "🌅", description: "Dramatic rim lighting" },
+  "High-Contrast Spot": { icon: "💡", description: "Focused, dramatic shadows" },
+  "Natural daylight": { icon: "🌤️", description: "Balanced outdoor lighting" },
+  "Custom": { icon: "🎨", description: "Your custom lighting" }
 }
 
 // Template presets with auto-configuration
@@ -487,7 +549,7 @@ export function DiverseMotionGeneratorInterface({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Mode Selection
-  const [mode, setMode] = useState<Mode>('none')
+  const [mode, setMode] = useState<Mode>('single')
   
   // 1️⃣ Product Description & Intent Capture
   const [productCategory, setProductCategory] = useState<ProductCategory>("Data Visualizations")
@@ -505,13 +567,9 @@ export function DiverseMotionGeneratorInterface({
   
   // Category-specific fields - Data Visualizations
   const [chartType, setChartType] = useState<string>("Line Chart")
-  const [customChartType, setCustomChartType] = useState("")
   const [dataPoints, setDataPoints] = useState<string>("10-20")
-  const [customDataPoints, setCustomDataPoints] = useState("")
   const [animationStyle, setAnimationStyle] = useState<string>("Sequential")
-  const [customAnimationStyle, setCustomAnimationStyle] = useState("")
   const [colorScheme, setColorScheme] = useState<string>("Gradient")
-  const [customColorScheme, setCustomColorScheme] = useState("")
   
   // Category-specific fields - Infographic
   const [layoutType, setLayoutType] = useState<string>("Vertical")
@@ -537,6 +595,31 @@ export function DiverseMotionGeneratorInterface({
   const [pacing, setPacing] = useState<string>("Medium")
   const [narrativeStructure, setNarrativeStructure] = useState<string>("Linear")
   
+  // Category-specific fields - Ads and UGC
+  const [contentFormat, setContentFormat] = useState<string>("Product Showcase")
+  const [platformOptimization, setPlatformOptimization] = useState<string>("TikTok")
+  const [toneStyle, setToneStyle] = useState<string>("Authentic UGC")
+  const [ctaType, setCtaType] = useState<string>("Shop Now")
+  const [creatorPersona, setCreatorPersona] = useState<string>("Everyday User")
+  const [pacingAds, setPacingAds] = useState<string>("Fast-Cut (3-5s)")
+  const [hookStyle, setHookStyle] = useState<string>("Question")
+  
+  // Enhancement mode state variables (separate from creation)
+  const [chartTypeEnhance, setChartTypeEnhance] = useState<string>("Highlight Trends")
+  const [dataPointsEnhance, setDataPointsEnhance] = useState<string>("Peak Values")
+  const [animationStyleEnhance, setAnimationStyleEnhance] = useState<string>("Enhance Clarity")
+  const [colorSchemeEnhance, setColorSchemeEnhance] = useState<string>("Follow Data Flow")
+
+  const [layoutTypeEnhance, setLayoutTypeEnhance] = useState<string>("Add Visual Hierarchy")
+  const [iconStyleEnhance, setIconStyleEnhance] = useState<string>("Modernize Icons")
+  const [textEmphasisEnhance, setTextEmphasisEnhance] = useState<string>("Bold Key Points")
+  const [flowDirectionEnhance, setFlowDirectionEnhance] = useState<string>("Add Connectors")
+
+  const [logoTypeEnhance, setLogoTypeEnhance] = useState<string>("Elegant Reveal")
+  const [animationComplexityEnhance, setAnimationComplexityEnhance] = useState<string>("Add Depth")
+  const [brandColorsEnhance, setBrandColorsEnhance] = useState<string>("")
+  const [revealStyleEnhance, setRevealStyleEnhance] = useState<string>("Smooth Transition")
+  
   // Multi-asset support
   const [assets, setAssets] = useState<MotionAsset[]>([
     { id: '1', prompt: '', timing: 5 }
@@ -549,18 +632,158 @@ export function DiverseMotionGeneratorInterface({
   
   // Dual Asset transition controls
   const [transitionType, setTransitionType] = useState<string>("morph")
-  const [customTransitionType, setCustomTransitionType] = useState("")
   const [transitionDuration, setTransitionDuration] = useState([1.0])
   const [transitionEasing, setTransitionEasing] = useState<string>("smooth")
-  const [customTransitionEasing, setCustomTransitionEasing] = useState("")
   const [transitionDirection, setTransitionDirection] = useState<string>("forward")
   
   // Multi Asset sequence controls
   const [sequenceStyle, setSequenceStyle] = useState<string>("sequential")
   const [globalTransition, setGlobalTransition] = useState<string>("fade")
   const [sceneTransitionDuration, setSceneTransitionDuration] = useState([0.8])
-  const [customSequenceStyle, setCustomSequenceStyle] = useState("")
-  const [customGlobalTransition, setCustomGlobalTransition] = useState("")
+  
+  // UI state
+  const [showAdvanced, setShowAdvanced] = useState(false)
+
+  // Validation state
+  const [validationStatus, setValidationStatus] = useState<{
+    category: 'valid' | 'warning' | 'error' | 'empty'
+    prompt: 'valid' | 'warning' | 'error' | 'empty'
+    assets: 'valid' | 'warning' | 'error' | 'empty'
+    duration: 'valid' | 'warning' | 'error' | 'empty'
+    overall: number // 0-100 score
+  }>({
+    category: 'empty',
+    prompt: 'empty',
+    assets: 'empty',
+    duration: 'valid',
+    overall: 0
+  })
+
+  // SINGLE TAB STATE
+  const [singleProductCategory, setSingleProductCategory] = useState<ProductCategory>("Data Visualizations")
+  const [singlePrompt, setSinglePrompt] = useState("")
+  const [singleProductName, setSingleProductName] = useState("")
+  const [singleDuration, setSingleDuration] = useState([5])
+  const [singleAspectRatio, setSingleAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16')
+
+  // Single - Visual Context
+  const [singleEmotionalTone, setSingleEmotionalTone] = useState<EmotionalTone>("Epic")
+  const [singleVisualStyle, setSingleVisualStyle] = useState<VisualStyle>("Photoreal")
+  const [singleEnvironment, setSingleEnvironment] = useState<Environment>("Studio white")
+  const [singleLightingMood, setSingleLightingMood] = useState<LightingMood>("Soft Daylight")
+  const [singleMaterialFocus, setSingleMaterialFocus] = useState<MaterialFocus[]>(["All"])
+  const [singleCameraType, setSingleCameraType] = useState<CameraType>("Macro Precision")
+  const [singleFrameRate, setSingleFrameRate] = useState<FrameRate>("Cinematic 60 fps")
+
+  // Single - Motion & Energy
+  const [singleRevealType, setSingleRevealType] = useState<RevealType>("Morph")
+  const [singleCameraEnergy, setSingleCameraEnergy] = useState([50])
+  const [singleLoopMode, setSingleLoopMode] = useState(false)
+  const [singleHookIntensity, setSingleHookIntensity] = useState([50])
+  const [singleEndEmotion, setSingleEndEmotion] = useState([50])
+
+  // Single - Audio DNA
+  const [singleSoundMode, setSingleSoundMode] = useState<SoundMode>("SFX only")
+  const [singleSoundMood, setSingleSoundMood] = useState<SoundMood>("Ambient minimal")
+  const [singleKeyEffects, setSingleKeyEffects] = useState<string[]>([])
+  const [singleMixCurve, setSingleMixCurve] = useState([50])
+
+  // Single - Brand Touch
+  const [singleAccentColorSync, setSingleAccentColorSync] = useState(false)
+  const [singleAccentColor, setSingleAccentColor] = useState("#3B82F6")
+  const [singleTextConstraint, setSingleTextConstraint] = useState(false)
+
+  // Single - Category-specific fields
+  const [singleChartType, setSingleChartType] = useState<string>("Bar Chart")
+  const [singleDataPoints, setSingleDataPoints] = useState<string>("5-10 points")
+  const [singleAnimationStyle, setSingleAnimationStyle] = useState<string>("Smooth reveal")
+  const [singleColorScheme, setSingleColorScheme] = useState<string>("Data-driven")
+  const [singleLayoutType, setSingleLayoutType] = useState<string>("Vertical flow")
+  const [singleIconStyle, setSingleIconStyle] = useState<string>("Minimalist")
+  const [singleTextEmphasis, setSingleTextEmphasis] = useState<string>("Bold headers")
+  const [singleFlowDirection, setSingleFlowDirection] = useState<string>("Top to bottom")
+  const [singleLogoType, setSingleLogoType] = useState<string>("Wordmark")
+  const [singleAnimationComplexity, setSingleAnimationComplexity] = useState<string>("Medium")
+  const [singleBrandColors, setSingleBrandColors] = useState<string>("")
+  const [singleRevealStyle, setSingleRevealStyle] = useState<string>("Fade in")
+  const [singleElementType, setSingleElementType] = useState<string>("Button")
+  const [singleInteractionType, setSingleInteractionType] = useState<string>("Hover")
+  const [singleStateTransitions, setSingleStateTransitions] = useState<string>("Smooth")
+  const [singleMicroInteractionLevel, setSingleMicroInteractionLevel] = useState<string>("Subtle")
+  const [singleSceneType, setSingleSceneType] = useState<string>("Hero shot")
+  const [singleMoodGenre, setSingleMoodGenre] = useState<string>("Dramatic")
+  const [singlePacing, setSinglePacing] = useState<string>("Medium")
+  const [singleNarrativeStructure, setSingleNarrativeStructure] = useState<string>("Linear")
+  const [singleContentFormat, setSingleContentFormat] = useState<string>("Product Showcase")
+  const [singlePlatformOptimization, setSinglePlatformOptimization] = useState<string>("TikTok")
+  const [singleToneStyle, setSingleToneStyle] = useState<string>("Authentic UGC")
+  const [singleCtaType, setSingleCtaType] = useState<string>("Shop Now")
+  const [singleCreatorPersona, setSingleCreatorPersona] = useState<string>("Everyday User")
+  const [singlePacingAds, setSinglePacingAds] = useState<string>("Fast-Cut (3-5s)")
+  const [singleHookStyle, setSingleHookStyle] = useState<string>("Question")
+
+  // DUAL TAB STATE
+  const [dualProductCategory, setDualProductCategory] = useState<ProductCategory>("Data Visualizations")
+  const [dualPrompt, setDualPrompt] = useState("")
+  const [dualProductName, setDualProductName] = useState("")
+  const [dualDuration, setDualDuration] = useState([5])
+  const [dualAspectRatio, setDualAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16')
+
+  // Dual - Visual Context
+  const [dualEmotionalTone, setDualEmotionalTone] = useState<EmotionalTone>("Epic")
+  const [dualVisualStyle, setDualVisualStyle] = useState<VisualStyle>("Photoreal")
+  const [dualEnvironment, setDualEnvironment] = useState<Environment>("Studio white")
+  const [dualLightingMood, setDualLightingMood] = useState<LightingMood>("Soft Daylight")
+  const [dualMaterialFocus, setDualMaterialFocus] = useState<MaterialFocus[]>(["All"])
+  const [dualCameraType, setDualCameraType] = useState<CameraType>("Macro Precision")
+  const [dualFrameRate, setDualFrameRate] = useState<FrameRate>("Cinematic 60 fps")
+
+  // Dual - Motion & Energy
+  const [dualRevealType, setDualRevealType] = useState<RevealType>("Morph")
+  const [dualCameraEnergy, setDualCameraEnergy] = useState([50])
+  const [dualLoopMode, setDualLoopMode] = useState(false)
+  const [dualHookIntensity, setDualHookIntensity] = useState([50])
+  const [dualEndEmotion, setDualEndEmotion] = useState([50])
+
+  // Dual - Audio DNA
+  const [dualSoundMode, setDualSoundMode] = useState<SoundMode>("SFX only")
+  const [dualSoundMood, setDualSoundMood] = useState<SoundMood>("Ambient minimal")
+  const [dualKeyEffects, setDualKeyEffects] = useState<string[]>([])
+  const [dualMixCurve, setDualMixCurve] = useState([50])
+
+  // Dual - Brand Touch
+  const [dualAccentColorSync, setDualAccentColorSync] = useState(false)
+  const [dualAccentColor, setDualAccentColor] = useState("#3B82F6")
+  const [dualTextConstraint, setDualTextConstraint] = useState(false)
+
+  // Dual - Category-specific fields
+  const [dualChartType, setDualChartType] = useState<string>("Bar Chart")
+  const [dualDataPoints, setDualDataPoints] = useState<string>("5-10 points")
+  const [dualAnimationStyle, setDualAnimationStyle] = useState<string>("Smooth reveal")
+  const [dualColorScheme, setDualColorScheme] = useState<string>("Data-driven")
+  const [dualLayoutType, setDualLayoutType] = useState<string>("Vertical flow")
+  const [dualIconStyle, setDualIconStyle] = useState<string>("Minimalist")
+  const [dualTextEmphasis, setDualTextEmphasis] = useState<string>("Bold headers")
+  const [dualFlowDirection, setDualFlowDirection] = useState<string>("Top to bottom")
+  const [dualLogoType, setDualLogoType] = useState<string>("Wordmark")
+  const [dualAnimationComplexity, setDualAnimationComplexity] = useState<string>("Medium")
+  const [dualBrandColors, setDualBrandColors] = useState<string>("")
+  const [dualRevealStyle, setDualRevealStyle] = useState<string>("Fade in")
+  const [dualElementType, setDualElementType] = useState<string>("Button")
+  const [dualInteractionType, setDualInteractionType] = useState<string>("Hover")
+  const [dualStateTransitions, setDualStateTransitions] = useState<string>("Smooth")
+  const [dualMicroInteractionLevel, setDualMicroInteractionLevel] = useState<string>("Subtle")
+  const [dualSceneType, setDualSceneType] = useState<string>("Hero shot")
+  const [dualMoodGenre, setDualMoodGenre] = useState<string>("Dramatic")
+  const [dualPacing, setDualPacing] = useState<string>("Medium")
+  const [dualNarrativeStructure, setDualNarrativeStructure] = useState<string>("Linear")
+  const [dualContentFormat, setDualContentFormat] = useState<string>("Product Showcase")
+  const [dualPlatformOptimization, setDualPlatformOptimization] = useState<string>("TikTok")
+  const [dualToneStyle, setDualToneStyle] = useState<string>("Authentic UGC")
+  const [dualCtaType, setDualCtaType] = useState<string>("Shop Now")
+  const [dualCreatorPersona, setDualCreatorPersona] = useState<string>("Everyday User")
+  const [dualPacingAds, setDualPacingAds] = useState<string>("Fast-Cut (3-5s)")
+  const [dualHookStyle, setDualHookStyle] = useState<string>("Question")
   
   // Preview system state
   const [showPreview, setShowPreview] = useState(false)
@@ -571,7 +794,7 @@ export function DiverseMotionGeneratorInterface({
   
   // Asset library state
   const [showAssetLibrary, setShowAssetLibrary] = useState(false)
-  const [librarySelectionMode, setLibrarySelectionMode] = useState<'single' | 'dual' | 'multi'>('single')
+  const [librarySelectionMode, setLibrarySelectionMode] = useState<'single' | 'dual' | 'multi' | 'dual-first' | 'dual-last'>('single')
   const [libraryTargetIndex, setLibraryTargetIndex] = useState<number>(0)
   
   // Preset manager state
@@ -626,13 +849,10 @@ export function DiverseMotionGeneratorInterface({
   const [customLightingMood, setCustomLightingMood] = useState("")
   const [materialFocus, setMaterialFocus] = useState<MaterialFocus[]>(["All"])
   const [cameraType, setCameraType] = useState<CameraType>("Macro Precision")
-  const [customCameraType, setCustomCameraType] = useState("")
   const [frameRate, setFrameRate] = useState<FrameRate>("Cinematic 60 fps")
-  const [customFrameRate, setCustomFrameRate] = useState("")
   
   // 3️⃣ Motion & Energy
   const [revealType, setRevealType] = useState<RevealType>("Morph")
-  const [customRevealType, setCustomRevealType] = useState("")
   const [cameraEnergy, setCameraEnergy] = useState([50]) // 0-100 slider
   const [loopMode, setLoopMode] = useState(false)
   const [hookIntensity, setHookIntensity] = useState([50]) // 0-100 slider
@@ -656,6 +876,35 @@ export function DiverseMotionGeneratorInterface({
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState(false)
+
+  // Image Selection State
+  const [useCustomImage, setUseCustomImage] = useState(true)
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null)
+  const [customImage, setCustomImage] = useState<File | null>(null)
+
+  // Dual tab image state
+  const [dualFirstFrameSource, setDualFirstFrameSource] = useState<'upload' | 'library'>('upload')
+  const [dualFirstFrameFile, setDualFirstFrameFile] = useState<File | null>(null)
+  const [dualFirstFrameUrl, setDualFirstFrameUrl] = useState<string | null>(null)
+  const [dualFirstFrameAssetId, setDualFirstFrameAssetId] = useState<string | null>(null)
+
+  const [dualLastFrameSource, setDualLastFrameSource] = useState<'upload' | 'library'>('upload')
+  const [dualLastFrameFile, setDualLastFrameFile] = useState<File | null>(null)
+  const [dualLastFrameUrl, setDualLastFrameUrl] = useState<string | null>(null)
+  const [dualLastFrameAssetId, setDualLastFrameAssetId] = useState<string | null>(null)
+
+  // Custom field states
+  const [customCameraType, setCustomCameraType] = useState("")
+  const [customFrameRate, setCustomFrameRate] = useState("")
+  const [customRevealType, setCustomRevealType] = useState("")
+  const [customTransitionType, setCustomTransitionType] = useState("")
+  const [customTransitionEasing, setCustomTransitionEasing] = useState("")
+  const [customSequenceStyle, setCustomSequenceStyle] = useState("")
+  const [customGlobalTransition, setCustomGlobalTransition] = useState("")
+
+  // Helper to check if assets exist (defined after all state variables)
+  const hasAssets = uploadedFiles.length > 0 || selectedImageUrl !== null
   
   // Collapsible sections (UGC Ads style)
   const [expandedSections, setExpandedSections] = useState({
@@ -674,6 +923,234 @@ export function DiverseMotionGeneratorInterface({
       [section]: !prev[section]
     }))
   }
+
+  // Smart field dependencies
+  useEffect(() => {
+    if (productCategory === "Ads and UGC") {
+      if (platformOptimization === "TikTok" || platformOptimization === "Instagram Reels") {
+        if (aspectRatio !== '9:16') {
+          // Show toast suggestion
+          toast({
+            title: "Aspect Ratio Suggestion",
+            description: `${platformOptimization} works best with 9:16 (vertical) format. Would you like to switch?`,
+            action: (
+              <Button size="sm" onClick={() => setAspectRatio('9:16')}>
+                Switch to 9:16
+              </Button>
+            ),
+          })
+        }
+      } else if (platformOptimization === "YouTube Shorts") {
+        if (aspectRatio !== '9:16') {
+          toast({
+            title: "Aspect Ratio Suggestion",
+            description: "YouTube Shorts works best with 9:16 format.",
+            action: (
+              <Button size="sm" onClick={() => setAspectRatio('9:16')}>
+                Switch to 9:16
+              </Button>
+            ),
+          })
+        }
+      }
+    }
+  }, [platformOptimization, productCategory, aspectRatio])
+
+  // Smart duration based on pacing (Ads & UGC)
+  useEffect(() => {
+    if (productCategory === "Ads and UGC") {
+      if (pacingAds === "Fast-Cut (3-5s)" && duration[0] > 20) {
+        toast({
+          title: "Duration Suggestion",
+          description: "Fast-cut pacing works best with shorter videos (10-20s).",
+        })
+      }
+    }
+  }, [pacingAds, duration, productCategory])
+
+  // Smart duration based on category
+  useEffect(() => {
+    if (productCategory === "Logo Animation" && duration[0] > 10) {
+      toast({
+        title: "Duration Suggestion", 
+        description: "Logo animations typically work best at 3-8 seconds.",
+      })
+    }
+  }, [productCategory, duration])
+
+  // Smart audio suggestions based on category
+  useEffect(() => {
+    if (productCategory === "Logo Animation" && soundMode !== "SFX only" && soundMode !== "Custom") {
+      toast({
+        title: "Audio Suggestion",
+        description: "Logo animations typically work best with 'SFX only' for a professional feel.",
+      })
+    } else if (productCategory === "Ads and UGC" && soundMode === "SFX only") {
+      toast({
+        title: "Audio Suggestion",
+        description: "Ads and UGC content often performs better with 'Music driven' or 'Hybrid' audio for engagement.",
+      })
+    } else if (productCategory === "Data Visualizations" && soundMode === "Music driven") {
+      toast({
+        title: "Audio Suggestion",
+        description: "Data visualizations typically work best with 'SFX only' for a professional, focused presentation.",
+      })
+    } else if (productCategory === "Cinematic Videos" && soundMode === "SFX only") {
+      toast({
+        title: "Audio Suggestion",
+        description: "Cinematic videos typically benefit from 'Music driven' audio for emotional impact.",
+      })
+    }
+  }, [productCategory, soundMode])
+
+  // Audio-visual sync suggestions - Pacing
+  useEffect(() => {
+    if (productCategory === "Ads and UGC") {
+      if (pacingAds === "Fast-Cut (3-5s)" && soundMood !== "Percussive energy") {
+        toast({
+          title: "Audio Sync Suggestion",
+          description: "Fast-cut pacing works great with 'Percussive energy' sound mood for maximum impact.",
+        })
+      } else if (pacingAds === "Slower/Story-driven" && soundMood === "Percussive energy") {
+        toast({
+          title: "Audio Sync Suggestion",
+          description: "Slower pacing typically pairs better with 'Ambient minimal' or 'Cinematic warm' sound moods.",
+        })
+      }
+    }
+  }, [pacingAds, soundMood, productCategory])
+
+  // Audio-visual sync suggestions - Emotional Tone
+  useEffect(() => {
+    if (emotionalTone === "Energetic" && soundMode === "SFX only") {
+      toast({
+        title: "Audio Sync Suggestion",
+        description: "Energetic content typically benefits from 'Music driven' audio to match the energy level.",
+      })
+    } else if ((emotionalTone === "Calm" || emotionalTone === "Poetic") && soundMood === "Percussive energy") {
+      toast({
+        title: "Audio Sync Suggestion",
+        description: "Calm/Poetic tones pair better with 'Ambient minimal' or 'Cinematic warm' sound moods.",
+      })
+    }
+  }, [emotionalTone, soundMode, soundMood])
+
+  // Audio-visual sync suggestions - Cinematic Videos
+  useEffect(() => {
+    if (productCategory === "Cinematic Videos") {
+      if (pacing === "Fast" && soundMood !== "Percussive energy") {
+        toast({
+          title: "Audio Sync Suggestion",
+          description: "Fast-paced cinematic videos work well with 'Percussive energy' sound mood.",
+        })
+      } else if (pacing === "Slow" && soundMood === "Percussive energy") {
+        toast({
+          title: "Audio Sync Suggestion",
+          description: "Slow-paced videos typically pair better with 'Ambient minimal' or 'Cinematic warm' moods.",
+        })
+      }
+    }
+  }, [pacing, soundMood, productCategory])
+
+  // Auto-expand Audio DNA for audio-critical categories
+  useEffect(() => {
+    if (productCategory === "Ads and UGC" || productCategory === "Cinematic Videos") {
+      setExpandedSections(prev => ({ ...prev, audio: true }))
+    }
+  }, [productCategory])
+
+  // Real-time validation
+  useEffect(() => {
+    const validateConfiguration = () => {
+      let score = 0
+      const newStatus = { ...validationStatus }
+      
+      // Category validation (20 points)
+      if (productCategory) {
+        newStatus.category = 'valid'
+        score += 20
+      } else {
+        newStatus.category = 'empty'
+      }
+      
+      // Prompt validation (30 points)
+      if (mode === 'none' || mode === 'single') {
+        if (prompt.trim().length > 20) {
+          newStatus.prompt = 'valid'
+          score += 30
+        } else if (prompt.trim().length > 0) {
+          newStatus.prompt = 'warning'
+          score += 15
+        } else {
+          newStatus.prompt = 'empty'
+        }
+      } else {
+        // Dual/Multi mode
+        const allPromptsValid = assets.every(a => a.prompt.trim().length > 20)
+        const somePromptsValid = assets.some(a => a.prompt.trim().length > 0)
+        if (allPromptsValid) {
+          newStatus.prompt = 'valid'
+          score += 30
+        } else if (somePromptsValid) {
+          newStatus.prompt = 'warning'
+          score += 15
+        } else {
+          newStatus.prompt = 'empty'
+        }
+      }
+      
+      // Assets validation (30 points)
+      if (mode === 'none') {
+        newStatus.assets = 'valid'
+        score += 30
+      } else if (mode === 'single') {
+        if (uploadedFiles.length >= 1) {
+          newStatus.assets = 'valid'
+          score += 30
+        } else {
+          newStatus.assets = 'empty'
+        }
+      } else if (mode === 'dual') {
+        if (uploadedFiles.length >= 2) {
+          newStatus.assets = 'valid'
+          score += 30
+        } else if (uploadedFiles.length === 1) {
+          newStatus.assets = 'warning'
+          score += 15
+        } else {
+          newStatus.assets = 'empty'
+        }
+      } else {
+        // Multi mode
+        if (uploadedFiles.length >= assets.length) {
+          newStatus.assets = 'valid'
+          score += 30
+        } else if (uploadedFiles.length > 0) {
+          newStatus.assets = 'warning'
+          score += 15
+        } else {
+          newStatus.assets = 'empty'
+        }
+      }
+      
+      // Duration validation (20 points)
+      if (productCategory === "Logo Animation" && duration[0] > 10) {
+        newStatus.duration = 'warning'
+        score += 10
+      } else if (productCategory === "Ads and UGC" && pacingAds === "Fast-Cut (3-5s)" && duration[0] > 20) {
+        newStatus.duration = 'warning'
+        score += 10
+      } else {
+        newStatus.duration = 'valid'
+        score += 20
+      }
+      
+      newStatus.overall = score
+      setValidationStatus(newStatus)
+    }
+    
+    validateConfiguration()
+  }, [productCategory, prompt, uploadedFiles, assets, mode, duration, pacingAds])
 
   // Asset management functions
   const updateAsset = (index: number, updates: Partial<MotionAsset>) => {
@@ -865,16 +1342,21 @@ export function DiverseMotionGeneratorInterface({
   // State for API dropdowns
   const [availableCharts, setAvailableCharts] = useState<any[]>([])
   const [availableAvatars, setAvailableAvatars] = useState<any[]>([])
+  const [availableProductMockups, setAvailableProductMockups] = useState<any[]>([])
   const [loadingCharts, setLoadingCharts] = useState(false)
   const [loadingAvatars, setLoadingAvatars] = useState(false)
+  const [loadingProductMockups, setLoadingProductMockups] = useState(false)
   const [selectedChartId, setSelectedChartId] = useState<string>("")
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("")
+  const [selectedProductMockupId, setSelectedProductMockupId] = useState<string>("")
   const [showChartsDropdown, setShowChartsDropdown] = useState(false)
   const [showAvatarsDropdown, setShowAvatarsDropdown] = useState(false)
+  const [showProductMockupsDropdown, setShowProductMockupsDropdown] = useState(false)
 
   // Computed selected items
   const selectedChart = availableCharts.find(c => c.id === selectedChartId)
   const selectedAvatar = availableAvatars.find(a => a.id === selectedAvatarId)
+  const selectedProductMockup = availableProductMockups.find(m => m.id === selectedProductMockupId)
 
   // Data fetching functions
   const loadAvailableCharts = async () => {
@@ -907,6 +1389,21 @@ export function DiverseMotionGeneratorInterface({
     }
   }
 
+  const loadAvailableProductMockups = async () => {
+    setLoadingProductMockups(true)
+    try {
+      const response = await fetch('/api/product-mockups')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableProductMockups(data.productMockups || [])
+      }
+    } catch (error) {
+      console.error('Failed to load product mockups:', error)
+    } finally {
+      setLoadingProductMockups(false)
+    }
+  }
+
   // Category-specific API handlers
   const handleOpenChartsAPI = () => {
     setShowChartsDropdown(!showChartsDropdown)
@@ -919,6 +1416,13 @@ export function DiverseMotionGeneratorInterface({
     setShowAvatarsDropdown(!showAvatarsDropdown)
     if (!showAvatarsDropdown && availableAvatars.length === 0) {
       loadAvailableAvatars()
+    }
+  }
+
+  const handleOpenProductMockupsAPI = () => {
+    setShowProductMockupsDropdown(!showProductMockupsDropdown)
+    if (!showProductMockupsDropdown && availableProductMockups.length === 0) {
+      loadAvailableProductMockups()
     }
   }
 
@@ -935,6 +1439,11 @@ export function DiverseMotionGeneratorInterface({
       return avatar.generated_images[0]
     }
     return null
+  }
+
+  const getProductMockupImageUrl = (mockup: any) => {
+    // Product mockups have generated_images array with signed URLs
+    return mockup.generated_images?.[0] || null
   }
 
   // Character management functions
@@ -1092,6 +1601,14 @@ export function DiverseMotionGeneratorInterface({
         setRevealType("Emerge")
         setEnvironment("Urban twilight")
         break
+      case "Ads and UGC":
+        setVisualStyle("Modern")
+        setEmotionalTone("Energetic")
+        setCameraEnergy([80])
+        setSoundMode("Music driven")
+        setRevealType("Morph")
+        setEnvironment("Studio white")
+        break
     }
     
     // Show toast notification about applied defaults
@@ -1100,6 +1617,112 @@ export function DiverseMotionGeneratorInterface({
       description: `Optimized settings for ${category.toLowerCase()} content`,
       duration: 3000
     })
+  }
+
+  const handleSingleCategoryChange = (category: ProductCategory) => {
+    setSingleProductCategory(category)
+    
+    // Set category-specific defaults for Single tab
+    switch (category) {
+      case "Data Visualizations":
+        setSingleVisualStyle("Cinematic")
+        setSingleEmotionalTone("Powerful")
+        setSingleCameraEnergy([50])
+        setSingleSoundMode("SFX only")
+        setSingleRevealType("Emerge")
+        break
+      case "Infographic":
+        setSingleVisualStyle("Stylized CG")
+        setSingleEmotionalTone("Calm")
+        setSingleCameraEnergy([40])
+        setSingleSoundMode("SFX only")
+        setSingleRevealType("Assemble")
+        break
+      case "Logo Animation":
+        setSingleVisualStyle("Stylized CG")
+        setSingleEmotionalTone("Epic")
+        setSingleCameraEnergy([60])
+        setSingleSoundMode("Hybrid")
+        setSingleRevealType("Morph From Form")
+        break
+      case "UI/UX Element":
+        setSingleVisualStyle("Stylized CG")
+        setSingleEmotionalTone("Calm")
+        setSingleCameraEnergy([45])
+        setSingleSoundMode("SFX only")
+        setSingleRevealType("Morph")
+        setSingleEnvironment("Studio white")
+        break
+      case "Cinematic Videos":
+        setSingleVisualStyle("Cinematic")
+        setSingleEmotionalTone("Epic")
+        setSingleCameraEnergy([65])
+        setSingleSoundMode("Hybrid")
+        setSingleRevealType("Emerge")
+        setSingleEnvironment("Urban twilight")
+        break
+      case "Ads and UGC":
+        setSingleVisualStyle("Modern")
+        setSingleEmotionalTone("Energetic")
+        setSingleCameraEnergy([80])
+        setSingleSoundMode("Music driven")
+        setSingleRevealType("Morph")
+        setSingleEnvironment("Studio white")
+        break
+    }
+  }
+
+  const handleDualCategoryChange = (category: ProductCategory) => {
+    setDualProductCategory(category)
+    
+    // Set category-specific defaults for Dual tab
+    switch (category) {
+      case "Data Visualizations":
+        setDualVisualStyle("Cinematic")
+        setDualEmotionalTone("Powerful")
+        setDualCameraEnergy([50])
+        setDualSoundMode("SFX only")
+        setDualRevealType("Emerge")
+        break
+      case "Infographic":
+        setDualVisualStyle("Stylized CG")
+        setDualEmotionalTone("Calm")
+        setDualCameraEnergy([40])
+        setDualSoundMode("SFX only")
+        setDualRevealType("Assemble")
+        break
+      case "Logo Animation":
+        setDualVisualStyle("Stylized CG")
+        setDualEmotionalTone("Epic")
+        setDualCameraEnergy([60])
+        setDualSoundMode("Hybrid")
+        setDualRevealType("Morph From Form")
+        break
+      case "UI/UX Element":
+        setDualVisualStyle("Stylized CG")
+        setDualEmotionalTone("Calm")
+        setDualCameraEnergy([45])
+        setDualSoundMode("SFX only")
+        setDualRevealType("Morph")
+        setDualEnvironment("Studio white")
+        break
+      case "Cinematic Videos":
+        setDualVisualStyle("Cinematic")
+        setDualEmotionalTone("Epic")
+        setDualCameraEnergy([65])
+        setDualSoundMode("Hybrid")
+        setDualRevealType("Emerge")
+        setDualEnvironment("Urban twilight")
+        break
+      case "Ads and UGC":
+        setDualVisualStyle("Modern")
+        setDualEmotionalTone("Energetic")
+        setDualCameraEnergy([80])
+        setDualSoundMode("Music driven")
+        setDualRevealType("Morph")
+        setDualEnvironment("Studio white")
+        break
+    }
   }
   
   // Asset file handling
@@ -1152,7 +1775,7 @@ export function DiverseMotionGeneratorInterface({
         const preview = URL.createObjectURL(file)
         newPreviews.push(preview)
       }
-      
+
       setUploadedFiles(prev => [...prev, ...newFiles])
       setAssetPreviews(prev => [...prev, ...newPreviews])
       
@@ -1178,6 +1801,201 @@ export function DiverseMotionGeneratorInterface({
         fileInputRef.current.value = ''
       }
     }
+  }
+
+  // Single image upload handler for diverse motion
+  const handleSingleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type (images only for diverse motion)
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: `${file.name} is not an image file.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: `${file.name} exceeds 50MB limit.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsUploadingAsset(true)
+
+    try {
+      // Create preview
+      const preview = URL.createObjectURL(file)
+      
+      // Update state
+      setCustomImage(file)
+      setSelectedImageUrl(preview)
+      setSelectedAssetId(null) // Clear library selection
+      
+      toast({
+        title: "Image uploaded",
+        description: `${file.name} is ready for animation.`,
+      })
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUploadingAsset(false)
+    }
+  }
+
+  // Handle library asset selection
+  const handleLibraryAssetSelect = (asset: any) => {
+    setSelectedAssetId(asset.id)
+    setSelectedImageUrl(asset.image || asset.preview)
+    setCustomImage(null) // Clear upload selection
+    setUseCustomImage(false) // Switch to library mode
+    
+    toast({
+      title: "Asset selected",
+      description: `${asset.title || 'Selected asset'} is ready for animation.`,
+    })
+  }
+
+  // Dual frame upload handlers
+  const handleDualFirstFrameUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type (images only for diverse motion)
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: `${file.name} is not an image file.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: `${file.name} exceeds 50MB limit.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsUploadingAsset(true)
+
+    try {
+      // Create preview
+      const preview = URL.createObjectURL(file)
+      
+      // Update state
+      setDualFirstFrameFile(file)
+      setDualFirstFrameUrl(preview)
+      setDualFirstFrameAssetId(null) // Clear library selection
+      setDualFirstFrameSource('upload')
+      
+      toast({
+        title: "First frame uploaded",
+        description: `${file.name} is ready as starting frame.`,
+      })
+    } catch (error) {
+      console.error('Error uploading first frame:', error)
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload first frame. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUploadingAsset(false)
+    }
+  }
+
+  const handleDualLastFrameUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type (images only for diverse motion)
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: `${file.name} is not an image file.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: `${file.name} exceeds 50MB limit.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsUploadingAsset(true)
+
+    try {
+      // Create preview
+      const preview = URL.createObjectURL(file)
+      
+      // Update state
+      setDualLastFrameFile(file)
+      setDualLastFrameUrl(preview)
+      setDualLastFrameAssetId(null) // Clear library selection
+      setDualLastFrameSource('upload')
+      
+      toast({
+        title: "Last frame uploaded",
+        description: `${file.name} is ready as ending frame.`,
+      })
+    } catch (error) {
+      console.error('Error uploading last frame:', error)
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload last frame. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUploadingAsset(false)
+    }
+  }
+
+  // Dual frame library selection handlers
+  const handleDualFirstFrameLibrarySelect = (asset: any) => {
+    setDualFirstFrameAssetId(asset.id)
+    setDualFirstFrameUrl(asset.image || asset.preview)
+    setDualFirstFrameFile(null) // Clear upload selection
+    setDualFirstFrameSource('library')
+    
+    toast({
+      title: "First frame selected",
+      description: `${asset.title || 'Selected asset'} is ready as starting frame.`,
+    })
+  }
+
+  const handleDualLastFrameLibrarySelect = (asset: any) => {
+    setDualLastFrameAssetId(asset.id)
+    setDualLastFrameUrl(asset.image || asset.preview)
+    setDualLastFrameFile(null) // Clear upload selection
+    setDualLastFrameSource('library')
+    
+    toast({
+      title: "Last frame selected",
+      description: `${asset.title || 'Selected asset'} is ready as ending frame.`,
+    })
   }
   
   const removeUploadedAsset = (index: number) => {
@@ -1231,7 +2049,10 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Data Visualizations" && !hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Chart Type</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Chart Type</label>
+                  <TooltipIcon content="Select the type of chart or graph to animate" />
+                </div>
                 <Select value={chartType} onValueChange={setChartType}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1242,20 +2063,14 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Pie Chart">🥧 Pie Chart</SelectItem>
                     <SelectItem value="Area Chart">📉 Area Chart</SelectItem>
                     <SelectItem value="Scatter Plot">⚫ Scatter Plot</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {chartType === 'Custom' && (
-                  <Input
-                    value={customChartType}
-                    onChange={(e) => setCustomChartType(e.target.value)}
-                    placeholder="Enter custom chart type..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Data Points</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Data Points</label>
+                  <TooltipIcon content="Choose the number of data points to visualize" />
+                </div>
                 <Select value={dataPoints} onValueChange={setDataPoints}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1265,20 +2080,14 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="10-20">10-20 points</SelectItem>
                     <SelectItem value="20-50">20-50 points</SelectItem>
                     <SelectItem value="50+">50+ points</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {dataPoints === 'Custom' && (
-                  <Input
-                    value={customDataPoints}
-                    onChange={(e) => setCustomDataPoints(e.target.value)}
-                    placeholder="Enter custom data points..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Animation Style</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Animation Style</label>
+                  <TooltipIcon content="Select how your data will be animated" />
+                </div>
                 <Select value={animationStyle} onValueChange={setAnimationStyle}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1287,20 +2096,14 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Sequential">🔢 Sequential</SelectItem>
                     <SelectItem value="Simultaneous">⚡ Simultaneous</SelectItem>
                     <SelectItem value="Wave">🌊 Wave</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {animationStyle === 'Custom' && (
-                  <Input
-                    value={customAnimationStyle}
-                    onChange={(e) => setCustomAnimationStyle(e.target.value)}
-                    placeholder="Enter custom animation style..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Color Scheme</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Color Scheme</label>
+                  <TooltipIcon content="Choose the color approach for your visualization" />
+                </div>
                 <Select value={colorScheme} onValueChange={setColorScheme}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1309,17 +2112,8 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Gradient">🌈 Gradient</SelectItem>
                     <SelectItem value="Solid">⬛ Solid</SelectItem>
                     <SelectItem value="Multi-color">🎨 Multi-color</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {colorScheme === 'Custom' && (
-                  <Input
-                    value={customColorScheme}
-                    onChange={(e) => setCustomColorScheme(e.target.value)}
-                    placeholder="Enter custom color scheme..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
             </>
           )}
@@ -1328,8 +2122,11 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Data Visualizations" && hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Enhancement Focus</label>
-                <Select value={chartType} onValueChange={setChartType}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Chart Enhancement Type</label>
+                  <TooltipIcon content="Choose the focus of your chart enhancement" />
+                </div>
+                <Select value={chartTypeEnhance} onValueChange={setChartTypeEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1338,21 +2135,15 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Add Annotations">📝 Add Annotations</SelectItem>
                     <SelectItem value="Smooth Transitions">✨ Smooth Transitions</SelectItem>
                     <SelectItem value="Enhance Clarity">🔍 Enhance Clarity</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {chartType === 'Custom' && (
-                  <Input
-                    value={customChartType}
-                    onChange={(e) => setCustomChartType(e.target.value)}
-                    placeholder="Enter custom enhancement focus..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Data Emphasis</label>
-                <Select value={dataPoints} onValueChange={setDataPoints}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Data Point Focus</label>
+                  <TooltipIcon content="Select which data points to emphasize" />
+                </div>
+                <Select value={dataPointsEnhance} onValueChange={setDataPointsEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1361,21 +2152,15 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Comparisons">⚖️ Comparisons</SelectItem>
                     <SelectItem value="Growth Areas">📊 Growth Areas</SelectItem>
                     <SelectItem value="Key Metrics">🎯 Key Metrics</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {dataPoints === 'Custom' && (
-                  <Input
-                    value={customDataPoints}
-                    onChange={(e) => setCustomDataPoints(e.target.value)}
-                    placeholder="Enter custom data emphasis..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Visual Treatment</label>
-                <Select value={animationStyle} onValueChange={setAnimationStyle}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Visual Enhancement Style</label>
+                  <TooltipIcon content="Choose how to improve the visual clarity" />
+                </div>
+                <Select value={animationStyleEnhance} onValueChange={setAnimationStyleEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1384,21 +2169,15 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Add Depth">📐 Add Depth</SelectItem>
                     <SelectItem value="Modernize Style">✨ Modernize Style</SelectItem>
                     <SelectItem value="Professional Polish">💎 Professional Polish</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {animationStyle === 'Custom' && (
-                  <Input
-                    value={customAnimationStyle}
-                    onChange={(e) => setCustomAnimationStyle(e.target.value)}
-                    placeholder="Enter custom visual treatment..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Animation Approach</label>
-                <Select value={colorScheme} onValueChange={setColorScheme}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Animation Enhancement</label>
+                  <TooltipIcon content="Select animation improvements for your chart" />
+                </div>
+                <Select value={colorSchemeEnhance} onValueChange={setColorSchemeEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1407,17 +2186,8 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Emphasize Key Points">⭐ Emphasize Key Points</SelectItem>
                     <SelectItem value="Smooth Reveal">✨ Smooth Reveal</SelectItem>
                     <SelectItem value="Dynamic Transitions">⚡ Dynamic Transitions</SelectItem>
-                    <SelectItem value="Custom">🎨 Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {colorScheme === 'Custom' && (
-                  <Input
-                    value={customColorScheme}
-                    onChange={(e) => setCustomColorScheme(e.target.value)}
-                    placeholder="Enter custom animation approach..."
-                    className="mt-2 bg-background border-border"
-                  />
-                )}
               </div>
             </>
           )}
@@ -1425,7 +2195,10 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Infographic" && !hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Layout Type</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Layout Type</label>
+                  <TooltipIcon content="Choose the layout structure for your infographic" />
+                </div>
                 <Select value={layoutType} onValueChange={setLayoutType}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1439,7 +2212,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Icon Style</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Icon Style</label>
+                  <TooltipIcon content="Select the visual style for icons" />
+                </div>
                 <Select value={iconStyle} onValueChange={setIconStyle}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1453,7 +2229,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Text Emphasis</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Text Emphasis</label>
+                  <TooltipIcon content="Choose how text will be highlighted" />
+                </div>
                 <Select value={textEmphasis} onValueChange={setTextEmphasis}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1466,7 +2245,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Flow Direction</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Flow Direction</label>
+                  <TooltipIcon content="Select the reading flow direction" />
+                </div>
                 <Select value={flowDirection} onValueChange={setFlowDirection}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1485,8 +2267,11 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Infographic" && hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Content Enhancement</label>
-                <Select value={layoutType} onValueChange={setLayoutType}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Layout Enhancement</label>
+                  <TooltipIcon content="Choose how to improve the layout structure" />
+                </div>
+                <Select value={layoutTypeEnhance} onValueChange={setLayoutTypeEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1499,8 +2284,11 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Icon Treatment</label>
-                <Select value={iconStyle} onValueChange={setIconStyle}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Icon Enhancement Style</label>
+                  <TooltipIcon content="Select how to enhance existing icons" />
+                </div>
+                <Select value={iconStyleEnhance} onValueChange={setIconStyleEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1513,8 +2301,11 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Text Animation</label>
-                <Select value={textEmphasis} onValueChange={setTextEmphasis}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Text Enhancement</label>
+                  <TooltipIcon content="Choose how to improve text presentation" />
+                </div>
+                <Select value={textEmphasisEnhance} onValueChange={setTextEmphasisEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1527,8 +2318,11 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Flow Enhancement</label>
-                <Select value={flowDirection} onValueChange={setFlowDirection}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Flow Enhancement Style</label>
+                  <TooltipIcon content="Select how to improve visual flow" />
+                </div>
+                <Select value={flowDirectionEnhance} onValueChange={setFlowDirectionEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1546,7 +2340,10 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Logo Animation" && !hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Logo Type</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Logo Type</label>
+                  <TooltipIcon content="Select your logo composition type" />
+                </div>
                 <Select value={logoType} onValueChange={setLogoType}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1559,7 +2356,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Animation Complexity</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Animation Complexity</label>
+                  <TooltipIcon content="Choose the animation intricacy level" />
+                </div>
                 <Select value={animationComplexity} onValueChange={setAnimationComplexity}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1572,7 +2372,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Brand Colors</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Brand Colors</label>
+                  <TooltipIcon content="Enter your brand colors (optional)" />
+                </div>
                 <Input
                   value={brandColors}
                   onChange={(e) => setBrandColors(e.target.value)}
@@ -1581,7 +2384,10 @@ export function DiverseMotionGeneratorInterface({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Reveal Style</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Reveal Style</label>
+                  <TooltipIcon content="Select how your logo will be revealed" />
+                </div>
                 <Select value={revealStyle} onValueChange={setRevealStyle}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1601,8 +2407,11 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Logo Animation" && hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Animation Style</label>
-                <Select value={logoType} onValueChange={setLogoType}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Logo Animation Enhancement</label>
+                  <TooltipIcon content="Choose the animation style for your logo" />
+                </div>
+                <Select value={logoTypeEnhance} onValueChange={setLogoTypeEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1615,8 +2424,11 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Enhancement Level</label>
-                <Select value={animationComplexity} onValueChange={setAnimationComplexity}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Animation Enhancement Level</label>
+                  <TooltipIcon content="Select the level of enhancement detail" />
+                </div>
+                <Select value={animationComplexityEnhance} onValueChange={setAnimationComplexityEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1628,17 +2440,23 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Color Treatment</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Brand Color Enhancement</label>
+                  <TooltipIcon content="Adjust or enhance brand colors" />
+                </div>
                 <Input
-                  value={brandColors}
-                  onChange={(e) => setBrandColors(e.target.value)}
+                  value={brandColorsEnhance}
+                  onChange={(e) => setBrandColorsEnhance(e.target.value)}
                   placeholder="Enhance existing colors"
                   className="bg-white dark:bg-gray-900"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Motion Effect</label>
-                <Select value={revealStyle} onValueChange={setRevealStyle}>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Motion Enhancement Style</label>
+                  <TooltipIcon content="Select motion effects to add" />
+                </div>
+                <Select value={revealStyleEnhance} onValueChange={setRevealStyleEnhance}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
@@ -1656,7 +2474,10 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "UI/UX Element" && !hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Element Type</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Element Type</label>
+                  <TooltipIcon content="Select the UI component to animate" />
+                </div>
                 <Select value={elementType} onValueChange={setElementType}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1671,7 +2492,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Interaction Type</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Interaction Type</label>
+                  <TooltipIcon content="Choose the interaction trigger" />
+                </div>
                 <Select value={interactionType} onValueChange={setInteractionType}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1685,7 +2509,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">State Transitions</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">State Transitions</label>
+                  <TooltipIcon content="Select number of states to animate" />
+                </div>
                 <Select value={stateTransitions} onValueChange={setStateTransitions}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1698,7 +2525,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Micro-interaction Level</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Micro-interaction Level</label>
+                  <TooltipIcon content="Choose the subtlety level" />
+                </div>
                 <Select value={microInteractionLevel} onValueChange={setMicroInteractionLevel}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1776,7 +2606,10 @@ export function DiverseMotionGeneratorInterface({
           {productCategory === "Cinematic Videos" && !hasAssets && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Scene Type</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Scene Type</label>
+                  <TooltipIcon content="Select the primary scene environment" />
+                </div>
                 <Select value={sceneType} onValueChange={setSceneType}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1790,7 +2623,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Mood/Genre</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Mood/Genre</label>
+                  <TooltipIcon content="Choose the emotional tone or genre" />
+                </div>
                 <Select value={moodGenre} onValueChange={setMoodGenre}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1804,7 +2640,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Pacing</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Video Pacing</label>
+                  <TooltipIcon content="Select the speed and rhythm of cuts" />
+                </div>
                 <Select value={pacing} onValueChange={setPacing}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1818,7 +2657,10 @@ export function DiverseMotionGeneratorInterface({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Narrative Structure</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Narrative Structure</label>
+                  <TooltipIcon content="Choose the storytelling approach" />
+                </div>
                 <Select value={narrativeStructure} onValueChange={setNarrativeStructure}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
@@ -1889,6 +2731,201 @@ export function DiverseMotionGeneratorInterface({
                     <SelectItem value="Emphasize Key Moments">⭐ Emphasize Key Moments</SelectItem>
                     <SelectItem value="Add Text Overlays">📝 Add Text Overlays</SelectItem>
                     <SelectItem value="Smooth Flow">🌊 Smooth Flow</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+          
+          {/* Ads and UGC - Creation Mode */}
+          {productCategory === "Ads and UGC" && !hasAssets && (
+            <>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Content Format</label>
+                  <TooltipIcon content="Select the ad or content format type" />
+                </div>
+                <Select value={contentFormat} onValueChange={setContentFormat}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Product Showcase">📦 Product Showcase</SelectItem>
+                    <SelectItem value="Testimonial">💬 Testimonial</SelectItem>
+                    <SelectItem value="Tutorial/How-To">🎓 Tutorial/How-To</SelectItem>
+                    <SelectItem value="Before/After">⚖️ Before/After</SelectItem>
+                    <SelectItem value="Unboxing">📦 Unboxing</SelectItem>
+                    <SelectItem value="Day-in-Life">📅 Day-in-Life</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Platform Optimization</label>
+                  <TooltipIcon content="Choose the target social platform" />
+                </div>
+                <Select value={platformOptimization} onValueChange={setPlatformOptimization}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TikTok">🎵 TikTok</SelectItem>
+                    <SelectItem value="Instagram Reels">📸 Instagram Reels</SelectItem>
+                    <SelectItem value="YouTube Shorts">📺 YouTube Shorts</SelectItem>
+                    <SelectItem value="Facebook/Meta">👥 Facebook/Meta</SelectItem>
+                    <SelectItem value="Multi-Platform">🌐 Multi-Platform</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Tone/Style</label>
+                  <TooltipIcon content="Select the content style and authenticity level" />
+                </div>
+                <Select value={toneStyle} onValueChange={setToneStyle}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Authentic UGC">🎭 Authentic UGC</SelectItem>
+                    <SelectItem value="Polished UGC">✨ Polished UGC</SelectItem>
+                    <SelectItem value="Professional Ad">💼 Professional Ad</SelectItem>
+                    <SelectItem value="Energetic/Hype">⚡ Energetic/Hype</SelectItem>
+                    <SelectItem value="Educational">📚 Educational</SelectItem>
+                    <SelectItem value="Emotional">❤️ Emotional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Call-to-Action Type</label>
+                  <TooltipIcon content="Choose the type of CTA (if any)" />
+                </div>
+                <Select value={ctaType} onValueChange={setCtaType}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Shop Now">🛒 Shop Now</SelectItem>
+                    <SelectItem value="Learn More">📖 Learn More</SelectItem>
+                    <SelectItem value="Download">⬇️ Download</SelectItem>
+                    <SelectItem value="Sign Up">📝 Sign Up</SelectItem>
+                    <SelectItem value="Limited Offer">⏰ Limited Offer</SelectItem>
+                    <SelectItem value="No CTA">🚫 No CTA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Creator Persona</label>
+                  <TooltipIcon content="Select who appears to be creating the content" />
+                </div>
+                <Select value={creatorPersona} onValueChange={setCreatorPersona}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Everyday User">👤 Everyday User</SelectItem>
+                    <SelectItem value="Influencer">⭐ Influencer</SelectItem>
+                    <SelectItem value="Expert/Professional">🎓 Expert/Professional</SelectItem>
+                    <SelectItem value="Employee">👔 Employee</SelectItem>
+                    <SelectItem value="Customer">😊 Customer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Clip Pacing</label>
+                  <TooltipIcon content="Choose the speed of cuts and transitions" />
+                </div>
+                <Select value={pacingAds} onValueChange={setPacingAds}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Fast-Cut (3-5s)">⚡ Fast-Cut (3-5s)</SelectItem>
+                    <SelectItem value="Medium (5-10s)">⏱️ Medium (5-10s)</SelectItem>
+                    <SelectItem value="Slower/Story-driven">📖 Slower/Story-driven</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium">Hook Style</label>
+                  <TooltipIcon content="Select how to grab attention at the start" />
+                </div>
+                <Select value={hookStyle} onValueChange={setHookStyle}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Question">❓ Question</SelectItem>
+                    <SelectItem value="Shock/Surprise">😱 Shock/Surprise</SelectItem>
+                    <SelectItem value="Problem Statement">⚠️ Problem Statement</SelectItem>
+                    <SelectItem value="Direct Benefit">💡 Direct Benefit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+          
+          {/* Ads and UGC - Asset Enhancement Mode */}
+          {productCategory === "Ads and UGC" && hasAssets && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">Optimize for Platform</label>
+                <Select value={platformOptimization} onValueChange={setPlatformOptimization}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TikTok Format">🎵 TikTok Format</SelectItem>
+                    <SelectItem value="Instagram Reels">📸 Instagram Reels</SelectItem>
+                    <SelectItem value="YouTube Shorts">📺 YouTube Shorts</SelectItem>
+                    <SelectItem value="Multi-Platform">🌐 Multi-Platform</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Add CTA Style</label>
+                <Select value={ctaType} onValueChange={setCtaType}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bold Overlay">💪 Bold Overlay</SelectItem>
+                    <SelectItem value="Subtle Corner">🔸 Subtle Corner</SelectItem>
+                    <SelectItem value="End Card">🎬 End Card</SelectItem>
+                    <SelectItem value="Voice + Text">🎤 Voice + Text</SelectItem>
+                    <SelectItem value="No CTA">🚫 No CTA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Enhance Hook</label>
+                <Select value={hookStyle} onValueChange={setHookStyle}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Add Text Hook">📝 Add Text Hook</SelectItem>
+                    <SelectItem value="Improve Opening">🚀 Improve Opening</SelectItem>
+                    <SelectItem value="Emphasize Problem">⚠️ Emphasize Problem</SelectItem>
+                    <SelectItem value="Highlight Benefit">💡 Highlight Benefit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">UGC Enhancement</label>
+                <Select value={toneStyle} onValueChange={setToneStyle}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Add Authenticity">🎭 Add Authenticity</SelectItem>
+                    <SelectItem value="Polish Production">✨ Polish Production</SelectItem>
+                    <SelectItem value="Add Captions">📝 Add Captions</SelectItem>
+                    <SelectItem value="Optimize Pacing">⏱️ Optimize Pacing</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1996,6 +3033,27 @@ export function DiverseMotionGeneratorInterface({
         setSoundMood("Cinematic warm")
         setMixCurve([70])
         break
+      case "Ads and UGC":
+        // Ads and UGC defaults: Energetic tone, Modern style, 15s duration,
+        // Studio white environment, Natural daylight lighting, All materials,
+        // Macro Precision camera, Standard 30 fps, Morph reveal, 80% energy,
+        // Music driven sound, Energetic mood
+        setEmotionalTone("Energetic")
+        setVisualStyle("Modern")
+        setDuration([15])
+        setEnvironment("Studio white")
+        setLightingMood("Natural daylight")
+        setMaterialFocus(["All"])
+        setCameraType("Macro Precision")
+        setFrameRate("Standard 30 fps")
+        setRevealType("Morph")
+        setCameraEnergy([80])
+        setHookIntensity([90])
+        setEndEmotion([85])
+        setSoundMode("Music driven")
+        setSoundMood("Percussive energy")
+        setMixCurve([75])
+        break
       default: // Product
         // Product defaults: Epic, Cinematic, 10s, Studio white, Soft Daylight, All materials, Macro Precision, Cinematic 60 fps, Morph, 50% energy, SFX only, Ambient minimal
         setEmotionalTone("Epic")
@@ -2041,8 +3099,8 @@ export function DiverseMotionGeneratorInterface({
   }
 
   const availableKeyEffects = [
-    "Steam hiss", "Impact thud", "Logo chime", "Whoosh", "Crystal chime", 
-    "Mechanical click", "Liquid splash", "Fabric rustle", "Metal ping"
+    "Whoosh", "Pop", "Swoosh", "Click", "Ding", "Boom", "Transition", "Rise", "Impact", "Glitch",
+    "Steam hiss", "Logo chime", "Crystal chime", "Mechanical click", "Liquid splash", "Fabric rustle", "Metal ping"
   ]
 
   // Helper function to get dynamic placeholders based on category
@@ -2058,19 +3116,31 @@ export function DiverseMotionGeneratorInterface({
         return "e.g., Interface elements slide and morph into new layouts"
       case "Cinematic Videos":
         return "e.g., Hero walks through dramatic landscape as sun sets behind mountains"
+      case "Ads and UGC":
+        return "e.g., Product transforms from problem to solution with authentic user testimonial"
       default:
         return "Describe the key transformation or moment"
     }
   }
 
   const handleGenerate = async () => {
+    // Validate essential fields first
+    if (!productCategory) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please select a Content Category to continue.",
+        variant: "destructive"
+      })
+      return
+    }
+
     // Mode-specific validation
     if (mode === 'none') {
       // No Asset mode - only requires prompt
       if (!prompt.trim()) {
         toast({
-          title: "Missing required field",
-          description: "Please fill in the Prompt field.",
+          title: "Missing Essential Field",
+          description: "Please fill in the Prompt field describing your vision.",
           variant: "destructive"
         })
         return
@@ -2079,7 +3149,7 @@ export function DiverseMotionGeneratorInterface({
       // Single Asset mode - requires 1 asset and prompt
       if (uploadedFiles.length < 1) {
         toast({
-          title: "Missing asset",
+          title: "Missing Essential Field",
           description: "Please upload an asset (image or video).",
           variant: "destructive"
         })
@@ -2087,8 +3157,8 @@ export function DiverseMotionGeneratorInterface({
       }
       if (!prompt.trim()) {
         toast({
-          title: "Missing required field",
-          description: "Please fill in the Prompt field.",
+          title: "Missing Essential Field",
+          description: "Please fill in the Prompt field describing your vision.",
           variant: "destructive"
         })
         return
@@ -2097,7 +3167,7 @@ export function DiverseMotionGeneratorInterface({
       // Dual Asset mode - requires 2 assets and prompts
       if (uploadedFiles.length < 2) {
         toast({
-          title: "Missing assets",
+          title: "Missing Essential Field",
           description: `Please upload both assets. You have uploaded ${uploadedFiles.length} of 2.`,
           variant: "destructive"
         })
@@ -2105,8 +3175,8 @@ export function DiverseMotionGeneratorInterface({
       }
       if (!assets[0]?.prompt.trim() || !assets[1]?.prompt.trim()) {
         toast({
-          title: "Missing required fields",
-          description: "Please fill in prompts for both assets.",
+          title: "Missing Essential Field",
+          description: "Please fill in prompts for both assets describing your vision.",
           variant: "destructive"
         })
         return
@@ -2159,11 +3229,11 @@ export function DiverseMotionGeneratorInterface({
         custom_environment: environment === "Custom" ? customEnvironment.trim() || null : null,
         lighting_mood: lightingMood === 'Custom' ? customLightingMood : lightingMood,
         material_focus: materialFocus,
-        camera_type: cameraType === 'Custom' ? customCameraType : cameraType,
-        frame_rate: frameRate === 'Custom' ? customFrameRate : frameRate,
+        camera_type: cameraType,
+        frame_rate: frameRate,
         
         // Motion & Energy
-        reveal_type: revealType === 'Custom' ? customRevealType : revealType,
+        reveal_type: revealType,
         camera_energy: cameraEnergy[0],
         loop_mode: loopMode,
         hook_intensity: hookIntensity[0],
@@ -2184,22 +3254,22 @@ export function DiverseMotionGeneratorInterface({
         // Category-specific fields
         category_specific: {
           // Data Visualizations
-          chart_type: productCategory === "Data Visualizations" ? (chartType === 'Custom' ? customChartType : chartType) : null,
-          data_points: productCategory === "Data Visualizations" ? (dataPoints === 'Custom' ? customDataPoints : dataPoints) : null,
-          animation_style: productCategory === "Data Visualizations" ? (animationStyle === 'Custom' ? customAnimationStyle : animationStyle) : null,
-          color_scheme: productCategory === "Data Visualizations" ? (colorScheme === 'Custom' ? customColorScheme : colorScheme) : null,
+          chart_type: productCategory === "Data Visualizations" ? (hasAssets ? chartTypeEnhance : chartType) : null,
+          data_points: productCategory === "Data Visualizations" ? (hasAssets ? dataPointsEnhance : dataPoints) : null,
+          animation_style: productCategory === "Data Visualizations" ? (hasAssets ? animationStyleEnhance : animationStyle) : null,
+          color_scheme: productCategory === "Data Visualizations" ? (hasAssets ? colorSchemeEnhance : colorScheme) : null,
           
           // Infographic
-          layout_type: productCategory === "Infographic" ? layoutType : null,
-          icon_style: productCategory === "Infographic" ? iconStyle : null,
-          text_emphasis: productCategory === "Infographic" ? textEmphasis : null,
-          flow_direction: productCategory === "Infographic" ? flowDirection : null,
+          layout_type: productCategory === "Infographic" ? (hasAssets ? layoutTypeEnhance : layoutType) : null,
+          icon_style: productCategory === "Infographic" ? (hasAssets ? iconStyleEnhance : iconStyle) : null,
+          text_emphasis: productCategory === "Infographic" ? (hasAssets ? textEmphasisEnhance : textEmphasis) : null,
+          flow_direction: productCategory === "Infographic" ? (hasAssets ? flowDirectionEnhance : flowDirection) : null,
           
           // Logo Animation
-          logo_type: productCategory === "Logo Animation" ? logoType : null,
-          animation_complexity: productCategory === "Logo Animation" ? animationComplexity : null,
-          brand_colors: productCategory === "Logo Animation" ? brandColors : null,
-          reveal_style: productCategory === "Logo Animation" ? revealStyle : null,
+          logo_type: productCategory === "Logo Animation" ? (hasAssets ? logoTypeEnhance : logoType) : null,
+          animation_complexity: productCategory === "Logo Animation" ? (hasAssets ? animationComplexityEnhance : animationComplexity) : null,
+          brand_colors: productCategory === "Logo Animation" ? (hasAssets ? brandColorsEnhance : brandColors) : null,
+          reveal_style: productCategory === "Logo Animation" ? (hasAssets ? revealStyleEnhance : revealStyle) : null,
           
           // UI/UX Element
           element_type: productCategory === "UI/UX Element" ? elementType : null,
@@ -2211,7 +3281,16 @@ export function DiverseMotionGeneratorInterface({
           scene_type: productCategory === "Cinematic Videos" ? sceneType : null,
           mood_genre: productCategory === "Cinematic Videos" ? moodGenre : null,
           pacing: productCategory === "Cinematic Videos" ? pacing : null,
-          narrative_structure: productCategory === "Cinematic Videos" ? narrativeStructure : null
+          narrative_structure: productCategory === "Cinematic Videos" ? narrativeStructure : null,
+          
+          // Ads and UGC
+          content_format: productCategory === "Ads and UGC" ? contentFormat : null,
+          platform_optimization: productCategory === "Ads and UGC" ? platformOptimization : null,
+          tone_style: productCategory === "Ads and UGC" ? toneStyle : null,
+          cta_type: productCategory === "Ads and UGC" ? ctaType : null,
+          creator_persona: productCategory === "Ads and UGC" ? creatorPersona : null,
+          pacing_ads: productCategory === "Ads and UGC" ? pacingAds : null,
+          hook_style: productCategory === "Ads and UGC" ? hookStyle : null
         },
         
         // Metadata
@@ -2247,11 +3326,11 @@ export function DiverseMotionGeneratorInterface({
         custom_environment: environment === "Custom" ? customEnvironment.trim() || null : null,
         lighting_mood: lightingMood === 'Custom' ? customLightingMood : lightingMood,
         material_focus: materialFocus,
-        camera_type: cameraType === 'Custom' ? customCameraType : cameraType,
-        frame_rate: frameRate === 'Custom' ? customFrameRate : frameRate,
+        camera_type: cameraType,
+        frame_rate: frameRate,
         
         // Motion & Energy
-        reveal_type: revealType === 'Custom' ? customRevealType : revealType,
+        reveal_type: revealType,
         camera_energy: cameraEnergy[0],
         loop_mode: loopMode,
         hook_intensity: hookIntensity[0],
@@ -2272,22 +3351,22 @@ export function DiverseMotionGeneratorInterface({
         // Category-specific fields
         category_specific: {
           // Data Visualizations
-          chart_type: productCategory === "Data Visualizations" ? (chartType === 'Custom' ? customChartType : chartType) : null,
-          data_points: productCategory === "Data Visualizations" ? (dataPoints === 'Custom' ? customDataPoints : dataPoints) : null,
-          animation_style: productCategory === "Data Visualizations" ? (animationStyle === 'Custom' ? customAnimationStyle : animationStyle) : null,
-          color_scheme: productCategory === "Data Visualizations" ? (colorScheme === 'Custom' ? customColorScheme : colorScheme) : null,
+          chart_type: productCategory === "Data Visualizations" ? (hasAssets ? chartTypeEnhance : chartType) : null,
+          data_points: productCategory === "Data Visualizations" ? (hasAssets ? dataPointsEnhance : dataPoints) : null,
+          animation_style: productCategory === "Data Visualizations" ? (hasAssets ? animationStyleEnhance : animationStyle) : null,
+          color_scheme: productCategory === "Data Visualizations" ? (hasAssets ? colorSchemeEnhance : colorScheme) : null,
           
           // Infographic
-          layout_type: productCategory === "Infographic" ? layoutType : null,
-          icon_style: productCategory === "Infographic" ? iconStyle : null,
-          text_emphasis: productCategory === "Infographic" ? textEmphasis : null,
-          flow_direction: productCategory === "Infographic" ? flowDirection : null,
+          layout_type: productCategory === "Infographic" ? (hasAssets ? layoutTypeEnhance : layoutType) : null,
+          icon_style: productCategory === "Infographic" ? (hasAssets ? iconStyleEnhance : iconStyle) : null,
+          text_emphasis: productCategory === "Infographic" ? (hasAssets ? textEmphasisEnhance : textEmphasis) : null,
+          flow_direction: productCategory === "Infographic" ? (hasAssets ? flowDirectionEnhance : flowDirection) : null,
           
           // Logo Animation
-          logo_type: productCategory === "Logo Animation" ? logoType : null,
-          animation_complexity: productCategory === "Logo Animation" ? animationComplexity : null,
-          brand_colors: productCategory === "Logo Animation" ? brandColors : null,
-          reveal_style: productCategory === "Logo Animation" ? revealStyle : null,
+          logo_type: productCategory === "Logo Animation" ? (hasAssets ? logoTypeEnhance : logoType) : null,
+          animation_complexity: productCategory === "Logo Animation" ? (hasAssets ? animationComplexityEnhance : animationComplexity) : null,
+          brand_colors: productCategory === "Logo Animation" ? (hasAssets ? brandColorsEnhance : brandColors) : null,
+          reveal_style: productCategory === "Logo Animation" ? (hasAssets ? revealStyleEnhance : revealStyle) : null,
           
           // UI/UX Element
           element_type: productCategory === "UI/UX Element" ? elementType : null,
@@ -2299,7 +3378,16 @@ export function DiverseMotionGeneratorInterface({
           scene_type: productCategory === "Cinematic Videos" ? sceneType : null,
           mood_genre: productCategory === "Cinematic Videos" ? moodGenre : null,
           pacing: productCategory === "Cinematic Videos" ? pacing : null,
-          narrative_structure: productCategory === "Cinematic Videos" ? narrativeStructure : null
+          narrative_structure: productCategory === "Cinematic Videos" ? narrativeStructure : null,
+          
+          // Ads and UGC
+          content_format: productCategory === "Ads and UGC" ? contentFormat : null,
+          platform_optimization: productCategory === "Ads and UGC" ? platformOptimization : null,
+          tone_style: productCategory === "Ads and UGC" ? toneStyle : null,
+          cta_type: productCategory === "Ads and UGC" ? ctaType : null,
+          creator_persona: productCategory === "Ads and UGC" ? creatorPersona : null,
+          pacing_ads: productCategory === "Ads and UGC" ? pacingAds : null,
+          hook_style: productCategory === "Ads and UGC" ? hookStyle : null
         },
         
         // Cinematic Videos - Characters and Dialog
@@ -2309,16 +3397,16 @@ export function DiverseMotionGeneratorInterface({
         
         // Dual Asset Transition Controls (Phase 2)
         transition_controls: mode === 'dual' ? {
-          type: transitionType === 'custom' ? customTransitionType : transitionType,
+          type: transitionType,
           duration: transitionDuration[0],
-          easing: transitionEasing === 'custom' ? customTransitionEasing : transitionEasing,
+          easing: transitionEasing,
           direction: transitionDirection
         } : null,
         
         // Multi Asset Sequence Controls (Phase 2)
         sequence_controls: mode === 'multi' ? {
-          style: sequenceStyle === 'custom' ? customSequenceStyle : sequenceStyle,
-          global_transition: globalTransition === 'custom' ? customGlobalTransition : globalTransition,
+          style: sequenceStyle,
+          global_transition: globalTransition,
           transition_duration: sceneTransitionDuration[0],
           total_duration: assets.reduce((sum, asset) => sum + (asset.timing || 5), 0)
         } : null,
@@ -2360,6 +3448,308 @@ export function DiverseMotionGeneratorInterface({
       toast({
         title: "Generation failed",
         description: error instanceof Error ? error.message : "Could not generate the motion video. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleSingleGenerate = async () => {
+    // Validate essential fields
+    if (!singleProductCategory) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please select a Content Category to continue.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!prompt.trim()) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please fill in the Prompt field describing your vision.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!selectedImageUrl) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please select an image source (upload or library).",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsGenerating(true)
+
+    try {
+      // Build FormData for single mode
+      const formData = new FormData()
+      
+      // Core fields
+      formData.append('product_category', singleProductCategory)
+      formData.append('prompt', prompt)
+      formData.append('product_name', singleProductName || '')
+      formData.append('duration', singleDuration[0].toString())
+      formData.append('aspect_ratio', singleAspectRatio)
+      
+      // Visual Context
+      formData.append('emotional_tone', singleEmotionalTone || '')
+      formData.append('visual_style', singleVisualStyle || '')
+      formData.append('environment', singleEnvironment || '')
+               formData.append('custom_environment', customEnvironment || '')
+      formData.append('lighting_mood', singleLightingMood || '')
+      formData.append('material_focus', JSON.stringify(singleMaterialFocus || []))
+      formData.append('camera_type', singleCameraType || '')
+      formData.append('frame_rate', singleFrameRate || '')
+      
+      // Motion & Energy
+      formData.append('reveal_type', singleRevealType || '')
+      formData.append('camera_energy', singleCameraEnergy[0].toString())
+      formData.append('loop_mode', singleLoopMode.toString())
+      formData.append('hook_intensity', singleHookIntensity[0].toString())
+      formData.append('end_emotion', singleEndEmotion[0].toString())
+      
+      // Audio DNA
+      formData.append('sound_mode', singleSoundMode || '')
+      formData.append('sound_mood', singleSoundMood || '')
+      formData.append('key_effects', JSON.stringify(singleKeyEffects || []))
+      formData.append('mix_curve', singleMixCurve[0].toString())
+      
+      // Brand Touch
+      formData.append('accent_color_sync', singleAccentColorSync.toString())
+      formData.append('accent_color', singleAccentColor || '')
+               formData.append('logo_moment', logoMoment || '')
+      formData.append('text_constraint', singleTextConstraint.toString())
+      
+      // Category-specific fields
+      formData.append('chart_type', singleProductCategory === "Data Visualizations" ? (singleChartType || '') : '')
+      formData.append('data_points', singleProductCategory === "Data Visualizations" ? (singleDataPoints || '') : '')
+      formData.append('animation_style', singleProductCategory === "Data Visualizations" ? (singleAnimationStyle || '') : '')
+      formData.append('color_scheme', singleProductCategory === "Data Visualizations" ? (singleColorScheme || '') : '')
+      
+      formData.append('layout_type', singleProductCategory === "Infographic" ? (singleLayoutType || '') : '')
+      formData.append('icon_style', singleProductCategory === "Infographic" ? (singleIconStyle || '') : '')
+      formData.append('text_emphasis', singleProductCategory === "Infographic" ? (singleTextEmphasis || '') : '')
+      formData.append('flow_direction', singleProductCategory === "Infographic" ? (singleFlowDirection || '') : '')
+      
+      formData.append('logo_type', singleProductCategory === "Logo Animation" ? (singleLogoType || '') : '')
+      formData.append('animation_complexity', singleProductCategory === "Logo Animation" ? (singleAnimationComplexity || '') : '')
+      formData.append('brand_colors', singleProductCategory === "Logo Animation" ? (singleBrandColors || '') : '')
+      formData.append('reveal_style', singleProductCategory === "Logo Animation" ? (singleRevealStyle || '') : '')
+      
+      formData.append('element_type', singleProductCategory === "UI/UX Element" ? (singleElementType || '') : '')
+      formData.append('interaction_type', singleProductCategory === "UI/UX Element" ? (singleInteractionType || '') : '')
+      formData.append('state_transitions', singleProductCategory === "UI/UX Element" ? (singleStateTransitions || '') : '')
+      formData.append('micro_interaction_level', singleProductCategory === "UI/UX Element" ? (singleMicroInteractionLevel || '') : '')
+      
+      formData.append('scene_type', singleProductCategory === "Cinematic Videos" ? (singleSceneType || '') : '')
+      formData.append('mood_genre', singleProductCategory === "Cinematic Videos" ? (singleMoodGenre || '') : '')
+      formData.append('pacing', singleProductCategory === "Cinematic Videos" ? (singlePacing || '') : '')
+      formData.append('narrative_structure', singleProductCategory === "Cinematic Videos" ? (singleNarrativeStructure || '') : '')
+      
+      formData.append('content_format', singleProductCategory === "Ads and UGC" ? (singleContentFormat || '') : '')
+      formData.append('platform_optimization', singleProductCategory === "Ads and UGC" ? (singlePlatformOptimization || '') : '')
+      formData.append('tone_style', singleProductCategory === "Ads and UGC" ? (singleToneStyle || '') : '')
+      formData.append('cta_type', singleProductCategory === "Ads and UGC" ? (singleCtaType || '') : '')
+      formData.append('creator_persona', singleProductCategory === "Ads and UGC" ? (singleCreatorPersona || '') : '')
+      formData.append('pacing_ads', singleProductCategory === "Ads and UGC" ? (singlePacingAds || '') : '')
+      formData.append('hook_style', singleProductCategory === "Ads and UGC" ? (singleHookStyle || '') : '')
+      
+      // Image source
+      formData.append('use_custom_image', useCustomImage.toString())
+      if (useCustomImage && customImage) {
+        formData.append('custom_image', customImage)
+      } else if (!useCustomImage && selectedAssetId) {
+        formData.append('selected_asset_id', selectedAssetId)
+      }
+
+      // Call Single-specific API endpoint
+      const response = await fetch('/api/diverse-motion/single', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Single generation failed')
+      }
+      
+      const result = await response.json()
+      console.log('Diverse motion generated successfully:', result)
+      
+      // Set generated video URL
+      setGeneratedVideo(result.diverseMotion?.generated_video_url || null)
+      
+      toast({
+        title: "Diverse Motion Generated!",
+        description: "Your animated video is ready for preview.",
+      })
+      
+    } catch (error) {
+      console.error('Single generation failed:', error)
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Could not generate the motion video.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleDualGenerate = async () => {
+    // Validate essential fields
+    if (!productCategory) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please select a Content Category to continue.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!prompt.trim()) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please fill in the Prompt field describing your vision.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!dualFirstFrameUrl || !dualLastFrameUrl) {
+      toast({
+        title: "Missing Essential Field",
+        description: "Please select both first and last frame images.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsGenerating(true)
+
+    try {
+      // Build FormData for dual mode
+      const formData = new FormData()
+      
+      // Core fields
+      formData.append('product_category', productCategory)
+      formData.append('prompt', prompt)
+      formData.append('product_name', productName || '')
+      formData.append('duration', '8')
+      formData.append('aspect_ratio', aspectRatio)
+      
+      // Visual Context
+      formData.append('emotional_tone', emotionalTone || '')
+      formData.append('visual_style', visualStyle || '')
+      formData.append('environment', environment || '')
+      formData.append('custom_environment', customEnvironment || '')
+      formData.append('lighting_mood', lightingMood || '')
+      formData.append('material_focus', JSON.stringify(materialFocus || []))
+      formData.append('camera_type', cameraType || '')
+      formData.append('frame_rate', frameRate || '')
+      
+      // Motion & Energy
+      formData.append('reveal_type', revealType || '')
+      formData.append('camera_energy', cameraEnergy[0].toString())
+      formData.append('loop_mode', loopMode.toString())
+      formData.append('hook_intensity', hookIntensity[0].toString())
+      formData.append('end_emotion', endEmotion[0].toString())
+      
+      // Audio DNA
+      formData.append('sound_mode', soundMode || '')
+      formData.append('sound_mood', soundMood || '')
+      formData.append('key_effects', JSON.stringify(keyEffects || []))
+      formData.append('mix_curve', mixCurve[0].toString())
+      
+      // Brand Touch
+      formData.append('accent_color_sync', accentColorSync.toString())
+      formData.append('accent_color', accentColor || '')
+      formData.append('logo_moment', logoMoment || '')
+      formData.append('text_constraint', textConstraint.toString())
+      
+      // Category-specific fields
+      formData.append('chart_type', productCategory === "Data Visualizations" ? (chartType || '') : '')
+      formData.append('data_points', productCategory === "Data Visualizations" ? (dataPoints || '') : '')
+      formData.append('animation_style', productCategory === "Data Visualizations" ? (animationStyle || '') : '')
+      formData.append('color_scheme', productCategory === "Data Visualizations" ? (colorScheme || '') : '')
+      
+      formData.append('layout_type', productCategory === "Infographic" ? (layoutType || '') : '')
+      formData.append('icon_style', productCategory === "Infographic" ? (iconStyle || '') : '')
+      formData.append('text_emphasis', productCategory === "Infographic" ? (textEmphasis || '') : '')
+      formData.append('flow_direction', productCategory === "Infographic" ? (flowDirection || '') : '')
+      
+      formData.append('logo_type', productCategory === "Logo Animation" ? (logoType || '') : '')
+      formData.append('animation_complexity', productCategory === "Logo Animation" ? (animationComplexity || '') : '')
+      formData.append('brand_colors', productCategory === "Logo Animation" ? (brandColors || '') : '')
+      formData.append('reveal_style', productCategory === "Logo Animation" ? (revealStyle || '') : '')
+      
+      formData.append('element_type', productCategory === "UI/UX Element" ? (elementType || '') : '')
+      formData.append('interaction_type', productCategory === "UI/UX Element" ? (interactionType || '') : '')
+      formData.append('state_transitions', productCategory === "UI/UX Element" ? (stateTransitions || '') : '')
+      formData.append('micro_interaction_level', productCategory === "UI/UX Element" ? (microInteractionLevel || '') : '')
+      
+      formData.append('scene_type', productCategory === "Cinematic Videos" ? (sceneType || '') : '')
+      formData.append('mood_genre', productCategory === "Cinematic Videos" ? (moodGenre || '') : '')
+      formData.append('pacing', productCategory === "Cinematic Videos" ? (pacing || '') : '')
+      formData.append('narrative_structure', productCategory === "Cinematic Videos" ? (narrativeStructure || '') : '')
+      
+      formData.append('content_format', productCategory === "Ads and UGC" ? (contentFormat || '') : '')
+      formData.append('platform_optimization', productCategory === "Ads and UGC" ? (platformOptimization || '') : '')
+      formData.append('tone_style', productCategory === "Ads and UGC" ? (toneStyle || '') : '')
+      formData.append('cta_type', productCategory === "Ads and UGC" ? (ctaType || '') : '')
+      formData.append('creator_persona', productCategory === "Ads and UGC" ? (creatorPersona || '') : '')
+      formData.append('pacing_ads', productCategory === "Ads and UGC" ? (pacingAds || '') : '')
+      formData.append('hook_style', productCategory === "Ads and UGC" ? (hookStyle || '') : '')
+      
+      // First frame
+      formData.append('first_frame_source', dualFirstFrameSource)
+      if (dualFirstFrameSource === 'upload' && dualFirstFrameFile) {
+        formData.append('first_frame_file', dualFirstFrameFile)
+      } else if (dualFirstFrameSource === 'library' && dualFirstFrameAssetId) {
+        formData.append('first_frame_asset_id', dualFirstFrameAssetId)
+      }
+
+      // Last frame
+      formData.append('last_frame_source', dualLastFrameSource)
+      if (dualLastFrameSource === 'upload' && dualLastFrameFile) {
+        formData.append('last_frame_file', dualLastFrameFile)
+      } else if (dualLastFrameSource === 'library' && dualLastFrameAssetId) {
+        formData.append('last_frame_asset_id', dualLastFrameAssetId)
+      }
+
+      // Call Dual-specific API endpoint
+      const response = await fetch('/api/diverse-motion/dual', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Dual generation failed')
+      }
+      
+      const result = await response.json()
+      console.log('Dual motion generated successfully:', result)
+      
+      // Set generated video URL
+      setGeneratedVideo(result.diverseMotion?.generated_video_url || null)
+      
+      toast({
+        title: "Dual Motion Generated!",
+        description: "Your animated video is ready for preview.",
+      })
+      
+    } catch (error) {
+      console.error('Dual generation failed:', error)
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Could not generate the motion video.",
         variant: "destructive"
       })
     } finally {
@@ -2409,18 +3799,12 @@ export function DiverseMotionGeneratorInterface({
               
               {/* Mode Selection Tabs */}
               <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
-                  <TabsTrigger value="none" className="text-xs py-2 px-1">
-                    <span className="truncate">No Asset</span>
-                  </TabsTrigger>
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
                   <TabsTrigger value="single" className="text-xs py-2 px-1">
                     <span className="truncate">Single</span>
                   </TabsTrigger>
                   <TabsTrigger value="dual" className="text-xs py-2 px-1">
                     <span className="truncate">Dual</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="multi" className="text-xs py-2 px-1">
-                    <span className="truncate">Multi</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -2495,8 +3879,11 @@ export function DiverseMotionGeneratorInterface({
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <label className="block text-sm font-medium text-purple-600 dark:text-purple-400">
-                        📂 Content Category
+                        📂 Content Category *
                       </label>
+                      {validationStatus.category === 'valid' && (
+                        <Check className="h-4 w-4 text-green-500" />
+                      )}
                       <TooltipIcon content="Choose the type of motion content you want to create. Each category has optimized settings and templates." />
                     </div>
                     <Select value={productCategory} onValueChange={handleCategoryChange}>
@@ -2534,6 +3921,12 @@ export function DiverseMotionGeneratorInterface({
                             Cinematic Videos
                           </div>
                         </SelectItem>
+                        <SelectItem value="Ads and UGC">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            Ads and UGC
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2568,19 +3961,64 @@ export function DiverseMotionGeneratorInterface({
                   
                   {/* Aspect Ratio */}
                   <div>
-                    <label className="block text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
-                      📐 Aspect Ratio
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-green-600 dark:text-green-400">
+                        📐 Aspect Ratio *
+                      </label>
+                      <TooltipIcon content="Choose the video dimensions based on your target platform" />
+                    </div>
                     <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Select aspect ratio..." />
+                      <SelectTrigger className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-950/20 dark:to-teal-950/20 border-green-200 dark:border-green-800">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
-                        <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
-                        <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                        <SelectItem value="9:16">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-10 bg-gradient-to-b from-blue-500 to-purple-500 rounded border-2 border-white shadow-sm"></div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">9:16 Vertical</span>
+                              <span className="text-xs text-muted-foreground">
+                                TikTok, Instagram Reels, YouTube Shorts
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="16:9">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-6 bg-gradient-to-r from-red-500 to-orange-500 rounded border-2 border-white shadow-sm"></div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">16:9 Landscape</span>
+                              <span className="text-xs text-muted-foreground">
+                                YouTube, Desktop, Presentations
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="1:1">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded border-2 border-white shadow-sm"></div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">1:1 Square</span>
+                              <span className="text-xs text-muted-foreground">
+                                Instagram Feed, Facebook, LinkedIn
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
+                    
+                    {/* Platform recommendation badge */}
+                    {productCategory === "Ads and UGC" && platformOptimization && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          💡 <strong>Recommended for {platformOptimization}:</strong>{' '}
+                          {(platformOptimization === "TikTok" || platformOptimization === "Instagram Reels" || platformOptimization === "YouTube Shorts") ? "9:16 (Vertical)" : 
+                           platformOptimization === "Multi-Platform" ? "1:1 (Square) for maximum compatibility" :
+                           "16:9 (Landscape)"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Template Dropdown */}
@@ -2683,12 +4121,18 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {emotionalTone === 'Custom' && (
-                      <Input
-                        value={customEmotionalTone}
-                        onChange={(e) => setCustomEmotionalTone(e.target.value)}
-                        placeholder="Enter custom emotional tone..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customEmotionalTone}
+                          onChange={(e) => setCustomEmotionalTone(e.target.value)}
+                          placeholder="e.g., Mysterious, Uplifting, Nostalgic"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired emotional tone (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
@@ -2709,32 +4153,21 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {visualStyle === 'Custom' && (
-                      <Input
-                        value={customVisualStyle}
-                        onChange={(e) => setCustomVisualStyle(e.target.value)}
-                        placeholder="Enter custom visual style..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customVisualStyle}
+                          onChange={(e) => setCustomVisualStyle(e.target.value)}
+                          placeholder="e.g., Minimalist, Vintage, Futuristic"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired visual style (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-teal-600 dark:text-teal-400 mb-2">
-                      ⏱️ Duration: {duration[0]}s
-                    </label>
-                    <Slider
-                      value={duration}
-                      onValueChange={setDuration}
-                      min={5}
-                      max={120}
-                      step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-teal-200 [&_.slider-track]:to-teal-400 [&_.slider-thumb]:bg-teal-500 [&_.slider-thumb]:border-teal-600"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>5s</span>
-                      <span>2 min</span>
-                    </div>
-                  </div>
                 </CollapsibleContent>
               </Collapsible>
 
@@ -2764,20 +4197,35 @@ export function DiverseMotionGeneratorInterface({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Studio white">🏢 Studio white</SelectItem>
-                        <SelectItem value="Urban twilight">🌆 Urban twilight</SelectItem>
-                        <SelectItem value="Forest dawn">🌲 Forest dawn</SelectItem>
-                        <SelectItem value="Black marble">🖤 Black marble</SelectItem>
-                        <SelectItem value="Custom">⚙️ Custom</SelectItem>
+                        {Object.entries(ENVIRONMENT_PREVIEWS).map(([env, preview]) => (
+                          <SelectItem key={env} value={env}>
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "w-8 h-8 rounded border-2 border-white shadow-sm bg-gradient-to-br",
+                                preview.gradient
+                              )} />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{env}</span>
+                                <span className="text-xs text-muted-foreground">{preview.description}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {environment === "Custom" && (
-                      <Input
-                        value={customEnvironment}
-                        onChange={(e) => setCustomEnvironment(e.target.value)}
-                        placeholder="Describe your custom environment"
-                        className="w-full mt-2"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customEnvironment}
+                          onChange={(e) => setCustomEnvironment(e.target.value)}
+                          placeholder="e.g., Cozy coffee shop, Futuristic lab, Tropical beach"
+                          className="w-full"
+                          maxLength={100}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your custom environment (max 100 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
@@ -2790,20 +4238,32 @@ export function DiverseMotionGeneratorInterface({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Soft Daylight">☀️ Soft Daylight</SelectItem>
-                        <SelectItem value="Glossy Specular">✨ Glossy Specular</SelectItem>
-                        <SelectItem value="Backlit Sunset">🌅 Backlit Sunset</SelectItem>
-                        <SelectItem value="High-Contrast Spot">💡 High-Contrast Spot</SelectItem>
-                        <SelectItem value="Custom">🎨 Custom</SelectItem>
+                        {Object.entries(LIGHTING_PREVIEWS).map(([light, preview]) => (
+                          <SelectItem key={light} value={light}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{preview.icon}</span>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{light}</span>
+                                <span className="text-xs text-muted-foreground">{preview.description}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {lightingMood === 'Custom' && (
-                      <Input
-                        value={customLightingMood}
-                        onChange={(e) => setCustomLightingMood(e.target.value)}
-                        placeholder="Enter custom lighting mood..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customLightingMood}
+                          onChange={(e) => setCustomLightingMood(e.target.value)}
+                          placeholder="e.g., Dramatic shadows, Warm candlelight, Cool moonlight"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired lighting mood (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
@@ -2840,14 +4300,6 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    {cameraType === 'Custom' && (
-                      <Input
-                        value={customCameraType}
-                        onChange={(e) => setCustomCameraType(e.target.value)}
-                        placeholder="Enter custom camera type..."
-                        className="mt-2 bg-background border-border"
-                      />
-                    )}
                   </div>
                   
                   <div>
@@ -2865,14 +4317,6 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    {frameRate === 'Custom' && (
-                      <Input
-                        value={customFrameRate}
-                        onChange={(e) => setCustomFrameRate(e.target.value)}
-                        placeholder="Enter custom frame rate..."
-                        className="mt-2 bg-background border-border"
-                      />
-                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -2894,6 +4338,61 @@ export function DiverseMotionGeneratorInterface({
                   )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-6 mt-6">
+                  {/* Motion Presets */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Quick Motion Presets</label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([20])
+                          setHookIntensity([30])
+                          setEndEmotion([40])
+                        }}
+                      >
+                        🐌 Subtle
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([50])
+                          setHookIntensity([50])
+                          setEndEmotion([50])
+                        }}
+                      >
+                        ⚖️ Balanced
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([80])
+                          setHookIntensity([70])
+                          setEndEmotion([60])
+                        }}
+                      >
+                        ⚡ Dynamic
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([95])
+                          setHookIntensity([90])
+                          setEndEmotion([85])
+                        }}
+                      >
+                        💥 Explosive
+                      </Button>
+                    </div>
+                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                       ⚡ Reveal Type
@@ -2910,32 +4409,37 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    {revealType === 'Custom' && (
-                      <Input
-                        value={customRevealType}
-                        onChange={(e) => setCustomRevealType(e.target.value)}
-                        placeholder="Enter custom reveal type..."
-                        className="mt-2 bg-background border-border"
-                      />
-                    )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">
-                      🔥 Camera Energy: {cameraEnergy[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-blue-600 dark:text-blue-400">
+                        📹 Camera Energy: {cameraEnergy[0]}
+                      </label>
+                      <TooltipIcon content="Control the intensity and dynamism of camera movement" />
+                    </div>
                     <Slider
                       value={cameraEnergy}
                       onValueChange={setCameraEnergy}
                       min={0}
                       max={100}
                       step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-orange-200 [&_.slider-track]:to-orange-400 [&_.slider-thumb]:bg-orange-500 [&_.slider-thumb]:border-orange-600"
+                      className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>Still</span>
+                      <span>Static</span>
+                      <span>Subtle</span>
+                      <span>Balanced</span>
                       <span>Dynamic</span>
+                      <span>Hyperactive</span>
                     </div>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                      {cameraEnergy[0] <= 20 && "Minimal movement, stable shots"}
+                      {cameraEnergy[0] > 20 && cameraEnergy[0] <= 40 && "Gentle pans and subtle motion"}
+                      {cameraEnergy[0] > 40 && cameraEnergy[0] <= 60 && "Moderate movement with smooth transitions"}
+                      {cameraEnergy[0] > 60 && cameraEnergy[0] <= 80 && "Active camera work with dynamic angles"}
+                      {cameraEnergy[0] > 80 && "Intense, fast-paced camera movement"}
+                    </p>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -2949,39 +4453,65 @@ export function DiverseMotionGeneratorInterface({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-pink-600 dark:text-pink-400 mb-2">
-                      🎯 Hook Intensity: {hookIntensity[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-pink-600 dark:text-pink-400">
+                        🎣 Hook Intensity: {hookIntensity[0]}
+                      </label>
+                      <TooltipIcon content="How strongly the opening grabs attention" />
+                    </div>
                     <Slider
                       value={hookIntensity}
                       onValueChange={setHookIntensity}
                       min={0}
                       max={100}
                       step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-pink-200 [&_.slider-track]:to-pink-400 [&_.slider-thumb]:bg-pink-500 [&_.slider-thumb]:border-pink-600"
+                      className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>Subtle</span>
-                      <span>Bold</span>
+                      <span>Gentle</span>
+                      <span>Moderate</span>
+                      <span>Strong</span>
+                      <span>Powerful</span>
+                      <span>Intense</span>
                     </div>
+                    <p className="text-xs text-pink-600 dark:text-pink-400 mt-2">
+                      {hookIntensity[0] <= 20 && "Soft, gradual introduction"}
+                      {hookIntensity[0] > 20 && hookIntensity[0] <= 40 && "Steady opening with interest"}
+                      {hookIntensity[0] > 40 && hookIntensity[0] <= 60 && "Clear attention-grabbing start"}
+                      {hookIntensity[0] > 60 && hookIntensity[0] <= 80 && "Strong, compelling opening"}
+                      {hookIntensity[0] > 80 && "Maximum impact, immediate engagement"}
+                    </p>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
-                      💫 End Emotion: {endEmotion[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-purple-600 dark:text-purple-400">
+                        🎭 End Emotion: {endEmotion[0]}
+                      </label>
+                      <TooltipIcon content="Emotional resolution at the video's conclusion" />
+                    </div>
                     <Slider
                       value={endEmotion}
                       onValueChange={setEndEmotion}
                       min={0}
                       max={100}
                       step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-purple-200 [&_.slider-track]:to-purple-400 [&_.slider-thumb]:bg-purple-500 [&_.slider-thumb]:border-purple-600"
+                      className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>Clean</span>
+                      <span>Satisfied</span>
+                      <span>Inspired</span>
+                      <span>Amazed</span>
                       <span>Awe</span>
                     </div>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                      {endEmotion[0] <= 20 && "Simple, clean conclusion"}
+                      {endEmotion[0] > 20 && endEmotion[0] <= 40 && "Satisfying, complete ending"}
+                      {endEmotion[0] > 40 && endEmotion[0] <= 60 && "Uplifting, inspiring finish"}
+                      {endEmotion[0] > 60 && endEmotion[0] <= 80 && "Impressive, memorable conclusion"}
+                      {endEmotion[0] > 80 && "Breathtaking, awe-inspiring finale"}
+                    </p>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -2995,6 +4525,9 @@ export function DiverseMotionGeneratorInterface({
                   <div className="flex items-center gap-2">
                     <Music className="h-4 w-4 text-indigo-500" />
                     <span className="font-medium text-indigo-600 dark:text-indigo-400">Audio DNA</span>
+                    {(productCategory === "Ads and UGC" || productCategory === "Cinematic Videos") && (
+                      <Badge variant="default" className="bg-indigo-600 text-xs">Important</Badge>
+                    )}
                   </div>
                   {expandedSections.audio ? (
                     <ChevronDown className="h-4 w-4" />
@@ -3004,9 +4537,12 @@ export function DiverseMotionGeneratorInterface({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-6 mt-6">
                   <div>
-                    <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
-                      🎵 Sound Mode
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                        🎵 Sound Mode
+                      </label>
+                      <TooltipIcon content="Choose whether to use sound effects, music, or both" />
+                    </div>
                     <Select value={soundMode} onValueChange={(value: SoundMode) => setSoundMode(value)}>
                       <SelectTrigger>
                         <SelectValue />
@@ -3019,19 +4555,28 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {soundMode === 'Custom' && (
-                      <Input
-                        value={customSoundMode}
-                        onChange={(e) => setCustomSoundMode(e.target.value)}
-                        placeholder="Enter custom sound mode..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customSoundMode}
+                          onChange={(e) => setCustomSoundMode(e.target.value)}
+                          placeholder="e.g., Nature sounds, Urban ambience, Silence"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired sound approach (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-teal-600 dark:text-teal-400 mb-2">
-                      🎶 Sound Mood
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-teal-600 dark:text-teal-400">
+                        🎶 Sound Mood
+                      </label>
+                      <TooltipIcon content="Select the emotional character of your audio" />
+                    </div>
                     <Select value={soundMood} onValueChange={(value: SoundMood) => setSoundMood(value)}>
                       <SelectTrigger>
                         <SelectValue />
@@ -3044,19 +4589,28 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {soundMood === 'Custom' && (
-                      <Input
-                        value={customSoundMood}
-                        onChange={(e) => setCustomSoundMood(e.target.value)}
-                        placeholder="Enter custom sound mood..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customSoundMood}
+                          onChange={(e) => setCustomSoundMood(e.target.value)}
+                          placeholder="e.g., Melancholic, Upbeat, Mysterious"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired sound mood (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">
-                      🎵 Key Effects
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-orange-600 dark:text-orange-400">
+                        🎯 Key Effects
+                      </label>
+                      <TooltipIcon content="Select sound effects to emphasize key moments in your video" />
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {availableKeyEffects.map((effect) => (
                         <Badge
@@ -3072,9 +4626,12 @@ export function DiverseMotionGeneratorInterface({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-violet-600 dark:text-violet-400 mb-2">
-                      📊 Mix Curve: {mixCurve[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-violet-600 dark:text-violet-400">
+                        🎚️ Mix Curve: {mixCurve[0]}
+                      </label>
+                      <TooltipIcon content="Balance between calm (0) and energetic (100) audio progression" />
+                    </div>
                     <Slider
                       value={mixCurve}
                       onValueChange={setMixCurve}
@@ -3523,11 +5080,14 @@ export function DiverseMotionGeneratorInterface({
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <label className="block text-sm font-medium text-purple-600 dark:text-purple-400">
-                        📂 Content Category
+                        📂 Content Category *
                       </label>
+                      {validationStatus.category === 'valid' && (
+                        <Check className="h-4 w-4 text-green-500" />
+                      )}
                       <TooltipIcon content="Choose the type of motion content you want to create. Each category has optimized settings and templates." />
                     </div>
-                    <Select value={productCategory} onValueChange={handleCategoryChange}>
+                    <Select value={singleProductCategory} onValueChange={handleSingleCategoryChange}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -3562,6 +5122,12 @@ export function DiverseMotionGeneratorInterface({
                             Cinematic Videos
                           </div>
                         </SelectItem>
+                        <SelectItem value="Ads and UGC">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            Ads and UGC
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -3571,8 +5137,8 @@ export function DiverseMotionGeneratorInterface({
                       🏷️ Product Name
                     </label>
                     <Input
-                      value={productName}
-                      onChange={(e) => setProductName(e.target.value)}
+                      value={singleProductName}
+                      onChange={(e) => setSingleProductName(e.target.value)}
                       placeholder="e.g., Adidas running shoe"
                       className="w-full bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800 focus:bg-gradient-to-r focus:from-amber-100 focus:to-orange-100 dark:focus:from-amber-900/30 dark:focus:to-orange-900/30 focus:border-amber-300 dark:focus:border-amber-700 transition-all duration-200"
                     />
@@ -3593,22 +5159,179 @@ export function DiverseMotionGeneratorInterface({
                       * Only the Prompt field is required. All other fields are optional.
                     </p>
                   </div>
+
+                  {/* Image Selection Section */}
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+                    <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-3">
+                      🖼️ Image Source *
+                    </label>
+                    
+                    <div className="space-y-4">
+                      {/* Toggle between upload and library */}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={useCustomImage ? "default" : "outline"}
+                          onClick={() => setUseCustomImage(true)}
+                          className="flex-1"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Image
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={!useCustomImage ? "default" : "outline"}
+                          onClick={() => setUseCustomImage(false)}
+                          className="flex-1"
+                        >
+                          <Package className="mr-2 h-4 w-4" />
+                          Library Asset
+                        </Button>
+                      </div>
+
+                      {/* Upload Section */}
+                      {useCustomImage && (
+                        <div className="space-y-3">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSingleImageUpload}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploadingAsset}
+                            className="w-full"
+                          >
+                            {isUploadingAsset ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Choose Image File
+                              </>
+                            )}
+                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            Supported: JPG, PNG, GIF (Max 50MB)
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Library Section */}
+                      {!useCustomImage && (
+                        <div className="space-y-3">
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              setLibrarySelectionMode('single');
+                              setShowAssetLibrary(true);
+                            }}
+                            className="w-full"
+                          >
+                            <Package className="mr-2 h-4 w-4" />
+                            Select from Library
+                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            Choose from your existing avatars, mockups, charts, or illustrations
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Preview selected image */}
+                      {selectedImageUrl && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium mb-2">Selected Image:</p>
+                          <div className="relative w-full max-w-xs">
+                            <img
+                              src={selectedImageUrl}
+                              alt="Selected for animation"
+                              className="w-full h-auto rounded-lg border-2 border-purple-300 dark:border-purple-700"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedImageUrl(null);
+                                setSelectedAssetId(null);
+                                setCustomImage(null);
+                              }}
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   
                   {/* Aspect Ratio */}
                   <div>
-                    <label className="block text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
-                      📐 Aspect Ratio
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-green-600 dark:text-green-400">
+                        📐 Aspect Ratio *
+                      </label>
+                      <TooltipIcon content="Choose the video dimensions based on your target platform" />
+                    </div>
                     <Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as '9:16' | '16:9' | '1:1')}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Select aspect ratio..." />
+                      <SelectTrigger className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-950/20 dark:to-teal-950/20 border-green-200 dark:border-green-800">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="9:16">📱 9:16 Vertical</SelectItem>
-                        <SelectItem value="16:9">🖥️ 16:9 Horizontal</SelectItem>
-                        <SelectItem value="1:1">⬜ 1:1 Square</SelectItem>
+                        <SelectItem value="9:16">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-10 bg-gradient-to-b from-blue-500 to-purple-500 rounded border-2 border-white shadow-sm"></div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">9:16 Vertical</span>
+                              <span className="text-xs text-muted-foreground">
+                                TikTok, Instagram Reels, YouTube Shorts
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="16:9">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-6 bg-gradient-to-r from-red-500 to-orange-500 rounded border-2 border-white shadow-sm"></div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">16:9 Landscape</span>
+                              <span className="text-xs text-muted-foreground">
+                                YouTube, Desktop, Presentations
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="1:1">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded border-2 border-white shadow-sm"></div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">1:1 Square</span>
+                              <span className="text-xs text-muted-foreground">
+                                Instagram Feed, Facebook, LinkedIn
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
+                    
+                    {/* Platform recommendation badge */}
+                    {singleProductCategory === "Ads and UGC" && platformOptimization && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          💡 <strong>Recommended for {platformOptimization}:</strong>{' '}
+                          {(platformOptimization === "TikTok" || platformOptimization === "Instagram Reels" || platformOptimization === "YouTube Shorts") ? "9:16 (Vertical)" : 
+                           platformOptimization === "Multi-Platform" ? "1:1 (Square) for maximum compatibility" :
+                           "16:9 (Landscape)"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Asset Upload Section */}
@@ -3647,7 +5370,7 @@ export function DiverseMotionGeneratorInterface({
                           </Button>
 
                           {/* Conditional API buttons based on category */}
-                          {productCategory === "Data Visualizations" && (
+                          {singleProductCategory === "Data Visualizations" && (
                             <>
                               <Button 
                                 type="button" 
@@ -3682,7 +5405,7 @@ export function DiverseMotionGeneratorInterface({
                             </>
                           )}
 
-                          {productCategory === "Cinematic Videos" && (
+                          {singleProductCategory === "Cinematic Videos" && (
                             <>
                               <Button 
                                 type="button" 
@@ -3718,8 +5441,43 @@ export function DiverseMotionGeneratorInterface({
                             </>
                           )}
 
+                          {singleProductCategory === "Ads and UGC" && (
+                            <>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={handleOpenProductMockupsAPI} 
+                                className="w-full"
+                              >
+                                <Package className="mr-2 h-4 w-4" />
+                                Choose from Products & Mockups API
+                              </Button>
+                              
+                              {showProductMockupsDropdown && (
+                                <Select value={selectedProductMockupId} onValueChange={setSelectedProductMockupId}>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select a product or mockup..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="max-h-60">
+                                    {loadingProductMockups ? (
+                                      <SelectItem value="loading" disabled>Loading mockups...</SelectItem>
+                                    ) : availableProductMockups.length === 0 ? (
+                                      <SelectItem value="none" disabled>No mockups available</SelectItem>
+                                    ) : (
+                                      availableProductMockups.map((mockup) => (
+                                        <SelectItem key={mockup.id} value={mockup.id}>
+                                          {mockup.title || 'Untitled Mockup'}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </>
+                          )}
+
                           {/* Keep library button for other categories */}
-                          {!["Data Visualizations", "Cinematic Videos"].includes(productCategory) && (
+                          {!["Data Visualizations", "Cinematic Videos", "Ads and UGC"].includes(singleProductCategory) && (
                             <Button 
                               type="button" 
                               variant="outline" 
@@ -3813,6 +5571,49 @@ export function DiverseMotionGeneratorInterface({
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedChartId("")}
+                        className="flex-shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Preview for selected product mockup */}
+                  {selectedProductMockupId && selectedProductMockup && uploadedFiles.length === 0 && (
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                      {/* Image du mockup */}
+                      {getProductMockupImageUrl(selectedProductMockup) ? (
+                        <img 
+                          src={getProductMockupImageUrl(selectedProductMockup)} 
+                          alt={selectedProductMockup.title}
+                          className="w-12 h-12 object-cover rounded-lg border border-border flex-shrink-0"
+                          onError={(e) => {
+                            console.error('Product mockup image failed to load:', getProductMockupImageUrl(selectedProductMockup))
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center flex-shrink-0">
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-primary text-sm truncate">
+                          {selectedProductMockup.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedProductMockup.description || 'Product Mockup'}
+                        </p>
+                      </div>
+                      
+                      {/* Bouton supprimer */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedProductMockupId("")}
                         className="flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
@@ -3963,12 +5764,18 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {emotionalTone === 'Custom' && (
-                      <Input
-                        value={customEmotionalTone}
-                        onChange={(e) => setCustomEmotionalTone(e.target.value)}
-                        placeholder="Enter custom emotional tone..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customEmotionalTone}
+                          onChange={(e) => setCustomEmotionalTone(e.target.value)}
+                          placeholder="e.g., Mysterious, Uplifting, Nostalgic"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired emotional tone (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
@@ -3989,32 +5796,21 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {visualStyle === 'Custom' && (
-                      <Input
-                        value={customVisualStyle}
-                        onChange={(e) => setCustomVisualStyle(e.target.value)}
-                        placeholder="Enter custom visual style..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customVisualStyle}
+                          onChange={(e) => setCustomVisualStyle(e.target.value)}
+                          placeholder="e.g., Minimalist, Vintage, Futuristic"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired visual style (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-teal-600 dark:text-teal-400 mb-2">
-                      ⏱️ Duration: {duration[0]}s
-                    </label>
-                    <Slider
-                      value={duration}
-                      onValueChange={setDuration}
-                      min={5}
-                      max={120}
-                      step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-teal-200 [&_.slider-track]:to-teal-400 [&_.slider-thumb]:bg-teal-500 [&_.slider-thumb]:border-teal-600"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>5s</span>
-                      <span>2 min</span>
-                    </div>
-                  </div>
                 </CollapsibleContent>
               </Collapsible>
 
@@ -4044,20 +5840,35 @@ export function DiverseMotionGeneratorInterface({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Studio white">🏢 Studio white</SelectItem>
-                        <SelectItem value="Urban twilight">🌆 Urban twilight</SelectItem>
-                        <SelectItem value="Forest dawn">🌲 Forest dawn</SelectItem>
-                        <SelectItem value="Black marble">🖤 Black marble</SelectItem>
-                        <SelectItem value="Custom">⚙️ Custom</SelectItem>
+                        {Object.entries(ENVIRONMENT_PREVIEWS).map(([env, preview]) => (
+                          <SelectItem key={env} value={env}>
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "w-8 h-8 rounded border-2 border-white shadow-sm bg-gradient-to-br",
+                                preview.gradient
+                              )} />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{env}</span>
+                                <span className="text-xs text-muted-foreground">{preview.description}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {environment === "Custom" && (
-                      <Input
-                        value={customEnvironment}
-                        onChange={(e) => setCustomEnvironment(e.target.value)}
-                        placeholder="Describe your custom environment"
-                        className="w-full mt-2"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customEnvironment}
+                          onChange={(e) => setCustomEnvironment(e.target.value)}
+                          placeholder="e.g., Cozy coffee shop, Futuristic lab, Tropical beach"
+                          className="w-full"
+                          maxLength={100}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your custom environment (max 100 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
@@ -4070,20 +5881,32 @@ export function DiverseMotionGeneratorInterface({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Soft Daylight">☀️ Soft Daylight</SelectItem>
-                        <SelectItem value="Glossy Specular">✨ Glossy Specular</SelectItem>
-                        <SelectItem value="Backlit Sunset">🌅 Backlit Sunset</SelectItem>
-                        <SelectItem value="High-Contrast Spot">💡 High-Contrast Spot</SelectItem>
-                        <SelectItem value="Custom">🎨 Custom</SelectItem>
+                        {Object.entries(LIGHTING_PREVIEWS).map(([light, preview]) => (
+                          <SelectItem key={light} value={light}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{preview.icon}</span>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{light}</span>
+                                <span className="text-xs text-muted-foreground">{preview.description}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {lightingMood === 'Custom' && (
-                      <Input
-                        value={customLightingMood}
-                        onChange={(e) => setCustomLightingMood(e.target.value)}
-                        placeholder="Enter custom lighting mood..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customLightingMood}
+                          onChange={(e) => setCustomLightingMood(e.target.value)}
+                          placeholder="e.g., Dramatic shadows, Warm candlelight, Cool moonlight"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired lighting mood (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
@@ -4120,14 +5943,6 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    {cameraType === 'Custom' && (
-                      <Input
-                        value={customCameraType}
-                        onChange={(e) => setCustomCameraType(e.target.value)}
-                        placeholder="Enter custom camera type..."
-                        className="mt-2 bg-background border-border"
-                      />
-                    )}
                   </div>
                   
                   <div>
@@ -4145,14 +5960,6 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    {frameRate === 'Custom' && (
-                      <Input
-                        value={customFrameRate}
-                        onChange={(e) => setCustomFrameRate(e.target.value)}
-                        placeholder="Enter custom frame rate..."
-                        className="mt-2 bg-background border-border"
-                      />
-                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -4174,6 +5981,61 @@ export function DiverseMotionGeneratorInterface({
                   )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-6 mt-6">
+                  {/* Motion Presets */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Quick Motion Presets</label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([20])
+                          setHookIntensity([30])
+                          setEndEmotion([40])
+                        }}
+                      >
+                        🐌 Subtle
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([50])
+                          setHookIntensity([50])
+                          setEndEmotion([50])
+                        }}
+                      >
+                        ⚖️ Balanced
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([80])
+                          setHookIntensity([70])
+                          setEndEmotion([60])
+                        }}
+                      >
+                        ⚡ Dynamic
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCameraEnergy([95])
+                          setHookIntensity([90])
+                          setEndEmotion([85])
+                        }}
+                      >
+                        💥 Explosive
+                      </Button>
+                    </div>
+                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                       ⚡ Reveal Type
@@ -4190,32 +6052,37 @@ export function DiverseMotionGeneratorInterface({
                         <SelectItem value="Custom">🎨 Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    {revealType === 'Custom' && (
-                      <Input
-                        value={customRevealType}
-                        onChange={(e) => setCustomRevealType(e.target.value)}
-                        placeholder="Enter custom reveal type..."
-                        className="mt-2 bg-background border-border"
-                      />
-                    )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">
-                      🔥 Camera Energy: {cameraEnergy[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-blue-600 dark:text-blue-400">
+                        📹 Camera Energy: {cameraEnergy[0]}
+                      </label>
+                      <TooltipIcon content="Control the intensity and dynamism of camera movement" />
+                    </div>
                     <Slider
                       value={cameraEnergy}
                       onValueChange={setCameraEnergy}
                       min={0}
                       max={100}
                       step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-orange-200 [&_.slider-track]:to-orange-400 [&_.slider-thumb]:bg-orange-500 [&_.slider-thumb]:border-orange-600"
+                      className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>Still</span>
+                      <span>Static</span>
+                      <span>Subtle</span>
+                      <span>Balanced</span>
                       <span>Dynamic</span>
+                      <span>Hyperactive</span>
                     </div>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                      {cameraEnergy[0] <= 20 && "Minimal movement, stable shots"}
+                      {cameraEnergy[0] > 20 && cameraEnergy[0] <= 40 && "Gentle pans and subtle motion"}
+                      {cameraEnergy[0] > 40 && cameraEnergy[0] <= 60 && "Moderate movement with smooth transitions"}
+                      {cameraEnergy[0] > 60 && cameraEnergy[0] <= 80 && "Active camera work with dynamic angles"}
+                      {cameraEnergy[0] > 80 && "Intense, fast-paced camera movement"}
+                    </p>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -4229,39 +6096,65 @@ export function DiverseMotionGeneratorInterface({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-pink-600 dark:text-pink-400 mb-2">
-                      🎯 Hook Intensity: {hookIntensity[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-pink-600 dark:text-pink-400">
+                        🎣 Hook Intensity: {hookIntensity[0]}
+                      </label>
+                      <TooltipIcon content="How strongly the opening grabs attention" />
+                    </div>
                     <Slider
                       value={hookIntensity}
                       onValueChange={setHookIntensity}
                       min={0}
                       max={100}
                       step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-pink-200 [&_.slider-track]:to-pink-400 [&_.slider-thumb]:bg-pink-500 [&_.slider-thumb]:border-pink-600"
+                      className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>Subtle</span>
-                      <span>Bold</span>
+                      <span>Gentle</span>
+                      <span>Moderate</span>
+                      <span>Strong</span>
+                      <span>Powerful</span>
+                      <span>Intense</span>
                     </div>
+                    <p className="text-xs text-pink-600 dark:text-pink-400 mt-2">
+                      {hookIntensity[0] <= 20 && "Soft, gradual introduction"}
+                      {hookIntensity[0] > 20 && hookIntensity[0] <= 40 && "Steady opening with interest"}
+                      {hookIntensity[0] > 40 && hookIntensity[0] <= 60 && "Clear attention-grabbing start"}
+                      {hookIntensity[0] > 60 && hookIntensity[0] <= 80 && "Strong, compelling opening"}
+                      {hookIntensity[0] > 80 && "Maximum impact, immediate engagement"}
+                    </p>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
-                      💫 End Emotion: {endEmotion[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-purple-600 dark:text-purple-400">
+                        🎭 End Emotion: {endEmotion[0]}
+                      </label>
+                      <TooltipIcon content="Emotional resolution at the video's conclusion" />
+                    </div>
                     <Slider
                       value={endEmotion}
                       onValueChange={setEndEmotion}
                       min={0}
                       max={100}
                       step={5}
-                      className="w-full [&_.slider-track]:bg-gradient-to-r [&_.slider-track]:from-purple-200 [&_.slider-track]:to-purple-400 [&_.slider-thumb]:bg-purple-500 [&_.slider-thumb]:border-purple-600"
+                      className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>Clean</span>
+                      <span>Satisfied</span>
+                      <span>Inspired</span>
+                      <span>Amazed</span>
                       <span>Awe</span>
                     </div>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                      {endEmotion[0] <= 20 && "Simple, clean conclusion"}
+                      {endEmotion[0] > 20 && endEmotion[0] <= 40 && "Satisfying, complete ending"}
+                      {endEmotion[0] > 40 && endEmotion[0] <= 60 && "Uplifting, inspiring finish"}
+                      {endEmotion[0] > 60 && endEmotion[0] <= 80 && "Impressive, memorable conclusion"}
+                      {endEmotion[0] > 80 && "Breathtaking, awe-inspiring finale"}
+                    </p>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -4275,6 +6168,9 @@ export function DiverseMotionGeneratorInterface({
                   <div className="flex items-center gap-2">
                     <Music className="h-4 w-4 text-indigo-500" />
                     <span className="font-medium text-indigo-600 dark:text-indigo-400">Audio DNA</span>
+                    {(productCategory === "Ads and UGC" || productCategory === "Cinematic Videos") && (
+                      <Badge variant="default" className="bg-indigo-600 text-xs">Important</Badge>
+                    )}
                   </div>
                   {expandedSections.audio ? (
                     <ChevronDown className="h-4 w-4" />
@@ -4284,9 +6180,12 @@ export function DiverseMotionGeneratorInterface({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-6 mt-6">
                   <div>
-                    <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
-                      🎵 Sound Mode
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                        🎵 Sound Mode
+                      </label>
+                      <TooltipIcon content="Choose whether to use sound effects, music, or both" />
+                    </div>
                     <Select value={soundMode} onValueChange={(value: SoundMode) => setSoundMode(value)}>
                       <SelectTrigger>
                         <SelectValue />
@@ -4299,19 +6198,28 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {soundMode === 'Custom' && (
-                      <Input
-                        value={customSoundMode}
-                        onChange={(e) => setCustomSoundMode(e.target.value)}
-                        placeholder="Enter custom sound mode..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customSoundMode}
+                          onChange={(e) => setCustomSoundMode(e.target.value)}
+                          placeholder="e.g., Nature sounds, Urban ambience, Silence"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired sound approach (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-teal-600 dark:text-teal-400 mb-2">
-                      🎶 Sound Mood
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-teal-600 dark:text-teal-400">
+                        🎶 Sound Mood
+                      </label>
+                      <TooltipIcon content="Select the emotional character of your audio" />
+                    </div>
                     <Select value={soundMood} onValueChange={(value: SoundMood) => setSoundMood(value)}>
                       <SelectTrigger>
                         <SelectValue />
@@ -4324,19 +6232,28 @@ export function DiverseMotionGeneratorInterface({
                       </SelectContent>
                     </Select>
                     {soundMood === 'Custom' && (
-                      <Input
-                        value={customSoundMood}
-                        onChange={(e) => setCustomSoundMood(e.target.value)}
-                        placeholder="Enter custom sound mood..."
-                        className="mt-2 bg-background border-border"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={customSoundMood}
+                          onChange={(e) => setCustomSoundMood(e.target.value)}
+                          placeholder="e.g., Melancholic, Upbeat, Mysterious"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Describe your desired sound mood (max 50 characters)
+                        </p>
+                      </div>
                     )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">
-                      🎵 Key Effects
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-orange-600 dark:text-orange-400">
+                        🎯 Key Effects
+                      </label>
+                      <TooltipIcon content="Select sound effects to emphasize key moments in your video" />
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {availableKeyEffects.map((effect) => (
                         <Badge
@@ -4352,9 +6269,12 @@ export function DiverseMotionGeneratorInterface({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-violet-600 dark:text-violet-400 mb-2">
-                      📊 Mix Curve: {mixCurve[0]}%
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-violet-600 dark:text-violet-400">
+                        🎚️ Mix Curve: {mixCurve[0]}
+                      </label>
+                      <TooltipIcon content="Balance between calm (0) and energetic (100) audio progression" />
+                    </div>
                     <Slider
                       value={mixCurve}
                       onValueChange={setMixCurve}
@@ -4490,6 +6410,12 @@ export function DiverseMotionGeneratorInterface({
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                                 Cinematic Videos
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="Ads and UGC">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                Ads and UGC
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -4695,8 +6621,43 @@ export function DiverseMotionGeneratorInterface({
                                 </>
                               )}
 
+                              {productCategory === "Ads and UGC" && (
+                                <>
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={handleOpenProductMockupsAPI} 
+                                    className="w-full"
+                                  >
+                                    <Package className="mr-2 h-4 w-4" />
+                                    Choose from Products & Mockups API
+                                  </Button>
+                                  
+                                  {showProductMockupsDropdown && (
+                                    <Select value={selectedProductMockupId} onValueChange={setSelectedProductMockupId}>
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a product or mockup..." />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-60">
+                                        {loadingProductMockups ? (
+                                          <SelectItem value="loading" disabled>Loading mockups...</SelectItem>
+                                        ) : availableProductMockups.length === 0 ? (
+                                          <SelectItem value="none" disabled>No mockups available</SelectItem>
+                                        ) : (
+                                          availableProductMockups.map((mockup) => (
+                                            <SelectItem key={mockup.id} value={mockup.id}>
+                                              {mockup.title || 'Untitled Mockup'}
+                                            </SelectItem>
+                                          ))
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                </>
+                              )}
+
                               {/* Keep library button for other categories */}
-                              {!["Data Visualizations", "Cinematic Videos"].includes(productCategory) && (
+                              {!["Data Visualizations", "Cinematic Videos", "Ads and UGC"].includes(productCategory) && (
                                 <Button 
                                   type="button" 
                                   variant="outline" 
@@ -4885,8 +6846,44 @@ export function DiverseMotionGeneratorInterface({
                                 </>
                               )}
 
+                              {productCategory === "Ads and UGC" && (
+                                <>
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={handleOpenProductMockupsAPI} 
+                                    className="w-full"
+                                    disabled={uploadedFiles.length < 1}
+                                  >
+                                    <Package className="mr-2 h-4 w-4" />
+                                    Choose from Products & Mockups API
+                                  </Button>
+                                  
+                                  {showProductMockupsDropdown && (
+                                    <Select value={selectedProductMockupId} onValueChange={setSelectedProductMockupId}>
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a product or mockup..." />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-60">
+                                        {loadingProductMockups ? (
+                                          <SelectItem value="loading" disabled>Loading mockups...</SelectItem>
+                                        ) : availableProductMockups.length === 0 ? (
+                                          <SelectItem value="none" disabled>No mockups available</SelectItem>
+                                        ) : (
+                                          availableProductMockups.map((mockup) => (
+                                            <SelectItem key={mockup.id} value={mockup.id}>
+                                              {mockup.title || 'Untitled Mockup'}
+                                            </SelectItem>
+                                          ))
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                </>
+                              )}
+
                               {/* Keep library button for other categories */}
-                              {!["Data Visualizations", "Cinematic Videos"].includes(productCategory) && (
+                              {!["Data Visualizations", "Cinematic Videos", "Ads and UGC"].includes(productCategory) && (
                                 <Button 
                                   type="button" 
                                   variant="outline" 
@@ -4998,14 +6995,6 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
-                            {transitionType === 'custom' && (
-                              <Input
-                                value={customTransitionType}
-                                onChange={(e) => setCustomTransitionType(e.target.value)}
-                                placeholder="Enter custom transition type..."
-                                className="mt-2 bg-white border-border"
-                              />
-                            )}
                             <p className="text-xs text-purple-600 mt-1">
                               {transitionType === 'morph' && 'Smooth organic blend'}
                               {transitionType === 'cut' && 'Instant switch'}
@@ -5032,34 +7021,9 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
-                            {transitionEasing === 'custom' && (
-                              <Input
-                                value={customTransitionEasing}
-                                onChange={(e) => setCustomTransitionEasing(e.target.value)}
-                                placeholder="Enter custom easing curve..."
-                                className="mt-2 bg-white border-border"
-                              />
-                            )}
                           </div>
                         </div>
                         
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700 mb-2">
-                            Duration: {transitionDuration[0].toFixed(1)}s
-                          </label>
-                          <Slider
-                            value={transitionDuration}
-                            onValueChange={setTransitionDuration}
-                            min={0.3}
-                            max={3.0}
-                            step={0.1}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-xs text-purple-600 mt-1">
-                            <span>Quick (0.3s)</span>
-                            <span>Slow (3.0s)</span>
-                          </div>
-                        </div>
                         
                         {(transitionType === 'slide' || transitionType === 'zoom') && (
                           <div>
@@ -5217,14 +7181,6 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        {cameraType === 'Custom' && (
-                          <Input
-                            value={customCameraType}
-                            onChange={(e) => setCustomCameraType(e.target.value)}
-                            placeholder="Enter custom camera type..."
-                            className="mt-2 bg-background border-border"
-                          />
-                        )}
                       </div>
                       
                       <div>
@@ -5242,14 +7198,6 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        {frameRate === 'Custom' && (
-                          <Input
-                            value={customFrameRate}
-                            onChange={(e) => setCustomFrameRate(e.target.value)}
-                            placeholder="Enter custom frame rate..."
-                            className="mt-2 bg-background border-border"
-                          />
-                        )}
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -5287,14 +7235,6 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        {revealType === 'Custom' && (
-                          <Input
-                            value={customRevealType}
-                            onChange={(e) => setCustomRevealType(e.target.value)}
-                            placeholder="Enter custom reveal type..."
-                            className="mt-2 bg-background border-border"
-                          />
-                        )}
                       </div>
                       
                       <div>
@@ -5431,9 +7371,12 @@ export function DiverseMotionGeneratorInterface({
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">
-                          🎵 Key Effects
-                        </label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <label className="block text-sm font-medium text-orange-600 dark:text-orange-400">
+                            🎯 Key Effects
+                          </label>
+                          <TooltipIcon content="Select sound effects to emphasize key moments in your video" />
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {availableKeyEffects.map((effect) => (
                             <Badge
@@ -5528,6 +7471,227 @@ export function DiverseMotionGeneratorInterface({
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
+
+                  {/* Dual Frame Image Selection Section */}
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+                    <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-3">
+                      🎬 Dual Frame Selection *
+                    </label>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* First Frame */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                          First Frame (Starting Point)
+                        </h4>
+                        
+                        {/* Toggle between upload and library */}
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={dualFirstFrameSource === 'upload' ? "default" : "outline"}
+                            onClick={() => setDualFirstFrameSource('upload')}
+                            className="flex-1 text-xs"
+                          >
+                            <Upload className="mr-2 h-3 w-3" />
+                            Upload
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={dualFirstFrameSource === 'library' ? "default" : "outline"}
+                            onClick={() => setDualFirstFrameSource('library')}
+                            className="flex-1 text-xs"
+                          >
+                            <Package className="mr-2 h-3 w-3" />
+                            Library
+                          </Button>
+                        </div>
+
+                        {/* Upload Section */}
+                        {dualFirstFrameSource === 'upload' && (
+                          <div className="space-y-3">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleDualFirstFrameUpload}
+                              className="hidden"
+                              id="dual-first-frame-upload"
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => document.getElementById('dual-first-frame-upload')?.click()}
+                              disabled={isUploadingAsset}
+                              className="w-full text-xs"
+                            >
+                              {isUploadingAsset ? (
+                                <>
+                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="mr-2 h-3 w-3" />
+                                  Choose First Frame
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Library Section */}
+                        {dualFirstFrameSource === 'library' && (
+                          <div className="space-y-3">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setLibrarySelectionMode('dual-first');
+                                setShowAssetLibrary(true);
+                              }}
+                              className="w-full text-xs"
+                            >
+                              <Package className="mr-2 h-3 w-3" />
+                              Select from Library
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Preview first frame */}
+                        {dualFirstFrameUrl && (
+                          <div className="mt-4">
+                            <p className="text-xs font-medium mb-2">First Frame:</p>
+                            <div className="relative w-full max-w-xs">
+                              <img
+                                src={dualFirstFrameUrl}
+                                alt="First frame for animation"
+                                className="w-full h-auto rounded-lg border-2 border-purple-300 dark:border-purple-700"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  setDualFirstFrameUrl(null);
+                                  setDualFirstFrameAssetId(null);
+                                  setDualFirstFrameFile(null);
+                                }}
+                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Last Frame */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                          Last Frame (Ending Point)
+                        </h4>
+                        
+                        {/* Toggle between upload and library */}
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={dualLastFrameSource === 'upload' ? "default" : "outline"}
+                            onClick={() => setDualLastFrameSource('upload')}
+                            className="flex-1 text-xs"
+                          >
+                            <Upload className="mr-2 h-3 w-3" />
+                            Upload
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={dualLastFrameSource === 'library' ? "default" : "outline"}
+                            onClick={() => setDualLastFrameSource('library')}
+                            className="flex-1 text-xs"
+                          >
+                            <Package className="mr-2 h-3 w-3" />
+                            Library
+                          </Button>
+                        </div>
+
+                        {/* Upload Section */}
+                        {dualLastFrameSource === 'upload' && (
+                          <div className="space-y-3">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleDualLastFrameUpload}
+                              className="hidden"
+                              id="dual-last-frame-upload"
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => document.getElementById('dual-last-frame-upload')?.click()}
+                              disabled={isUploadingAsset}
+                              className="w-full text-xs"
+                            >
+                              {isUploadingAsset ? (
+                                <>
+                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="mr-2 h-3 w-3" />
+                                  Choose Last Frame
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Library Section */}
+                        {dualLastFrameSource === 'library' && (
+                          <div className="space-y-3">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setLibrarySelectionMode('dual-last');
+                                setShowAssetLibrary(true);
+                              }}
+                              className="w-full text-xs"
+                            >
+                              <Package className="mr-2 h-3 w-3" />
+                              Select from Library
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Preview last frame */}
+                        {dualLastFrameUrl && (
+                          <div className="mt-4">
+                            <p className="text-xs font-medium mb-2">Last Frame:</p>
+                            <div className="relative w-full max-w-xs">
+                              <img
+                                src={dualLastFrameUrl}
+                                alt="Last frame for animation"
+                                className="w-full h-auto rounded-lg border-2 border-purple-300 dark:border-purple-700"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  setDualLastFrameUrl(null);
+                                  setDualLastFrameAssetId(null);
+                                  setDualLastFrameFile(null);
+                                }}
+                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground mt-4">
+                      Upload or select two images to create a smooth transition animation between them.
+                    </p>
+                  </div>
                 </TabsContent>
 
                 {/* Multi Asset Mode */}
@@ -5587,6 +7751,12 @@ export function DiverseMotionGeneratorInterface({
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                                 Cinematic Videos
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="Ads and UGC">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                Ads and UGC
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -5969,14 +8139,6 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
-                            {sequenceStyle === 'custom' && (
-                              <Input
-                                value={customSequenceStyle}
-                                onChange={(e) => setCustomSequenceStyle(e.target.value)}
-                                placeholder="Enter custom sequence style..."
-                                className="mt-2 bg-white border-border"
-                              />
-                            )}
                             <p className="text-xs text-orange-600 mt-1">
                               {sequenceStyle === 'sequential' && 'One after another'}
                               {sequenceStyle === 'overlapping' && 'Blend between scenes'}
@@ -6002,34 +8164,9 @@ export function DiverseMotionGeneratorInterface({
                                 <SelectItem value="custom">🎨 Custom</SelectItem>
                               </SelectContent>
                             </Select>
-                            {globalTransition === 'custom' && (
-                              <Input
-                                value={customGlobalTransition}
-                                onChange={(e) => setCustomGlobalTransition(e.target.value)}
-                                placeholder="Enter custom global transition..."
-                                className="mt-2 bg-white border-border"
-                              />
-                            )}
                           </div>
                         </div>
                         
-                        <div>
-                          <label className="block text-sm font-medium text-orange-700 mb-2">
-                            Transition Duration: {sceneTransitionDuration[0].toFixed(1)}s
-                          </label>
-                          <Slider
-                            value={sceneTransitionDuration}
-                            onValueChange={setSceneTransitionDuration}
-                            min={0.2}
-                            max={2.0}
-                            step={0.1}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-xs text-orange-600 mt-1">
-                            <span>Quick (0.2s)</span>
-                            <span>Slow (2.0s)</span>
-                          </div>
-                        </div>
                         
                         {/* Scene Flow Preview */}
                         <div className="p-3 bg-white rounded border border-orange-200">
@@ -6174,14 +8311,6 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        {cameraType === 'Custom' && (
-                          <Input
-                            value={customCameraType}
-                            onChange={(e) => setCustomCameraType(e.target.value)}
-                            placeholder="Enter custom camera type..."
-                            className="mt-2 bg-background border-border"
-                          />
-                        )}
                       </div>
                       
                       <div>
@@ -6199,14 +8328,6 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        {frameRate === 'Custom' && (
-                          <Input
-                            value={customFrameRate}
-                            onChange={(e) => setCustomFrameRate(e.target.value)}
-                            placeholder="Enter custom frame rate..."
-                            className="mt-2 bg-background border-border"
-                          />
-                        )}
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -6244,14 +8365,6 @@ export function DiverseMotionGeneratorInterface({
                             <SelectItem value="Custom">🎨 Custom</SelectItem>
                           </SelectContent>
                         </Select>
-                        {revealType === 'Custom' && (
-                          <Input
-                            value={customRevealType}
-                            onChange={(e) => setCustomRevealType(e.target.value)}
-                            placeholder="Enter custom reveal type..."
-                            className="mt-2 bg-background border-border"
-                          />
-                        )}
                       </div>
                       
                       <div>
@@ -6388,9 +8501,12 @@ export function DiverseMotionGeneratorInterface({
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-2">
-                          🎵 Key Effects
-                        </label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <label className="block text-sm font-medium text-orange-600 dark:text-orange-400">
+                            🎯 Key Effects
+                          </label>
+                          <TooltipIcon content="Select sound effects to emphasize key moments in your video" />
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {availableKeyEffects.map((effect) => (
                             <Badge
@@ -6619,13 +8735,63 @@ export function DiverseMotionGeneratorInterface({
             )}
           </div>
           
+          {/* Configuration Score */}
+          <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Configuration Completeness
+              </span>
+              <span className={cn(
+                "text-sm font-bold",
+                validationStatus.overall >= 80 ? "text-green-600" :
+                validationStatus.overall >= 50 ? "text-yellow-600" :
+                "text-red-600"
+              )}>
+                {validationStatus.overall}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div 
+                className={cn(
+                  "h-2 rounded-full transition-all duration-300",
+                  validationStatus.overall >= 80 ? "bg-green-500" :
+                  validationStatus.overall >= 50 ? "bg-yellow-500" :
+                  "bg-red-500"
+                )}
+                style={{ width: `${validationStatus.overall}%` }}
+              />
+            </div>
+            {validationStatus.overall < 100 && (
+              <div className="mt-2 space-y-1">
+                {validationStatus.category === 'empty' && (
+                  <p className="text-xs text-red-600">• Select a content category</p>
+                )}
+                {validationStatus.prompt === 'empty' && (
+                  <p className="text-xs text-red-600">• Add a descriptive prompt</p>
+                )}
+                {validationStatus.prompt === 'warning' && (
+                  <p className="text-xs text-yellow-600">• Prompt is too short (add more details)</p>
+                )}
+                {validationStatus.assets === 'empty' && mode !== 'none' && (
+                  <p className="text-xs text-red-600">• Upload required assets</p>
+                )}
+                {validationStatus.assets === 'warning' && (
+                  <p className="text-xs text-yellow-600">• Upload all required assets ({uploadedFiles.length}/{mode === 'dual' ? 2 : assets.length})</p>
+                )}
+                {validationStatus.duration === 'warning' && (
+                  <p className="text-xs text-yellow-600">• Duration may be too long for this category</p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button 
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
+              onClick={mode === 'single' ? handleSingleGenerate : handleDualGenerate}
+              disabled={isGenerating || (mode === 'single' ? !singlePrompt.trim() : !assets[0]?.prompt.trim())}
               className="min-w-[140px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white border-0"
             >
               {isGenerating ? (
@@ -6636,7 +8802,7 @@ export function DiverseMotionGeneratorInterface({
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generate Motion
+                  Generate {mode === 'single' ? 'Single' : 'Dual'} Motion
                 </>
               )}
             </Button>
@@ -6644,12 +8810,99 @@ export function DiverseMotionGeneratorInterface({
         </div>
       </div>
 
+      {/* Generated Video Player */}
+      {generatedVideo && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Generated Video</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const link = document.createElement('a')
+                    link.href = generatedVideo
+                    link.download = `diverse-motion-${Date.now()}.mp4`
+                    link.click()
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedVideo)
+                    toast({
+                      title: "Link copied",
+                      description: "Video link copied to clipboard",
+                    })
+                  }}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Copy Link
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setGeneratedVideo(null)}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
+              </div>
+            </div>
+            <div className="p-4">
+              <video
+                src={generatedVideo}
+                controls
+                className="w-full h-auto rounded-lg"
+                autoPlay
+                loop
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="p-4 border-t bg-gray-50 dark:bg-gray-800">
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setGeneratedVideo(null)
+                    // Reset form for new generation
+                    setSelectedImageUrl(null)
+                    setSelectedAssetId(null)
+                    setCustomImage(null)
+                  }}
+                  className="flex-1"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Generate New Video
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setGeneratedVideo(null)}
+                  className="flex-1"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Asset Library Modal */}
       <AssetLibraryModal
         isOpen={showAssetLibrary}
         onClose={() => setShowAssetLibrary(false)}
-        onSelectAssets={handleSelectFromLibrary}
+        onSelectAssets={
+          librarySelectionMode === 'single' ? handleLibraryAssetSelect :
+          librarySelectionMode === 'dual-first' ? handleDualFirstFrameLibrarySelect :
+          librarySelectionMode === 'dual-last' ? handleDualLastFrameLibrarySelect :
+          handleSelectFromLibrary
+        }
         multiSelect={librarySelectionMode === 'multi'}
         maxSelection={librarySelectionMode === 'multi' ? 10 : 1}
       />

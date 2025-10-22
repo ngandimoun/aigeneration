@@ -20,9 +20,9 @@ const createProductMotionSchema = z.object({
   emotional_tone: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   visual_style: z.string().optional().nullable().transform(e => e === '' ? undefined : e).or(nullToUndefined),
   duration: z.union([z.number(), z.string()]).optional().nullable().transform(e => {
-    if (e === '' || e === null || e === undefined) return undefined;
+    if (e === '' || e === null || e === undefined) return 10; // Default to 10 seconds when not provided
     return typeof e === 'string' ? Number(e) : e;
-  }).pipe(z.number().min(5).max(15).optional()).or(nullToUndefined),
+  }).pipe(z.number().min(5).max(120).optional()).or(nullToUndefined),
   aspect_ratio: z.enum(['9:16', '16:9', '1:1']).optional().nullable(),
   
   // Visual Context
@@ -73,7 +73,7 @@ const createProductMotionSchema = z.object({
   // Dual and Multi mode controls
   transition_controls: z.object({
     type: z.string().optional(),
-    duration: z.number().optional(),
+    duration: z.number().optional().default(1.0), // Default to 1 second when not provided
     easing: z.string().optional(),
     direction: z.string().optional()
   }).optional().nullable(),
@@ -81,7 +81,7 @@ const createProductMotionSchema = z.object({
   sequence_controls: z.object({
     style: z.string().optional(),
     global_transition: z.string().optional(),
-    transition_duration: z.number().optional(),
+    transition_duration: z.number().optional().default(0.5), // Default to 0.5 seconds when not provided
     total_duration: z.number().optional()
   }).optional().nullable(),
 });
@@ -107,16 +107,31 @@ export async function POST(request: NextRequest) {
 
     const validatedData = createProductMotionSchema.parse(body);
 
-    // Simulate generated video
-    const generatedVideoFileName = `${uuidv4()}-motion.mp4`;
-    const generatedStoragePath = `renders/product-motion/${user.id}/generated/${generatedVideoFileName}`;
-    const generatedVideoUrl = `https://example.com/generated_motion/${generatedVideoFileName}`; // Placeholder URL
+          // For single mode, redirect to dedicated endpoint
+          if (validatedData.mode === 'single') {
+            return NextResponse.json({ 
+              error: 'Single mode requests should be sent to /api/diverse-motion/single endpoint',
+              redirect: '/api/diverse-motion/single'
+            }, { status: 400 });
+          }
+
+          // For dual mode, redirect to dedicated endpoint
+          if (validatedData.mode === 'dual') {
+            return NextResponse.json({ 
+              error: 'Dual mode requests should be sent to /api/diverse-motion/dual endpoint',
+              redirect: '/api/diverse-motion/dual'
+            }, { status: 400 });
+          }
 
     const { data, error } = await supabase
-      .from('product_motions')
+      .from('diverse_motions')
       .insert([
         {
           user_id: user.id,
+          // Mode and Template
+          mode: validatedData.mode,
+          template: validatedData.template,
+          custom_template: validatedData.custom_template,
           // Product Description & Intent Capture
           product_category: validatedData.product_category,
           product_name: validatedData.product_name,
@@ -154,10 +169,16 @@ export async function POST(request: NextRequest) {
           logo_moment: validatedData.logo_moment,
           text_constraint: validatedData.text_constraint,
           
+          // Category-specific fields
+          chart_type: validatedData.chart_type,
+          data_points: validatedData.data_points,
+          animation_style: validatedData.animation_style,
+          color_scheme: validatedData.color_scheme,
+          
           // Generation State
-          status: 'completed',
-          generated_video_url: generatedVideoUrl,
-          storage_path: generatedStoragePath,
+          status: 'pending',
+          generated_video_url: null,
+          storage_path: null,
           
           // Metadata
           metadata: {
@@ -219,7 +240,7 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (error) {
-      console.error('Error inserting product_motion:', error);
+      console.error('Error inserting diverse_motion:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -229,7 +250,7 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           user_id: user.id,
-          content_type: 'product_motions',  // Changed from item_type
+          content_type: 'diverse_motions',  // Updated to match new table name
           content_id: data[0].id,           // Changed from item_id
           // Removed: title, description, image_url, created_at (not in schema)
         },
@@ -241,7 +262,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ 
-      message: 'Product motion generated and saved successfully', 
+      message: 'Diverse motion generated and saved successfully', 
       data: data[0] 
     }, { status: 200 });
 
@@ -262,21 +283,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: productMotions, error } = await supabase
-    .from('product_motions')
+  const { data: diverseMotions, error } = await supabase
+    .from('diverse_motions')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching product_motions:', error);
+    console.error('Error fetching diverse_motions:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(productMotions, { status: 200 });
+  return NextResponse.json(diverseMotions, { status: 200 });
 }
 
-// PUT endpoint to update a product_motion
+// PUT endpoint to update a diverse_motion
 export async function PUT(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -288,29 +309,29 @@ export async function PUT(request: NextRequest) {
   const { id, ...updates } = await request.json();
 
   if (!id) {
-    return NextResponse.json({ error: 'Product motion ID is required for update' }, { status: 400 });
+    return NextResponse.json({ error: 'Diverse motion ID is required for update' }, { status: 400 });
   }
 
   const { data, error } = await supabase
-    .from('product_motions')
+    .from('diverse_motions')
     .update(updates)
     .eq('id', id)
     .eq('user_id', user.id)
     .select();
 
   if (error) {
-    console.error('Error updating product_motion:', error);
+    console.error('Error updating diverse_motion:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   if (!data || data.length === 0) {
-    return NextResponse.json({ error: 'Product motion not found or unauthorized' }, { status: 404 });
+    return NextResponse.json({ error: 'Diverse motion not found or unauthorized' }, { status: 404 });
   }
 
-  return NextResponse.json({ message: 'Product motion updated successfully', data }, { status: 200 });
+  return NextResponse.json({ message: 'Diverse motion updated successfully', data }, { status: 200 });
 }
 
-// DELETE endpoint to delete a product_motion
+// DELETE endpoint to delete a diverse_motion
 export async function DELETE(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -322,19 +343,19 @@ export async function DELETE(request: NextRequest) {
   const { id } = await request.json();
 
   if (!id) {
-    return NextResponse.json({ error: 'Product motion ID is required for deletion' }, { status: 400 });
+    return NextResponse.json({ error: 'Diverse motion ID is required for deletion' }, { status: 400 });
   }
 
   const { error } = await supabase
-    .from('product_motions')
+    .from('diverse_motions')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id);
 
   if (error) {
-    console.error('Error deleting product_motion:', error);
+    console.error('Error deleting diverse_motion:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ message: 'Product motion deleted successfully' }, { status: 200 });
+  return NextResponse.json({ message: 'Diverse motion deleted successfully' }, { status: 200 });
 }

@@ -139,4 +139,86 @@ export async function extendVeo(params: ExtendVeoParams): Promise<KieGenerateRes
   return (await res.json()) as KieGenerateResponse
 }
 
+export async function pollVeoCompletion(
+  taskId: string, 
+  maxAttempts = 60, 
+  intervalMs = 5000
+): Promise<{ videoUrl: string; resolution?: string }> {
+  console.log(`[KIE] Starting polling for taskId: ${taskId}`)
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const info = await getRecordInfo(taskId)
+      
+      if (info.code !== 200 || !info.data) {
+        throw new Error(`Record info failed: ${info.msg}`)
+      }
+      
+      const data = info.data
+      console.log(`[KIE] Poll attempt ${attempt}/${maxAttempts}, successFlag: ${data.successFlag}`)
+      
+      // Check completion status
+      if (data.successFlag === 1) {
+        // Success - try to get video URL
+        let videoUrl: string | undefined
+        
+        // Try 1080p first (better quality)
+        try {
+          const hd = await get1080p(taskId)
+          if (hd.code === 200 && hd.data?.resultUrl) {
+            videoUrl = hd.data.resultUrl
+            console.log(`[KIE] Got 1080p video URL: ${videoUrl}`)
+          }
+        } catch (err) {
+          console.log(`[KIE] 1080p failed, trying resultUrls: ${(err as Error).message}`)
+        }
+        
+        // Fallback to resultUrls
+        if (!videoUrl && data.response?.resultUrls && data.response.resultUrls.length > 0) {
+          videoUrl = data.response.resultUrls[0]
+          console.log(`[KIE] Using resultUrls video URL: ${videoUrl}`)
+        }
+        
+        if (!videoUrl) {
+          throw new Error('No video URL found in response')
+        }
+        
+        return {
+          videoUrl,
+          resolution: data.response?.resolution
+        }
+      } else if (data.successFlag === 2) {
+        // Failed
+        const errorMsg = data.errorMessage || 'Unknown error'
+        throw new Error(`Video generation failed: ${errorMsg}`)
+      } else if (data.successFlag === 3) {
+        // Content policy violation - stop immediately
+        console.error(`[KIE] Content policy violation for taskId: ${taskId}`)
+        throw new Error(
+          'Content Policy Violation: Your prompt or images were flagged by Google\'s content policy. ' +
+          'All characters must be clearly fictional. Please try:\n' +
+          '1. Using different AI-generated character images\n' +
+          '2. Revising your scene description\n' +
+          '3. Avoiding real-world sensitive topics (airports, security, etc.)'
+        )
+      }
+      
+      // Still generating (successFlag === 0), wait and try again
+      if (attempt < maxAttempts) {
+        console.log(`[KIE] Still generating, waiting ${intervalMs}ms...`)
+        await new Promise(resolve => setTimeout(resolve, intervalMs))
+      }
+      
+    } catch (error) {
+      if (attempt === maxAttempts) {
+        throw error
+      }
+      console.log(`[KIE] Poll attempt ${attempt} failed: ${(error as Error).message}`)
+      await new Promise(resolve => setTimeout(resolve, intervalMs))
+    }
+  }
+  
+  throw new Error(`Video generation timed out after ${maxAttempts} attempts`)
+}
+
 

@@ -60,17 +60,66 @@ export async function GET(request: NextRequest) {
     // Apply pagination (use range instead of limit to avoid conflicts)
     query = query.range(offset, offset + limit - 1)
 
-    const { data: talkingAvatars, error } = await query
+    const { data: dbRecords, error } = await query
 
     if (error) {
       console.error('Error fetching talking avatars:', error)
       return NextResponse.json({ error: 'Failed to fetch talking avatars' }, { status: 500 })
     }
 
+    // Fetch storage files to find orphaned videos
+    const { data: storageFiles } = await supabase.storage
+      .from('dreamcut')
+      .list(`renders/talking-avatars/${user.id}`, {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' }
+      })
+
+    // Find orphaned files (files in storage but not in database)
+    const dbPaths = new Set((dbRecords || []).map(r => r.storage_path).filter(Boolean))
+    const orphanedFiles = (storageFiles || []).filter(file => {
+      const fullPath = `renders/talking-avatars/${user.id}/${file.name}`
+      return !dbPaths.has(fullPath) && file.name.endsWith('.mp4')
+    })
+
+    // Create records for orphaned files
+    const orphanedRecords = await Promise.all(
+      orphanedFiles.map(async (file) => {
+        const fullPath = `renders/talking-avatars/${user.id}/${file.name}`
+        try {
+          const { data: signedUrl } = await supabase.storage
+            .from('dreamcut')
+            .createSignedUrl(fullPath, 86400)
+          
+          // Extract UUID from filename (format: uuid-generated.mp4 or uuid-multi-generated.mp4)
+          const filename = file.name.replace(/-generated\.mp4$/, '').replace(/-multi-generated\.mp4$/, '')
+          
+          return {
+            id: filename,
+            title: 'Untitled (Orphaned)',
+            mode: file.name.includes('multi') ? 'multi' : 'describe',
+            status: 'orphaned',
+            storage_path: fullPath,
+            generated_video_url: signedUrl?.signedUrl,
+            created_at: file.created_at,
+            metadata: { orphaned: true, original_filename: file.name }
+          }
+        } catch (urlError) {
+          console.error('Error generating signed URL for orphaned file:', file.name, urlError)
+          return null
+        }
+      })
+    )
+
+    // Filter out null results and combine with database records
+    const validOrphanedRecords = orphanedRecords.filter(Boolean)
+    const allVideos = [...(dbRecords || []), ...validOrphanedRecords]
+
     // Generate fresh signed URLs for videos that have storage_path
     const talkingAvatarsWithFreshUrls = await Promise.all(
-      (talkingAvatars || []).map(async (avatar) => {
-        if (avatar.storage_path && avatar.status === 'completed') {
+      allVideos.map(async (avatar) => {
+        if (avatar.storage_path && (avatar.status === 'completed' || avatar.status === 'orphaned')) {
           try {
             const { data: signedUrl } = await supabase.storage
               .from('dreamcut')

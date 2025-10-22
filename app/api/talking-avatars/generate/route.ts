@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { getFalClient } from '@/lib/utils/fal-client'
+import { generateVeo, pollVeoCompletion } from '@/lib/kie'
+import { buildTalkingAvatarsPrompt } from '@/lib/utils/talking-avatars-prompt-builder'
+import { buildMultiAvatarPrompt } from '@/lib/utils/talking-avatars-multi-prompt-builder'
+import { processSceneSlotImages, cleanupTempImages } from '@/lib/utils/image-url-processor'
 
 // Helper to convert null to undefined for Zod optional()
 const nullToUndefined = z.literal('null').transform(() => undefined);
@@ -95,9 +99,13 @@ const createTalkingAvatarSchema = z.object({
   custom_sound_effects: z.string().optional(),
   
   // Mode 3: Multi-Character Scene
-  use_custom_scene_image: z.boolean().optional(),
-  scene_image: z.any().optional(), // File object
-  selected_scene_avatar_id: z.string().optional(),
+  scene_slots: z.array(z.object({
+    id: z.string(),
+    source: z.enum(['library', 'upload']),
+    file: z.any().optional(), // File object
+    preview: z.string().optional(),
+    avatarId: z.string().optional(),
+  })).optional(),
   scene_description: z.string().optional(),
   scene_character_count: z.number().optional(),
   scene_characters: z.array(z.object({
@@ -143,6 +151,182 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Check if this is describe mode (JSON body) or single mode (FormData)
+    const contentType = request.headers.get('content-type') || ''
+    
+    if (contentType.includes('application/json')) {
+      // AI Generate mode (describe) - JSON body
+      const body = await request.json()
+      const { 
+        mode, 
+        title, 
+        aspect_ratio, 
+        main_prompt, 
+        character_count,
+        characters, 
+        dialog_lines, 
+        environment, 
+        custom_environment,
+        background, 
+        custom_background,
+        lighting, 
+        custom_lighting,
+        background_music, 
+        custom_background_music,
+        sound_effects, 
+        custom_sound_effects 
+      } = body
+
+      if (mode !== 'describe') {
+        return NextResponse.json({ error: 'Invalid mode for JSON request' }, { status: 400 })
+      }
+
+      // Validate required fields for describe mode
+      if (!title?.trim()) {
+        return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+      }
+
+      if (!main_prompt?.trim()) {
+        return NextResponse.json({ error: 'Main prompt is required' }, { status: 400 })
+      }
+
+      // Build enhanced prompt
+      const enhancedPrompt = buildTalkingAvatarsPrompt({
+        mainPrompt: main_prompt,
+        characters: characters || [],
+        dialogLines: dialog_lines || [],
+        environment,
+        customEnvironment: custom_environment,
+        background,
+        customBackground: custom_background,
+        lighting,
+        customLighting: custom_lighting,
+        backgroundMusic: background_music,
+        customBackgroundMusic: custom_background_music,
+        soundEffects: sound_effects,
+        customSoundEffects: custom_sound_effects
+      })
+
+      console.log('🎬 AI Generate mode - Enhanced prompt:', enhancedPrompt)
+
+      // Call KIE Veo API with veo3 (Quality mode) for audio support
+      const kieResult = await generateVeo({
+        prompt: enhancedPrompt,
+        model: 'veo3', // Use Quality mode for audio support
+        generationType: 'TEXT_2_VIDEO',
+        aspectRatio: aspect_ratio || '16:9',
+        enableTranslation: true
+      })
+
+      if (kieResult.code !== 200 || !kieResult.data?.taskId) {
+        console.error('KIE API failed:', kieResult)
+        return NextResponse.json({ error: 'Failed to start video generation' }, { status: 502 })
+      }
+
+      const taskId = kieResult.data.taskId
+      console.log('🎬 KIE task started:', taskId)
+
+      // Poll for completion (synchronous wait)
+      let videoUrl: string
+      try {
+        const result = await pollVeoCompletion(taskId)
+        videoUrl = result.videoUrl
+        console.log('🎬 Video generation completed:', videoUrl)
+      } catch (error) {
+        console.error('Video generation failed:', error)
+        
+        // Check if it's a content policy error
+        if (error instanceof Error && error.message.includes('Content Policy Violation')) {
+          return NextResponse.json({ 
+            error: error.message,
+            errorType: 'CONTENT_POLICY_VIOLATION'
+          }, { status: 400 })
+        }
+        
+        return NextResponse.json({ 
+          error: 'Video generation failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+        }, { status: 502 })
+      }
+
+      // Download video from KIE
+      const videoResp = await fetch(videoUrl)
+      if (!videoResp.ok) {
+        return NextResponse.json({ error: 'Failed to download generated video' }, { status: 502 })
+      }
+      const videoBuffer = Buffer.from(await videoResp.arrayBuffer())
+
+      // Upload to Supabase Storage
+      const fileName = `${uuidv4()}-generated.mp4`
+      const storage_path = `renders/talking-avatars/${user.id}/generated/${fileName}`
+      const { error: uploadErr } = await supabase.storage
+        .from('dreamcut')
+        .upload(storage_path, videoBuffer, { 
+          contentType: 'video/mp4', 
+          cacheControl: '3600' 
+        })
+
+      if (uploadErr) {
+        return NextResponse.json({ error: 'Failed to store generated video' }, { status: 500 })
+      }
+
+      // Create signed URL
+      const { data: signedVideo } = await supabase.storage
+        .from('dreamcut')
+        .createSignedUrl(storage_path, 86400) // 24h
+
+      // Insert to database
+      const { data: inserted, error: insertErr } = await supabase
+        .from('talking_avatars')
+        .insert([{
+          user_id: user.id,
+          title,
+          mode: 'describe',
+          aspect_ratio: aspect_ratio || '16:9',
+          resolution: '720p',
+          fps: 25,
+          max_duration: 8, // Default 8 seconds for AI Generate
+          facial_expressions: true,
+          gestures: true,
+          eye_contact: true,
+          head_movement: true,
+          kie_task_id: taskId, // CRITICAL: Store in dedicated column for future queries
+          generated_video_url: signedVideo?.signedUrl || null,
+          storage_path,
+          status: 'completed',
+          metadata: {
+            mode: 'describe',
+            enhanced_prompt: enhancedPrompt,
+            timestamp: new Date().toISOString()
+          }
+        }])
+        .select()
+
+      if (insertErr) {
+        console.error('❌ AI Generate database insertion failed:', insertErr)
+        return NextResponse.json({ 
+          error: 'Failed to save talking avatar', 
+          details: insertErr.message 
+        }, { status: 500 })
+      }
+
+      // Add to library
+      await supabase
+        .from('library_items')
+        .insert({
+          user_id: user.id,
+          content_type: 'talking_avatars',
+          content_id: inserted?.[0]?.id,
+          date_added_to_library: new Date().toISOString()
+        })
+
+      return NextResponse.json({ 
+        message: 'Talking Avatar generated successfully',
+        talkingAvatar: inserted?.[0],
+        taskId
+      }, { status: 201 })
+    }
+
+    // Single Avatar mode (existing FormData logic) - DO NOT TOUCH
     const formData = await request.formData()
 
     const mode = (formData.get('mode')?.toString() || 'single') as 'single' | 'describe' | 'multi'
@@ -228,6 +412,306 @@ export async function POST(request: NextRequest) {
       if (!audio_url) {
         return NextResponse.json({ error: 'No audio provided or found for selected voiceover' }, { status: 400 })
       }
+    }
+
+    // Multi mode processing
+    if (mode === 'multi') {
+      // Parse multi mode FormData
+      const sceneSlots: Array<{
+        id: string
+        source: 'library' | 'upload'
+        file?: File
+        preview?: string
+        avatarId?: string
+      }> = []
+
+      // Extract scene slots from FormData
+      let slotIndex = 0
+      while (formData.has(`scene_slot_${slotIndex}_source`)) {
+        const source = formData.get(`scene_slot_${slotIndex}_source`)?.toString() as 'library' | 'upload'
+        const slot: any = {
+          id: slotIndex.toString(),
+          source
+        }
+
+        if (source === 'library') {
+          const avatarId = formData.get(`scene_slot_${slotIndex}_avatar_id`)?.toString()
+          if (avatarId) {
+            slot.avatarId = avatarId
+            sceneSlots.push(slot)
+          }
+        } else if (source === 'upload') {
+          const file = formData.get(`scene_slot_${slotIndex}_file`) as File
+          if (file) {
+            slot.file = file
+            sceneSlots.push(slot)
+          }
+        }
+
+        slotIndex++
+      }
+
+      // Extract other multi mode fields
+      const sceneDescription = formData.get('scene_description')?.toString() || ''
+      const sceneCharacterCount = parseInt(formData.get('scene_character_count')?.toString() || '1')
+      const sceneCharacters = JSON.parse(formData.get('scene_characters')?.toString() || '[]')
+      const sceneDialogLines = JSON.parse(formData.get('scene_dialog_lines')?.toString() || '[]')
+      const sceneEnvironment = formData.get('scene_environment')?.toString() || ''
+      const customSceneEnvironment = formData.get('custom_scene_environment')?.toString() || ''
+      const sceneBackground = formData.get('scene_background')?.toString() || ''
+      const customSceneBackground = formData.get('custom_scene_background')?.toString() || ''
+      const sceneLighting = formData.get('scene_lighting')?.toString() || ''
+      const customSceneLighting = formData.get('custom_scene_lighting')?.toString() || ''
+      const sceneBackgroundMusic = formData.get('scene_background_music')?.toString() || ''
+      const customSceneBackgroundMusic = formData.get('custom_scene_background_music')?.toString() || ''
+      const sceneSoundEffects = formData.get('scene_sound_effects')?.toString() || ''
+      const customSceneSoundEffects = formData.get('custom_scene_sound_effects')?.toString() || ''
+      const maxDuration = parseInt(formData.get('max_duration')?.toString() || '148')
+
+      // Validate multi mode inputs
+      if (sceneSlots.length === 0) {
+        return NextResponse.json({ error: 'At least one scene slot is required' }, { status: 400 })
+      }
+
+      if (!sceneDescription.trim()) {
+        return NextResponse.json({ error: 'Scene description is required' }, { status: 400 })
+      }
+
+      // Process scene slots - upload files and get avatar URLs
+      const processedSceneSlots = []
+      for (const slot of sceneSlots) {
+        if (slot.source === 'library' && slot.avatarId) {
+          // Get avatar image URL
+          const { data: avatar } = await supabase
+            .from('avatars_personas')
+            .select('generated_images, storage_paths')
+            .eq('id', slot.avatarId)
+            .single()
+          
+          let imageUrl: string | undefined
+          const candidatePath = avatar?.storage_paths?.[0] as string | undefined
+          if (candidatePath) {
+            const { data: signed } = await supabase.storage.from('dreamcut').createSignedUrl(candidatePath, 86400)
+            imageUrl = signed?.signedUrl
+          } else if (avatar?.generated_images?.[0]) {
+            imageUrl = avatar.generated_images[0]
+          }
+
+          processedSceneSlots.push({
+            id: slot.id,
+            source: 'library',
+            avatarId: slot.avatarId,
+            imageUrl
+          })
+        } else if (slot.source === 'upload' && slot.file) {
+          // Upload file to storage
+          const sanitizedName = slot.file.name.replace(/[^a-zA-Z0-9_.-]/g, '_')
+          const imagePath = `renders/talking-avatars/${user.id}/inputs/${uuidv4()}-${sanitizedName}`
+          const { error: uploadErr } = await supabase.storage
+            .from('dreamcut')
+            .upload(imagePath, slot.file, { cacheControl: '3600', upsert: false })
+          
+          if (uploadErr) {
+            return NextResponse.json({ error: `Failed to upload image: ${uploadErr.message}` }, { status: 500 })
+          }
+          
+          const { data: signed } = await supabase.storage.from('dreamcut').createSignedUrl(imagePath, 86400)
+          
+          processedSceneSlots.push({
+            id: slot.id,
+            source: 'upload',
+            imageUrl: signed?.signedUrl,
+            storagePath: imagePath
+          })
+        }
+      }
+
+      // Process scene slots to get image URLs for REFERENCE_2_VIDEO
+      const imageUrls: string[] = []
+      const tempImagePaths: string[] = []
+      
+      for (const slot of processedSceneSlots) {
+        if (slot.imageUrl) {
+          imageUrls.push(slot.imageUrl)
+          if (slot.storagePath) {
+            tempImagePaths.push(slot.storagePath)
+          }
+        }
+      }
+
+      if (imageUrls.length === 0) {
+        return NextResponse.json({ error: 'No valid avatar images found' }, { status: 400 })
+      }
+
+      if (imageUrls.length > 3) {
+        return NextResponse.json({ error: 'Maximum 3 avatar images allowed for REFERENCE_2_VIDEO' }, { status: 400 })
+      }
+
+      // Build enhanced prompt for multi-avatar scene
+      const enhancedPrompt = buildMultiAvatarPrompt({
+        sceneDescription,
+        sceneCharacters,
+        dialogLines: sceneDialogLines,
+        environment: sceneEnvironment,
+        customEnvironment: customSceneEnvironment,
+        background: sceneBackground,
+        customBackground: customSceneBackground,
+        lighting: sceneLighting,
+        customLighting: customSceneLighting,
+        backgroundMusic: sceneBackgroundMusic,
+        customBackgroundMusic: customSceneBackgroundMusic,
+        soundEffects: sceneSoundEffects,
+        customSoundEffects: customSceneSoundEffects,
+        imageCount: imageUrls.length
+      })
+
+      console.log('🎬 Multi Avatar mode - Enhanced prompt:', enhancedPrompt)
+      console.log('🎬 Multi Avatar mode - Image URLs:', imageUrls)
+
+      // Call KIE Veo API with REFERENCE_2_VIDEO
+      // NOTE: REFERENCE_2_VIDEO only supports veo3_fast (no audio) - will add TTS overlay
+      const kieResult = await generateVeo({
+        prompt: enhancedPrompt,
+        imageUrls: imageUrls,
+        model: 'veo3_fast', // Required for REFERENCE_2_VIDEO (no audio support)
+        generationType: 'REFERENCE_2_VIDEO',
+        aspectRatio: '16:9', // FIXED for REFERENCE_2_VIDEO
+        enableTranslation: true
+      })
+
+      if (kieResult.code !== 200 || !kieResult.data?.taskId) {
+        console.error('KIE API failed:', kieResult)
+        return NextResponse.json({ error: 'Failed to start video generation' }, { status: 502 })
+      }
+
+      const taskId = kieResult.data.taskId
+      console.log('🎬 KIE task started:', taskId)
+
+      // Poll for completion (synchronous wait)
+      let videoUrl: string
+      try {
+        const result = await pollVeoCompletion(taskId)
+        videoUrl = result.videoUrl
+        console.log('🎬 Video generation completed:', videoUrl)
+      } catch (error) {
+        console.error('Video generation failed:', error)
+        
+        // Check if it's a content policy error
+        if (error instanceof Error && error.message.includes('Content Policy Violation')) {
+          return NextResponse.json({ 
+            error: error.message,
+            errorType: 'CONTENT_POLICY_VIOLATION'
+          }, { status: 400 })
+        }
+        
+        return NextResponse.json({ 
+          error: 'Video generation failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+        }, { status: 502 })
+      }
+
+      // Download video from KIE
+      const videoResp = await fetch(videoUrl)
+      if (!videoResp.ok) {
+        return NextResponse.json({ error: 'Failed to download generated video' }, { status: 502 })
+      }
+      const videoBuffer = Buffer.from(await videoResp.arrayBuffer())
+
+      // Upload to Supabase Storage
+      const fileName = `${uuidv4()}-multi-generated.mp4`
+      const storage_path = `renders/talking-avatars/${user.id}/multi/${fileName}`
+      const { error: uploadErr } = await supabase.storage
+        .from('dreamcut')
+        .upload(storage_path, videoBuffer, { 
+          cacheControl: '3600', 
+          upsert: false,
+          contentType: 'video/mp4'
+        })
+
+      if (uploadErr) {
+        return NextResponse.json({ error: `Failed to upload video: ${uploadErr.message}` }, { status: 500 })
+      }
+
+      // Create signed URL
+      const { data: signedUrlData } = await supabase.storage
+        .from('dreamcut')
+        .createSignedUrl(storage_path, 86400) // 24 hours
+
+      if (!signedUrlData?.signedUrl) {
+        return NextResponse.json({ error: 'Failed to create signed URL' }, { status: 500 })
+      }
+
+      // Insert to database
+      const { data: inserted, error: insertErr } = await supabase
+        .from('talking_avatars')
+        .insert([{
+          user_id: user.id,
+          title,
+          mode: 'multi',
+          aspect_ratio: '16:9', // FIXED for REFERENCE_2_VIDEO
+          resolution: '720p',
+          fps: 25,
+          max_duration: 8, // Default 8 seconds for Multi Avatar
+          facial_expressions: true,
+          gestures: true,
+          eye_contact: true,
+          head_movement: true,
+          kie_task_id: taskId,
+          generated_video_url: signedUrlData.signedUrl,
+          storage_path,
+          status: 'completed',
+          metadata: {
+            mode: 'multi',
+            enhanced_prompt: enhancedPrompt,
+            scene_character_count: sceneCharacterCount,
+            image_references: imageUrls.length,
+            scene_slots: processedSceneSlots,
+            scene_description: sceneDescription,
+            scene_characters: sceneCharacters,
+            scene_dialog_lines: sceneDialogLines,
+            scene_environment: sceneEnvironment,
+            custom_scene_environment: customSceneEnvironment,
+            scene_background: sceneBackground,
+            custom_scene_background: customSceneBackground,
+            scene_lighting: sceneLighting,
+            custom_scene_lighting: customSceneLighting,
+            scene_background_music: sceneBackgroundMusic,
+            custom_scene_background_music: customSceneBackgroundMusic,
+            scene_sound_effects: sceneSoundEffects,
+            custom_scene_sound_effects: customSceneSoundEffects
+          }
+        }])
+        .select()
+
+      if (insertErr) {
+        console.error('❌ Multi Avatar database insertion failed:', insertErr)
+        console.log('📁 Video file preserved in storage for user access:', storage_path)
+        
+        return NextResponse.json({ 
+          error: 'Failed to save talking avatar', 
+          details: insertErr.message 
+        }, { status: 500 })
+      }
+
+      // Add to library
+      await supabase
+        .from('library_items')
+        .insert({
+          user_id: user.id,
+          content_type: 'talking_avatars',
+          content_id: inserted?.[0]?.id,
+          date_added_to_library: new Date().toISOString()
+        })
+
+      // Clean up temporary images
+      if (tempImagePaths.length > 0) {
+        await cleanupTempImages(tempImagePaths)
+      }
+
+      return NextResponse.json({ 
+        message: 'Multi-avatar video generated successfully',
+        talkingAvatar: inserted?.[0],
+        taskId
+      }, { status: 201 })
     }
 
     // Call fal.ai veed/fabric-1.0 (resolution forced to 720p)
