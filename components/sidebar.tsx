@@ -604,22 +604,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
                 <Droplets className="h-4 w-4 shrink-0" />
                 <span>Add Watermark</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 text-xs ${
-                  selectedSection === 'add-watermark'
-                    ? 'bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-700 text-white hover:from-[#57e6f9] hover:via-blue-500 hover:to-purple-700'
-                    : 'text-sidebar-foreground hover:bg-accent'
-                }`}
-                onClick={() => {
-                  setSelectedSection('add-watermark')
-                  onMobileClose()
-                }}
-                title="Create new watermark project"
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
             </div>
             {/* <div className="flex items-center gap-1">
               <Button

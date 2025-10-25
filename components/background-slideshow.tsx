@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { GradientBackground } from "@/components/gradient-background"
 import InfiniteGallery from "@/components/infinite-gallery"
 import { BackgroundVideo } from "@/components/background-video"
+import { GradientBackground2 } from "./gradient-background2"
 
 const TOTAL_BACKGROUNDS = 3
 
@@ -95,12 +96,7 @@ export function BackgroundSlideshow() {
         }`}
         style={{ pointerEvents: activeBackground === 2 ? "auto" : "none" }}
       >
-        <BackgroundVideo
-          src="/alt.mp4"
-          className="h-full w-full"
-          videoClassName="h-full w-full object-cover"
-          fallback={<div className="flex h-full w-full items-center justify-center text-white">Video unavailable</div>}
-        />
+        <GradientBackground2 />
       </div>
     </div>
   )

@@ -126,10 +126,10 @@ export function SubtitleInterface({ onClose, projectTitle, emptyState }: Subtitl
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
             Subtitle Projects
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Manage your generated subtitle videos
           </p>
         </div>
@@ -144,10 +144,10 @@ export function SubtitleInterface({ onClose, projectTitle, emptyState }: Subtitl
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 blur-2xl opacity-30 animate-pulse"></div>
                 <FileText className="relative h-24 w-24 text-transparent bg-gradient-to-r from-yellow-500 via-amber-600 to-orange-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
               </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+              <h3 className="text-sm font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
                 No Subtitle Projects Yet
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Generate your first subtitle project to see it here.
               </p>
             </div>
@@ -159,15 +159,11 @@ export function SubtitleInterface({ onClose, projectTitle, emptyState }: Subtitl
             <Card key={project.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{project.title}</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground mt-1">
+                  <div className="flex-1 min-w-0 text-sm">
+                    <CardTitle className="truncate">{project.title}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground mt-1">
                       {project.description}
                     </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    {getStatusIcon(project.status)}
-                    {getStatusBadge(project.status)}
                   </div>
                 </div>
               </CardHeader>
@@ -189,21 +185,21 @@ export function SubtitleInterface({ onClose, projectTitle, emptyState }: Subtitl
 
                 {/* Project Details */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs">
                     <Calendar className="h-4 w-4" />
                     <span>{formatDate(project.created_at)}</span>
                   </div>
                   
                   {project.emoji_enrichment && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span className="text-lg">🎯</span>
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                      <span className="text-xs">🎯</span>
                       <span>Emoji enrichment enabled</span>
                     </div>
                   )}
                   
                   {project.keyword_emphasis && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span className="text-lg">💡</span>
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                      <span className="text-xs">💡</span>
                       <span>Keyword emphasis enabled</span>
                     </div>
                   )}
