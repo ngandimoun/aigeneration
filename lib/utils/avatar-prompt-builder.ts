@@ -25,6 +25,13 @@ export interface AvatarPromptParams {
   ethnicity?: string | null
   emotionBias?: number
   
+  // Frame & Composition
+  avatarComposition?: string | null
+  poseStyle?: string | null
+  cameraView?: string | null
+  eyeDirection?: string | null
+  headOrientation?: string | null
+  
   // Physical Traits
   bodyType?: string | null
   skinTone?: string | null
@@ -79,6 +86,11 @@ export function buildAvatarPrompt(params: AvatarPromptParams): string {
     genderExpression,
     ethnicity,
     emotionBias,
+    avatarComposition,
+    poseStyle,
+    cameraView,
+    eyeDirection,
+    headOrientation,
     bodyType,
     skinTone,
     hairStyle,
@@ -153,6 +165,40 @@ export function buildAvatarPrompt(params: AvatarPromptParams): string {
   
   if (identityParts.length > 0) {
     promptParts.push(identityParts.join(', '))
+  }
+  
+  // Frame & Composition
+  const compositionParts: string[] = []
+  
+  if (shouldInclude(avatarComposition)) {
+    compositionParts.push(`${avatarComposition} composition`)
+  }
+  
+  if (shouldInclude(poseStyle)) {
+    compositionParts.push(`${poseStyle} pose`)
+  }
+  
+  if (shouldInclude(cameraView)) {
+    compositionParts.push(`${cameraView} camera view`)
+  }
+  
+  if (shouldInclude(eyeDirection)) {
+    // Convert to natural prompt
+    const eyePrompt = eyeDirection === "Look at Camera" ? "looking directly at viewer" :
+                      eyeDirection === "Look Left" ? "looking to the left" :
+                      eyeDirection === "Look Right" ? "looking to the right" :
+                      eyeDirection === "Look Up" ? "eyes looking upward" :
+                      eyeDirection === "Look Down" ? "eyes looking downward" :
+                      eyeDirection === "Look Away" ? "gaze turned away naturally" : eyeDirection
+    compositionParts.push(eyePrompt)
+  }
+  
+  if (shouldInclude(headOrientation)) {
+    compositionParts.push(`head ${headOrientation.toLowerCase()}`)
+  }
+  
+  if (compositionParts.length > 0) {
+    promptParts.push(compositionParts.join(', '))
   }
   
   // Physical Traits

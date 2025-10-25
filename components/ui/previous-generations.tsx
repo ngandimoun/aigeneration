@@ -214,40 +214,59 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
   }
 
   // Handle video playback
-  const handlePlayVideo = (video: any) => {
+  const handlePlayVideo = async (video: any) => {
     console.log('🎬 [VIDEO] Attempting to play video:', video.id)
     
-    const videoUrl = video.generated_video_url
-    if (!videoUrl) {
-      console.error('❌ [VIDEO] No video URL available')
+    try {
+      // Fetch fresh signed URL from API
+      const response = await fetch('/api/talking-avatars')
+      if (!response.ok) {
+        throw new Error('Failed to fetch video data')
+      }
+      
+      const data = await response.json()
+      const freshVideo = data.talkingAvatars?.find((v: any) => v.id === video.id)
+      
+      if (!freshVideo?.generated_video_url) {
+        throw new Error('Video URL not available')
+      }
+      
+      // Open with fresh URL
+      window.open(freshVideo.generated_video_url, '_blank')
+      
+      toast({
+        title: "Opening video",
+        description: `Playing ${video.title || 'talking avatar'}...`
+      })
+    } catch (error) {
+      console.error('❌ [VIDEO] Playback failed:', error)
       toast({
         title: "Playback failed",
-        description: "Video file not available",
+        description: "Unable to play video. Please try again.",
         variant: "destructive"
       })
-      return
     }
-    
-    // Open video in a new tab/window for playback
-    window.open(videoUrl, '_blank')
-    
-    toast({
-      title: "Opening video",
-      description: `Playing ${video.title || 'talking avatar'}...`
-    })
   }
 
   // Handle video download
   const handleDownloadVideo = async (video: any) => {
     try {
-      const videoUrl = video.generated_video_url
-      if (!videoUrl) {
-        throw new Error('No video URL available')
+      // Fetch fresh signed URL from API
+      const response = await fetch('/api/talking-avatars')
+      if (!response.ok) {
+        throw new Error('Failed to fetch video data')
       }
       
-      // Create download link
+      const data = await response.json()
+      const freshVideo = data.talkingAvatars?.find((v: any) => v.id === video.id)
+      
+      if (!freshVideo?.generated_video_url) {
+        throw new Error('Video URL not available')
+      }
+      
+      // Download with fresh URL
       const link = document.createElement('a')
-      link.href = videoUrl
+      link.href = freshVideo.generated_video_url
       link.download = `${video.title || 'talking-avatar'}.mp4`
       document.body.appendChild(link)
       link.click()
@@ -258,10 +277,10 @@ export function PreviousGenerations({ contentType, userId, className = "" }: Pre
         description: `Downloading ${video.title || 'talking avatar'}...`
       })
     } catch (error) {
-      console.error('Video download failed:', error)
+      console.error('❌ [VIDEO] Download failed:', error)
       toast({
         title: "Download failed",
-        description: "Could not download the video file",
+        description: "Unable to download video. Please try again.",
         variant: "destructive"
       })
     }

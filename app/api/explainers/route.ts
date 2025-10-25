@@ -62,7 +62,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch explainers' }, { status: 500 })
     }
 
-    return NextResponse.json({ explainers }, { 
+    // Generate fresh signed URLs for completed explainers
+    const explainersWithFreshUrls = await Promise.all(
+      (explainers || []).map(async (explainer) => {
+        if (explainer.status === 'completed') {
+          try {
+            // Try to get storage_path from metadata or construct it
+            let storagePath = explainer.metadata?.storage_path
+            
+            if (!storagePath) {
+              // Construct storage path following the pattern: renders/explainers/{user_id}/{id}.mp4
+              storagePath = `renders/explainers/${user.id}/${explainer.id}.mp4`
+            }
+            
+            const { data: signedUrl } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hours
+            
+            if (signedUrl?.signedUrl) {
+              return {
+                ...explainer,
+                content: {
+                  ...explainer.content,
+                  video_url: signedUrl.signedUrl
+                }
+              }
+            }
+          } catch (urlError) {
+            console.error('Error generating signed URL for explainer:', explainer.id, urlError)
+          }
+        }
+        return explainer
+      })
+    )
+
+    return NextResponse.json({ explainers: explainersWithFreshUrls }, { 
       status: 200,
       headers: {
         'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',

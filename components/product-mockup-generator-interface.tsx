@@ -243,6 +243,13 @@ export function ProductMockupGeneratorInterface({
     platform: false
   })
 
+  // Helper function for avatar image URL
+  const getAvatarImageUrl = (avatar: AvailableAvatar): string | null => {
+    return avatar.generated_images?.[0] || 
+           avatar.image || 
+           null
+  }
+
   // Convert storage paths to signed URLs when generatedImages change
   useEffect(() => {
     if (generatedImages.length > 0) {
@@ -2506,6 +2513,45 @@ export function ProductMockupGeneratorInterface({
                   </Select>
                 )}
               </div>
+
+              {/* Avatar Preview */}
+              {selectedAvatarId && !useBasicAvatar && (() => {
+                const selectedAvatar = availableAvatars.find(a => a.id === selectedAvatarId)
+                if (!selectedAvatar) return null
+                
+                const avatarImageUrl = getAvatarImageUrl(selectedAvatar)
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {avatarImageUrl ? (
+                        <img 
+                          src={avatarImageUrl} 
+                          alt={selectedAvatar.persona_name || selectedAvatar.title}
+                          className="w-12 h-12 object-cover rounded-lg border border-border"
+                          onError={(e) => {
+                            console.error('🎭 Avatar image failed to load:', avatarImageUrl)
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                          <User className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-primary text-sm">
+                          {selectedAvatar.persona_name || selectedAvatar.title}
+                        </p>
+                        {selectedAvatar.description && (
+                          <p className="text-xs text-muted-foreground">
+                            {selectedAvatar.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Basic Avatar Customization */}
               {useBasicAvatar && (

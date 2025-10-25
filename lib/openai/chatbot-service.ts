@@ -16,8 +16,8 @@ const openai = new OpenAI({
 export interface ChatbotServiceConfig {
   model?: string
   maxTokens?: number
-  temperature?: number
-  stream?: boolean
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
+  verbosity?: 'low' | 'medium' | 'high'
 }
 
 export interface SendMessageParams {
@@ -46,9 +46,10 @@ export class ChatbotService {
 
   constructor(config: ChatbotServiceConfig = {}) {
     this.config = {
-      model: 'gpt-5-mini-2025-08-07',
-      maxTokens: 2000,
-      stream: true,
+      model: 'gpt-5-mini-2025-08-07', // KEEP EXISTING - do not change
+      maxTokens: 1500, // Increased for better responses
+      reasoningEffort: 'minimal', // Fast responses for chat
+      verbosity: 'low', // Concise responses
       ...config
     }
   }
@@ -66,7 +67,7 @@ export class ChatbotService {
       // Add system prompt with current section context
       messages.push({
         role: 'system',
-        content: generateSystemPrompt(currentSection)
+        content: generateSystemPrompt(currentSection, (imageFiles && imageFiles.length > 0) || (imageUrls && imageUrls.length > 0))
       })
 
       // Add conversation history (last 10 messages to stay within token limits)
@@ -144,23 +145,30 @@ export class ChatbotService {
         content: currentContent.length === 1 ? message : currentContent
       })
 
-      // Make API call
+      // Make API call with GPT-5 specific parameters
       const response = await openai.chat.completions.create({
         model: this.config.model!,
         messages,
         max_completion_tokens: this.config.maxTokens,
-        stream: false // We'll handle streaming in the API route
+        stream: false, // Explicitly set to false for non-streaming
+        reasoning_effort: this.config.reasoningEffort,
+        verbosity: this.config.verbosity
       })
+
+      // Properly handle response with null checks
+      if (!response || !response.choices || response.choices.length === 0) {
+        throw new Error('No response from OpenAI')
+      }
 
       const assistantMessage = response.choices[0]?.message?.content
 
       if (!assistantMessage) {
-        throw new Error('No response from OpenAI')
+        throw new Error('No response content from OpenAI')
       }
 
       return {
         success: true,
-        message: assistantMessage,
+        message: this.formatResponse(assistantMessage),
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
@@ -170,9 +178,29 @@ export class ChatbotService {
 
     } catch (error) {
       console.error('Chatbot service error:', error)
+      
+      // Enhanced error handling for GPT-5 specific issues
+      let errorMessage = 'Failed to get response from OpenAI'
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+        
+        // Handle specific GPT-5 parameter errors
+        if (error.message.includes('temperature') || error.message.includes('top_p')) {
+          errorMessage = 'GPT-5 model configuration error. Please contact support.'
+        } else if (error.message.includes('reasoning_effort') || error.message.includes('verbosity')) {
+          errorMessage = 'GPT-5 parameter configuration error. Please contact support.'
+        }
+      }
+      
+      // Log actual OpenAI error details for debugging
+      if (error && typeof error === 'object' && 'response' in error) {
+        console.error('OpenAI API error details:', (error as any).response?.data)
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: errorMessage
       }
     }
   }
@@ -259,12 +287,14 @@ export class ChatbotService {
         content: currentContent.length === 1 ? message : currentContent
       })
 
-      // Stream response
+      // Stream response with GPT-5 specific parameters
       const stream = await openai.chat.completions.create({
         model: this.config.model!,
         messages,
         max_completion_tokens: this.config.maxTokens,
-        stream: true
+        stream: true, // Explicitly set to true for streaming
+        reasoning_effort: this.config.reasoningEffort,
+        verbosity: this.config.verbosity
       })
 
       for await (const chunk of stream) {
@@ -276,7 +306,22 @@ export class ChatbotService {
 
     } catch (error) {
       console.error('Streaming error:', error)
-      yield `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
+      
+      // Enhanced error handling for streaming
+      let errorMessage = 'Unknown error occurred'
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+        
+        // Handle specific GPT-5 parameter errors
+        if (error.message.includes('temperature') || error.message.includes('top_p')) {
+          errorMessage = 'GPT-5 model configuration error. Please contact support.'
+        } else if (error.message.includes('reasoning_effort') || error.message.includes('verbosity')) {
+          errorMessage = 'GPT-5 parameter configuration error. Please contact support.'
+        }
+      }
+      
+      yield `Error: ${errorMessage}`
     }
   }
 
@@ -360,7 +405,10 @@ Provide detailed analysis and 2-3 different prompt variations.`
       const response = await openai.chat.completions.create({
         model: this.config.model!,
         messages,
-        max_completion_tokens: this.config.maxTokens
+        max_completion_tokens: this.config.maxTokens,
+        stream: false, // Explicitly set to false for non-streaming
+        reasoning_effort: this.config.reasoningEffort,
+        verbosity: this.config.verbosity
       })
 
       const analysis = response.choices[0]?.message?.content
@@ -383,27 +431,63 @@ Provide detailed analysis and 2-3 different prompt variations.`
 
     } catch (error) {
       console.error('Image analysis error:', error)
+      
+      // Enhanced error handling for image analysis
+      let errorMessage = 'Failed to analyze image'
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+        
+        // Handle specific GPT-5 parameter errors
+        if (error.message.includes('temperature') || error.message.includes('top_p')) {
+          errorMessage = 'GPT-5 model configuration error. Please contact support.'
+        } else if (error.message.includes('reasoning_effort') || error.message.includes('verbosity')) {
+          errorMessage = 'GPT-5 parameter configuration error. Please contact support.'
+        }
+      }
+      
+      // Log actual OpenAI error details for debugging
+      if (error && typeof error === 'object' && 'response' in error) {
+        console.error('OpenAI API error details:', (error as any).response?.data)
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to analyze image'
+        error: errorMessage
       }
     }
   }
 
   /**
-   * Convert file to base64 string
+   * Convert file to base64 string (Node.js compatible)
    */
   private async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        const base64 = result.split(',')[1]
-        resolve(base64)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
+    try {
+      // Convert File to Buffer in Node.js environment
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      return buffer.toString('base64')
+    } catch (error) {
+      console.error('Error converting file to base64:', error)
+      throw new Error('Failed to convert image to base64')
+    }
+  }
+
+  /**
+   * Format and clean up GPT responses for better readability
+   */
+  private formatResponse(rawResponse: string): string {
+    if (!rawResponse || rawResponse.trim().length === 0) {
+      return rawResponse
+    }
+    
+    // Only do basic cleanup, don't be too aggressive
+    let formatted = rawResponse
+      .replace(/\n{3,}/g, '\n\n') // Max 2 line breaks
+      .trim()
+    
+    // Don't truncate responses - let natural conversation flow
+    return formatted
   }
 
   /**

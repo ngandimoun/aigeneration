@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useChatbot } from './chatbot-context'
 import { MessageBubble } from './message-bubble'
+import { LibraryAssetPicker } from './library-asset-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 // import { ScrollArea } from '@/components/ui/scroll-area'
@@ -34,8 +35,7 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [selectedImageUrls, setSelectedImageUrls] = useState<string[]>([])
   const [showImagePicker, setShowImagePicker] = useState(false)
-  const [showLibraryPicker, setShowLibraryPicker] = useState(false)
-  const [libraryImages, setLibraryImages] = useState<any[]>([])
+  const [showLibraryModal, setShowLibraryModal] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -63,7 +63,7 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
     setSelectedImages([])
     setSelectedImageUrls([])
     setShowImagePicker(false)
-    setShowLibraryPicker(false)
+    setShowLibraryModal(false)
 
     await sendMessage(message, selectedImages, selectedImageUrls)
   }
@@ -120,32 +120,15 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
     setSelectedImageUrls(prev => prev.filter((_, i) => i !== index))
   }
 
-  const loadLibraryImages = async () => {
-    try {
-      const response = await fetch('/api/library?limit=50&category=visuals')
-      const data = await response.json()
-      
-      if (data.success && data.libraryItems) {
-        setLibraryImages(data.libraryItems.filter((item: any) => 
-          item.content_type === 'visuals' && 
-          (item.url?.includes('.jpg') || item.url?.includes('.png') || item.url?.includes('.webp'))
-        ))
-      }
-    } catch (error) {
-      console.error('Error loading library images:', error)
-      toast.error('Failed to load library images')
-    }
-  }
-
-  const selectLibraryImage = (imageUrl: string) => {
-    const totalImages = selectedImages.length + selectedImageUrls.length
-    if (totalImages >= 2) {
+  const handleLibraryAssetSelect = (assets: any[]) => {
+    const totalImages = selectedImages.length + selectedImageUrls.length + assets.length
+    if (totalImages > 2) {
       toast.error('Maximum 2 images allowed')
       return
     }
 
-    setSelectedImageUrls(prev => [...prev, imageUrl])
-    setShowLibraryPicker(false)
+    const assetUrls = assets.map(asset => asset.imageUrl)
+    setSelectedImageUrls(prev => [...prev, ...assetUrls])
   }
 
   return (
@@ -271,12 +254,7 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
                 size="sm"
                 variant="ghost"
                 className="h-6 w-6 p-0"
-                onClick={() => {
-                  setShowLibraryPicker(!showLibraryPicker)
-                  if (!showLibraryPicker) {
-                    loadLibraryImages()
-                  }
-                }}
+                onClick={() => setShowLibraryModal(true)}
                 title="Select from library"
               >
                 <Library className="h-3 w-3" />
@@ -306,37 +284,13 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
           </Button>
         </div>
 
-        {/* Library image picker */}
-        {showLibraryPicker && (
-          <div className="mt-2 p-3 border border-border rounded-lg bg-muted/50">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Select from Library</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowLibraryPicker(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
-              {libraryImages.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => selectLibraryImage(item.url)}
-                  className="relative group"
-                >
-                  <img
-                    src={item.url}
-                    alt="Library image"
-                    className="w-full h-16 object-cover rounded border border-border hover:border-primary transition-colors"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Library Asset Picker Modal */}
+        <LibraryAssetPicker
+          isOpen={showLibraryModal}
+          onClose={() => setShowLibraryModal(false)}
+          onSelectAssets={handleLibraryAssetSelect}
+          maxSelection={2}
+        />
       </div>
 
       {/* Hidden file input */}

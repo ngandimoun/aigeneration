@@ -54,8 +54,30 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { PreviousGenerations } from "@/components/ui/previous-generations"
 
+// Constants moved outside component to prevent infinite re-renders
+const motionTypes = [
+  { value: "smooth", label: "Smooth" },
+  { value: "dynamic", label: "Dynamic" },
+  { value: "subtle", label: "Subtle" },
+  { value: "dramatic", label: "Dramatic" }
+]
+
+const styles = [
+  { value: "cinematic", label: "Cinematic" },
+  { value: "modern", label: "Modern" },
+  { value: "vintage", label: "Vintage" },
+  { value: "minimalist", label: "Minimalist" }
+]
+
+const aspectRatios = [
+  { value: "16:9", label: "16:9 (Widescreen)" },
+  { value: "9:16", label: "9:16 (Vertical)" },
+  { value: "1:1", label: "1:1 (Square)" },
+  { value: "4:3", label: "4:3 (Standard)" }
+]
+
 interface DiverseMotionSingleInterfaceProps {
-  onClose: () => void
+onClose: () => void
   projectTitle: string
 }
 
@@ -138,27 +160,6 @@ export function DiverseMotionSingleInterface({
     console.log(`📚 Total library assets loaded: ${assets.length}`)
     setLibraryAssets(assets)
   }, [avatarsData, productMockupsData, chartsData])
-
-  const motionTypes = [
-    { value: "smooth", label: "Smooth" },
-    { value: "dynamic", label: "Dynamic" },
-    { value: "subtle", label: "Subtle" },
-    { value: "dramatic", label: "Dramatic" }
-  ]
-
-  const styles = [
-    { value: "cinematic", label: "Cinematic" },
-    { value: "modern", label: "Modern" },
-    { value: "vintage", label: "Vintage" },
-    { value: "minimalist", label: "Minimalist" }
-  ]
-
-  const aspectRatios = [
-    { value: "16:9", label: "16:9 (Widescreen)" },
-    { value: "9:16", label: "9:16 (Vertical)" },
-    { value: "1:1", label: "1:1 (Square)" },
-    { value: "4:3", label: "4:3 (Standard)" }
-  ]
 
   const handleAssetUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -298,25 +299,26 @@ export function DiverseMotionSingleInterface({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Layers className="h-5 w-5 text-white" />
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <Layers className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Diverse Motion - Single Asset</h2>
+                <p className="text-sm text-muted-foreground">{projectTitle}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold">Diverse Motion - Single Asset</h2>
-              <p className="text-sm text-muted-foreground">{projectTitle}</p>
-            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
 
-        <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6">
           {/* Title Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Title</label>
@@ -632,13 +634,7 @@ export function DiverseMotionSingleInterface({
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Previous Generations */}
-      <PreviousGenerations 
-        contentType="diverse_motion_single" 
-        userId={user?.id || ''} 
-        className="mt-8" 
-      />
-    </div>
+      </div>
+    </>
   )
 }

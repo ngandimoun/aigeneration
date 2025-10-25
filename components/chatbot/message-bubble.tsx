@@ -29,13 +29,49 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   const formatContent = (content: string) => {
-    // Simple markdown-like formatting for code blocks and prompts
-    const codeBlockRegex = /```([\s\S]*?)```/g
-    const inlineCodeRegex = /`([^`]+)`/g
-    
+    // Enhanced markdown-like formatting with comprehensive color accents for better readability
     let formatted = content
-      .replace(codeBlockRegex, '<pre class="bg-muted p-3 rounded-md overflow-x-auto my-2"><code>$1</code></pre>')
-      .replace(inlineCodeRegex, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
+    
+    // Numbered items with titles (e.g., "1) Brand/team hero image (static)")
+    formatted = formatted.replace(/^(\d+)\)\s+([^(\n]+)(\([^)]+\))?/gim, (match, num, title, tag) => {
+      const coloredTag = tag ? `<span class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded ml-2">${tag}</span>` : ''
+      return `<div class="mb-3 mt-2"><span class="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">${num})</span> <strong class="font-bold text-blue-600 dark:text-blue-400">${title.trim()}</strong>${coloredTag}</div>`
+    })
+    
+    // Section labels ending with colon (e.g., "Subjects & clothing:", "Environment:")
+    formatted = formatted.replace(/^-\s+([^:]+):/gim, '<div class="mb-2 mt-3"><strong class="font-bold text-purple-600 dark:text-purple-400">• $1:</strong></div>')
+    
+    // Hex color codes with visual badge
+    formatted = formatted.replace(/#([0-9A-F]{6})/gi, (match, hex) => {
+      return `<span class="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded font-mono text-sm"><span class="w-3 h-3 rounded border border-gray-300 dark:border-gray-600" style="background-color: ${match}"></span><code class="text-foreground font-semibold">${match}</code></span>`
+    })
+    
+    // Headers with gradient colors (## and ###)
+    formatted = formatted
+      .replace(/^### (.*$)/gim, '<h3 class="text-base font-semibold mt-4 mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold mt-4 mb-3 bg-gradient-to-r from-[#57e6f9] via-blue-500 to-purple-600 bg-clip-text text-transparent">$1</h2>')
+    
+    // Bold text with color accent
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-blue-600 dark:text-blue-400">$1</strong>')
+    
+    // Italic text
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em class="italic text-purple-600 dark:text-purple-400">$1</em>')
+    
+    // Code blocks with enhanced styling
+    const codeBlockRegex = /```([\s\S]*?)```/g
+    formatted = formatted.replace(codeBlockRegex, '<pre class="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-l-4 border-blue-500 p-4 rounded-lg overflow-x-auto my-3 text-sm font-mono shadow-sm"><code class="text-foreground">$1</code></pre>')
+    
+    // Inline code with accent background
+    const inlineCodeRegex = /`([^`]+)`/g
+    formatted = formatted.replace(inlineCodeRegex, '<code class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-mono text-sm font-semibold">$1</code>')
+    
+    // Bullet points with colored markers
+    formatted = formatted.replace(/^• (.*$)/gim, '<li class="ml-4 mb-1.5 flex items-start"><span class="text-blue-500 mr-2">•</span><span>$1</span></li>')
+    formatted = formatted.replace(/^- (.*$)/gim, '<li class="ml-4 mb-1.5 flex items-start"><span class="text-purple-500 mr-2">•</span><span>$1</span></li>')
+    
+    // Line breaks
+    formatted = formatted.replace(/\n\n/g, '</p><p class="mb-2">')
+    formatted = '<p class="mb-2">' + formatted + '</p>'
     
     return formatted
   }
@@ -82,11 +118,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
           {/* Message content */}
           <div 
-            className={`text-sm leading-relaxed ${
+            className={`text-sm leading-7 ${
               isUser ? 'text-white' : 'text-foreground'
             }`}
+            style={{ lineHeight: '1.7' }}
             dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
           />
+
+          {/* Typing cursor for streaming messages */}
+          {isAssistant && message.isStreaming && (
+            <span className="inline-block w-2 h-4 bg-current ml-1 animate-pulse" />
+          )}
 
           {/* Copy button for assistant messages with prompts */}
           {isAssistant && (

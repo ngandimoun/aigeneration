@@ -55,8 +55,31 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { PreviousGenerations } from "@/components/ui/previous-generations"
 
+// Constants moved outside component to prevent infinite re-renders
+const motionTypes = [
+  { value: "smooth", label: "Smooth" },
+  { value: "dynamic", label: "Dynamic" },
+  { value: "subtle", label: "Subtle" },
+  { value: "dramatic", label: "Dramatic" },
+  { value: "transition", label: "Transition" }
+]
+
+const styles = [
+  { value: "cinematic", label: "Cinematic" },
+  { value: "modern", label: "Modern" },
+  { value: "vintage", label: "Vintage" },
+  { value: "minimalist", label: "Minimalist" }
+]
+
+const aspectRatios = [
+  { value: "16:9", label: "16:9 (Widescreen)" },
+  { value: "9:16", label: "9:16 (Vertical)" },
+  { value: "1:1", label: "1:1 (Square)" },
+  { value: "4:3", label: "4:3 (Standard)" }
+]
+
 interface DiverseMotionDualInterfaceProps {
-  onClose: () => void
+onClose: () => void
   projectTitle: string
 }
 
@@ -144,28 +167,6 @@ export function DiverseMotionDualInterface({
     console.log(`📚 Total library assets loaded: ${assets.length}`)
     setLibraryAssets(assets)
   }, [avatarsData, productMockupsData, chartsData])
-
-  const motionTypes = [
-    { value: "smooth", label: "Smooth" },
-    { value: "dynamic", label: "Dynamic" },
-    { value: "subtle", label: "Subtle" },
-    { value: "dramatic", label: "Dramatic" },
-    { value: "transition", label: "Transition" }
-  ]
-
-  const styles = [
-    { value: "cinematic", label: "Cinematic" },
-    { value: "modern", label: "Modern" },
-    { value: "vintage", label: "Vintage" },
-    { value: "minimalist", label: "Minimalist" }
-  ]
-
-  const aspectRatios = [
-    { value: "16:9", label: "16:9 (Widescreen)" },
-    { value: "9:16", label: "9:16 (Vertical)" },
-    { value: "1:1", label: "1:1 (Square)" },
-    { value: "4:3", label: "4:3 (Standard)" }
-  ]
 
   const handleAssetUpload = (assetNumber: 1 | 2, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -350,25 +351,26 @@ export function DiverseMotionDualInterface({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Layers className="h-5 w-5 text-white" />
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <Layers className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Diverse Motion - Dual Asset</h2>
+                <p className="text-sm text-muted-foreground">{projectTitle}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold">Diverse Motion - Dual Asset</h2>
-              <p className="text-sm text-muted-foreground">{projectTitle}</p>
-            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
 
-        <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6">
           {/* Title Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Title</label>
@@ -720,72 +722,66 @@ export function DiverseMotionDualInterface({
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Library Selection Modal */}
-      <Dialog open={showLibraryModal} onOpenChange={setShowLibraryModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Select Asset {libraryTargetAsset} from Library</DialogTitle>
-          </DialogHeader>
-          
-          {loadingLibraryAssets ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Loading your library assets...</p>
-              </div>
-            </div>
-          ) : libraryAssets.length === 0 ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-center">
-                <Library className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">No assets found in your library</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Generate some Avatars, Product Mockups, or Charts first
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-              {libraryAssets.map((asset) => (
-                <div
-                  key={asset.id}
-                  className="group cursor-pointer rounded-lg border border-muted-foreground/25 overflow-hidden hover:border-primary/50 transition-colors"
-                  onClick={() => handleLibraryAssetSelect(asset)}
-                >
-                  <div className="aspect-square relative">
-                    <img
-                      src={asset.image}
-                      alt={asset.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                  </div>
-                  <div className="p-3 space-y-2">
-                    <h4 className="text-sm font-medium truncate">{asset.title}</h4>
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs"
-                    >
-                      {asset.content_type === 'avatars_personas' && 'Avatar'}
-                      {asset.content_type === 'product_mockups' && 'Product'}
-                      {asset.content_type === 'charts_infographics' && 'Chart'}
-                    </Badge>
+          {/* Library Selection Modal */}
+          <Dialog open={showLibraryModal} onOpenChange={setShowLibraryModal}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Asset {libraryTargetAsset} from Library</DialogTitle>
+              </DialogHeader>
+              
+              {loadingLibraryAssets ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading your library assets...</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Previous Generations */}
-      <PreviousGenerations 
-        contentType="diverse_motion_dual" 
-        userId={user?.id || ''} 
-        className="mt-8" 
-      />
-    </div>
+              ) : libraryAssets.length === 0 ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <Library className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No assets found in your library</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Generate some Avatars, Product Mockups, or Charts first
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+                  {libraryAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="group cursor-pointer rounded-lg border border-muted-foreground/25 overflow-hidden hover:border-primary/50 transition-colors"
+                      onClick={() => handleLibraryAssetSelect(asset)}
+                    >
+                      <div className="aspect-square relative">
+                        <img
+                          src={asset.image}
+                          alt={asset.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      </div>
+                      <div className="p-3 space-y-2">
+                        <h4 className="text-sm font-medium truncate">{asset.title}</h4>
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs"
+                        >
+                          {asset.content_type === 'avatars_personas' && 'Avatar'}
+                          {asset.content_type === 'product_mockups' && 'Product'}
+                          {asset.content_type === 'charts_infographics' && 'Chart'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    </>
   )
 }

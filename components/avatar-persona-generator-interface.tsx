@@ -1300,6 +1300,58 @@ const OUTFIT_CATEGORIES = {
   "Bohemian/Artistic": { icon: "🎨", desc: "Artistic, free-spirited style" }
 }
 
+// Avatar Composition options
+const AVATAR_COMPOSITIONS = [
+  { value: "Full Body", label: "Full Body", icon: "🧍", desc: "Entire figure with full stance and background" },
+  { value: "Upper Body", label: "Upper Body / Half Body", icon: "👤", desc: "From waist or chest up, great for profile cards" },
+  { value: "Bust", label: "Bust / Shoulders Up", icon: "👔", desc: "Cropped portrait, artistic or cinematic style" },
+  { value: "Portrait", label: "Portrait / Face Only", icon: "👤", desc: "Headshot focusing on facial features" },
+  { value: "Action Pose", label: "Action Pose", icon: "🏃", desc: "Full-body dynamic shot with motion and energy" },
+  { value: "Stylized Headshot", label: "Stylized Headshot", icon: "🎭", desc: "Focused close-up emphasizing art style" },
+  { value: "Custom Frame", label: "Custom Frame", icon: "📐", desc: "Manual crop or body ratio selection" }
+]
+
+// Pose Style options
+const POSE_STYLES = [
+  { value: "Static", label: "Static", icon: "🧍", desc: "Neutral stance, simple posture, minimal movement" },
+  { value: "Dynamic", label: "Dynamic", icon: "⚡", desc: "Expressive and motion-rich poses with energy" },
+  { value: "Artistic", label: "Artistic", icon: "🎨", desc: "Stylized or exaggerated poses, cinematic" },
+  { value: "Casual", label: "Casual / Relaxed", icon: "😌", desc: "Friendly, informal, approachable posture" },
+  { value: "Power", label: "Power / Heroic", icon: "🦸", desc: "Confident, bold, dominant stance" },
+  { value: "Emotive", label: "Emotive", icon: "😊", desc: "Focuses on emotional gestures and expressions" },
+  { value: "Candid", label: "Candid / Natural", icon: "📸", desc: "Authentic and spontaneous, like a real photo" }
+]
+
+// Camera View options
+const CAMERA_VIEWS = [
+  { value: "Close-up", label: "Close-up", icon: "👁️", desc: "Head + shoulders, highlights facial features" },
+  { value: "Medium", label: "Medium", icon: "📏", desc: "Waist up, balanced facial detail and body language" },
+  { value: "Wide", label: "Wide / Full Shot", icon: "🖼️", desc: "Entire body visible, displays outfit and environment" },
+  { value: "Extreme Close-up", label: "Extreme Close-up", icon: "🔍", desc: "Face or eyes only, dramatic framing" },
+  { value: "Over-the-Shoulder", label: "Over-the-Shoulder", icon: "👀", desc: "Framed from behind, adds depth and narrative" },
+  { value: "Top-down", label: "Top-down / Isometric", icon: "📐", desc: "Overhead or angled perspective, strategic view" }
+]
+
+// Eye Direction options
+const EYE_DIRECTIONS = [
+  { value: "Look at Camera", label: "Look at Camera", icon: "👁️", desc: "Direct eye contact — engaging and conversational" },
+  { value: "Look Left", label: "Look Left", icon: "👈", desc: "Gaze slightly to the left — candid feel" },
+  { value: "Look Right", label: "Look Right", icon: "👉", desc: "Gaze slightly to the right — balanced look" },
+  { value: "Look Up", label: "Look Up", icon: "⬆️", desc: "Eyes directed upward — dreamy or thoughtful" },
+  { value: "Look Down", label: "Look Down", icon: "⬇️", desc: "Eyes directed downward — shy or introspective" },
+  { value: "Look Away", label: "Look Away (Random)", icon: "↗️", desc: "Randomized natural gaze for candid shots" }
+]
+
+// Head Orientation options
+const HEAD_ORIENTATIONS = [
+  { value: "Front", label: "Front / Neutral", icon: "⚪", desc: "Head facing forward — standard portrait" },
+  { value: "Turned Left", label: "Turned Left", icon: "↰", desc: "Head turned to the left — dynamic angle" },
+  { value: "Turned Right", label: "Turned Right", icon: "↱", desc: "Head turned to the right — expressive look" },
+  { value: "Tilted", label: "Tilted", icon: "⤴️", desc: "Head tilted slightly — playful or curious" },
+  { value: "Profile Left", label: "Profile Left", icon: "◀️", desc: "Side profile facing left — artistic" },
+  { value: "Profile Right", label: "Profile Right", icon: "▶️", desc: "Side profile facing right — artistic" }
+]
+
 // Accessories options
 const ACCESSORIES = [
   { value: "Glasses", label: "Glasses", icon: "👓" },
@@ -1453,6 +1505,13 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
   const [ageRange, setAgeRange] = useState<string>("")
   const [genderExpression, setGenderExpression] = useState<string>("")
   const [emotionBias, setEmotionBias] = useState<number[]>([50]) // 0-100 slider
+  
+  // Frame & Composition
+  const [avatarComposition, setAvatarComposition] = useState<string>("")
+  const [poseStyle, setPoseStyle] = useState<string>("")
+  const [cameraView, setCameraView] = useState<string>("")
+  const [eyeDirection, setEyeDirection] = useState<string>("")
+  const [headOrientation, setHeadOrientation] = useState<string>("")
   
   // Physical Traits & Outfits
   const [bodyType, setBodyType] = useState<string>("")
@@ -1794,6 +1853,11 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
       formData.append('genderExpression', genderExpression || '')
       formData.append('ethnicity', ethnicity || '')
       formData.append('emotionBias', emotionBias[0].toString())
+      formData.append('avatarComposition', avatarComposition || '')
+      formData.append('poseStyle', poseStyle || '')
+      formData.append('cameraView', cameraView || '')
+      formData.append('eyeDirection', eyeDirection || '')
+      formData.append('headOrientation', headOrientation || '')
       formData.append('bodyType', bodyType || '')
       formData.append('skinTone', skinTone || '')
       formData.append('hairStyle', hairStyle || '')
@@ -2500,6 +2564,221 @@ export function AvatarPersonaGeneratorInterface({ onClose, projectTitle }: Avata
             />
           )}
         </div>
+        </div>
+
+        {/* Frame & Composition Section */}
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-primary" />
+            <h4 className="text-xs font-semibold bg-gradient-to-r from-purple-500 via-pink-400 to-purple-500 bg-clip-text text-transparent">🎬 Frame & Composition</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* Avatar Composition */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs font-medium text-foreground">Avatar Composition</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Choose how much of the character you want to generate — from a full-body render to a close-up portrait.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select value={avatarComposition} onValueChange={setAvatarComposition}>
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
+                  <SelectValue placeholder="Select composition..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
+                  {AVATAR_COMPOSITIONS.map((comp) => (
+                    <SelectItem key={comp.value} value={comp.value}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{comp.icon}</span>
+                        <div>
+                          <div className="text-sm font-medium">{comp.label}</div>
+                          <div className="text-xs text-muted-foreground">{comp.desc}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Pose Style */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs font-medium text-foreground">Pose Style</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Control the posture, attitude, and energy of your avatar.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select value={poseStyle} onValueChange={setPoseStyle}>
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
+                  <SelectValue placeholder="Select pose style..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
+                  {POSE_STYLES.map((pose) => (
+                    <SelectItem key={pose.value} value={pose.value}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{pose.icon}</span>
+                        <div>
+                          <div className="text-sm font-medium">{pose.label}</div>
+                          <div className="text-xs text-muted-foreground">{pose.desc}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Camera View */}
+            <div className="space-y-1 sm:col-span-2">
+              <div className="flex items-center gap-1">
+                <label className="text-xs font-medium text-foreground">Camera View</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Choose the camera framing — how close or far the character appears in the shot.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select value={cameraView} onValueChange={setCameraView}>
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
+                  <SelectValue placeholder="Select camera view..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
+                  {CAMERA_VIEWS.map((view) => (
+                    <SelectItem key={view.value} value={view.value}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{view.icon}</span>
+                        <div>
+                          <div className="text-sm font-medium">{view.label}</div>
+                          <div className="text-xs text-muted-foreground">{view.desc}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Eye Direction */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs font-medium text-foreground">Eye Direction</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Control where the avatar is looking — adds personality and realism.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select value={eyeDirection} onValueChange={setEyeDirection}>
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
+                  <SelectValue placeholder="Select eye direction..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
+                  {EYE_DIRECTIONS.map((direction) => (
+                    <SelectItem key={direction.value} value={direction.value}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{direction.icon}</span>
+                        <div>
+                          <div className="text-sm font-medium">{direction.label}</div>
+                          <div className="text-xs text-muted-foreground">{direction.desc}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Head Orientation */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs font-medium text-foreground">Head Orientation</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Control head positioning and angle for dynamic expressions.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select value={headOrientation} onValueChange={setHeadOrientation}>
+                <SelectTrigger className="h-8 text-xs w-full min-w-[120px]">
+                  <SelectValue placeholder="Select head orientation..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🚫</span>
+                      <span className="text-sm">None</span>
+                    </div>
+                  </SelectItem>
+                  {HEAD_ORIENTATIONS.map((orientation) => (
+                    <SelectItem key={orientation.value} value={orientation.value}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{orientation.icon}</span>
+                        <div>
+                          <div className="text-sm font-medium">{orientation.label}</div>
+                          <div className="text-xs text-muted-foreground">{orientation.desc}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
         {/* Physical Traits & Outfits Section */}

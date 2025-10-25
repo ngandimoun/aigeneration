@@ -78,6 +78,9 @@ export function ChatbotProvider({ children, currentSection = '' }: ChatbotProvid
   const sendMessage = async (message: string, imageFiles?: File[], imageUrls?: string[]) => {
     if (!user || !conversationId) return
 
+    // Create placeholder for assistant response (declare outside try block for error handling)
+    const assistantId = crypto.randomUUID()
+
     try {
       setIsLoading(true)
 
@@ -94,6 +97,20 @@ export function ChatbotProvider({ children, currentSection = '' }: ChatbotProvid
 
       setMessages(prev => [...prev, userMessage])
 
+      // Create placeholder for assistant response
+      const placeholderMessage: ChatMessage = {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        imageUrls: [],
+        currentSection: currentSection,
+        isStreaming: true,
+        metadata: {},
+        createdAt: new Date().toISOString()
+      }
+
+      setMessages(prev => [...prev, placeholderMessage])
+
       // Prepare form data
       const formData = new FormData()
       formData.append('message', message)
@@ -108,42 +125,107 @@ export function ChatbotProvider({ children, currentSection = '' }: ChatbotProvid
         imageUrls.forEach(url => formData.append('imageUrls', url))
       }
 
-      // Send message to API
-      const response = await fetch('/api/chatbot/message', {
+      // Stream response from API
+      const response = await fetch('/api/chatbot/stream', {
         method: 'POST',
         body: formData
       })
 
-      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
-      if (data.success && data.message) {
-        // Add assistant response to UI
-        setMessages(prev => [...prev, data.message])
-      } else {
-        // Handle error
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No response body reader available')
+      }
+
+      const decoder = new TextDecoder()
+      let fullContent = ''
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              
+              if (data === '[DONE]') {
+                continue
+              }
+
+              try {
+                const parsed = JSON.parse(data)
+                
+                if (parsed.error) {
+                  // Handle streaming error
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { 
+                          ...msg, 
+                          content: `Sorry, I encountered an error: ${parsed.error}`,
+                          isStreaming: false 
+                        }
+                      : msg
+                  ))
+                  return
+                }
+
+                if (parsed.chunk) {
+                  fullContent += parsed.chunk
+                  
+                  // Update message content in real-time
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { ...msg, content: fullContent }
+                      : msg
+                  ))
+                }
+
+                if (parsed.isComplete) {
+                  // Mark streaming complete
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { 
+                          ...msg, 
+                          isStreaming: false,
+                          id: parsed.messageId || msg.id
+                        }
+                      : msg
+                  ))
+                }
+              } catch (parseError) {
+                console.error('Error parsing streaming data:', parseError)
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error)
+      
+      // Remove the placeholder message and add error message
+      setMessages(prev => {
+        const filtered = prev.filter(msg => msg.id !== assistantId)
         const errorMessage: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `Sorry, I encountered an error: ${data.error || 'Unknown error'}`,
+          content: 'Sorry, I encountered an error. Please try again.',
           imageUrls: [],
           currentSection: currentSection,
           metadata: {},
           createdAt: new Date().toISOString()
         }
-        setMessages(prev => [...prev, errorMessage])
-      }
-    } catch (error) {
-      console.error('Error sending message:', error)
-      const errorMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        imageUrls: [],
-        currentSection: currentSection,
-        metadata: {},
-        createdAt: new Date().toISOString()
-      }
-      setMessages(prev => [...prev, errorMessage])
+        return [...filtered, errorMessage]
+      })
     } finally {
       setIsLoading(false)
     }

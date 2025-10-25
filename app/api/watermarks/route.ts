@@ -27,7 +27,38 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch watermarks' }, { status: 500 })
     }
 
-    return NextResponse.json({ watermarks }, {
+    // Generate fresh signed URLs for completed watermarks
+    const watermarksWithFreshUrls = await Promise.all(
+      (watermarks || []).map(async (watermark) => {
+        if (watermark.status === 'completed') {
+          try {
+            // Try to get storage_path from metadata or construct it
+            let storagePath = watermark.metadata?.storage_path
+            
+            if (!storagePath) {
+              // Construct storage path following the pattern: renders/watermarks/{user_id}/{id}.mp4
+              storagePath = `renders/watermarks/${user.id}/${watermark.id}.mp4`
+            }
+            
+            const { data: signedUrl } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hours
+            
+            if (signedUrl?.signedUrl) {
+              return {
+                ...watermark,
+                output_video_url: signedUrl.signedUrl
+              }
+            }
+          } catch (urlError) {
+            console.error('Error generating signed URL for watermark:', watermark.id, urlError)
+          }
+        }
+        return watermark
+      })
+    )
+
+    return NextResponse.json({ watermarks: watermarksWithFreshUrls }, {
       headers: {
         'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
         'CDN-Cache-Control': 'max-age=30'

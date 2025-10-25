@@ -186,12 +186,11 @@ export async function POST(request: NextRequest) {
         video_url: validatedData.video_file_input,
         watermark_text: validatedData.watermark_text,
         font_size: validatedData.font_size,
-        output_video_url: signedVideo?.signedUrl,
+        output_video_url: null, // Will be populated by GET endpoint with fresh signed URL
         storage_path,
         status: 'completed',
         content: {
-          video_url: signedVideo?.signedUrl,
-          output_video_url: signedVideo?.signedUrl,
+          video_storage_path: storage_path,
           watermark_text: validatedData.watermark_text,
           font_size: validatedData.font_size,
           ...validatedData

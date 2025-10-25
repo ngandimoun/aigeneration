@@ -121,7 +121,41 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ subtitles }, { status: 200 });
+  // Generate fresh signed URLs for completed subtitles
+  const subtitlesWithFreshUrls = await Promise.all(
+    (subtitles || []).map(async (subtitle) => {
+      if (subtitle.status === 'completed') {
+        try {
+          // Try to get storage_path from metadata or construct it
+          let storagePath = subtitle.metadata?.storage_path
+          
+          if (!storagePath) {
+            // Construct storage path following the pattern: renders/subtitles/{user_id}/{id}.mp4
+            storagePath = `renders/subtitles/${user.id}/${subtitle.id}.mp4`
+          }
+          
+          const { data: signedUrl } = await supabase.storage
+            .from('dreamcut')
+            .createSignedUrl(storagePath, 86400) // 24 hours
+          
+          if (signedUrl?.signedUrl) {
+            return {
+              ...subtitle,
+              content: {
+                ...subtitle.content,
+                video_url: signedUrl.signedUrl
+              }
+            }
+          }
+        } catch (urlError) {
+          console.error('Error generating signed URL for subtitle:', subtitle.id, urlError)
+        }
+      }
+      return subtitle
+    })
+  )
+
+  return NextResponse.json({ subtitles: subtitlesWithFreshUrls }, { status: 200 });
 }
 
 // PUT endpoint to update a subtitle project

@@ -4,6 +4,7 @@ export interface ChatMessage {
   content: string
   imageUrls?: string[]
   currentSection?: string
+  isStreaming?: boolean
   metadata?: {
     promptType?: string
     assetType?: string
@@ -77,5 +78,13 @@ export interface PromptGenerationResponse {
   success: boolean
   prompt?: string
   suggestions?: string[]
+  error?: string
+}
+
+export interface StreamingResponse {
+  chunk: string
+  conversationId: string
+  isComplete: boolean
+  messageId?: string
   error?: string
 }

@@ -37,6 +37,13 @@ const avatarPersonaGenerationSchema = z.object({
   genderExpression: z.enum(['Female', 'Male', 'Non-binary', 'Custom']).or(z.literal('')).optional(),
   emotionBias: z.number().min(0).max(100).default(50),
   
+  // Frame & Composition
+  avatarComposition: z.string().optional(),
+  poseStyle: z.string().optional(),
+  cameraView: z.string().optional(),
+  eyeDirection: z.string().optional(),
+  headOrientation: z.string().optional(),
+  
   // Physical Traits & Outfits
   bodyType: z.enum(['Slim', 'Athletic', 'Curvy', 'Stocky', 'Custom']).or(z.literal('')).optional(),
   skinTone: z.string().optional(),
@@ -92,7 +99,9 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at,
         content,
-        metadata
+        metadata,
+        generated_images,
+        storage_paths
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -108,6 +117,28 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('❌ Error fetching avatars:', error)
       return NextResponse.json({ error: 'Failed to fetch avatars' }, { status: 500 })
+    }
+
+    // Regenerate expired signed URLs from storage_paths
+    if (avatars && avatars.length > 0) {
+      for (const avatar of avatars) {
+        if (avatar.storage_paths && avatar.storage_paths.length > 0) {
+          // Regenerate fresh signed URLs from storage paths
+          const freshUrls: string[] = []
+          for (const storagePath of avatar.storage_paths) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('dreamcut')
+              .createSignedUrl(storagePath, 86400) // 24 hour expiry
+            if (signedUrlData?.signedUrl) {
+              freshUrls.push(signedUrlData.signedUrl)
+            }
+          }
+          // Replace expired URLs with fresh ones
+          if (freshUrls.length > 0) {
+            avatar.generated_images = freshUrls
+          }
+        }
+      }
     }
 
     return NextResponse.json({ avatars }, { status: 200 })
@@ -147,6 +178,11 @@ export async function POST(request: NextRequest) {
     const genderExpression = formData.get('genderExpression')?.toString() || null
     const ethnicity = formData.get('ethnicity')?.toString() || null
     const emotionBias = parseInt(formData.get('emotionBias')?.toString() || '50')
+    const avatarComposition = formData.get('avatarComposition')?.toString() || null
+    const poseStyle = formData.get('poseStyle')?.toString() || null
+    const cameraView = formData.get('cameraView')?.toString() || null
+    const eyeDirection = formData.get('eyeDirection')?.toString() || null
+    const headOrientation = formData.get('headOrientation')?.toString() || null
     const bodyType = formData.get('bodyType')?.toString() || null
     const skinTone = formData.get('skinTone')?.toString() || null
     const hairStyle = formData.get('hairStyle')?.toString() || null
@@ -286,6 +322,15 @@ export async function POST(request: NextRequest) {
         emotionBias
       },
       
+      // Frame & Composition
+      frameComposition: {
+        avatarComposition,
+        poseStyle,
+        cameraView,
+        eyeDirection,
+        headOrientation
+      },
+      
       // Physical Traits
       physicalTraits: {
         bodyType,
@@ -326,6 +371,11 @@ export async function POST(request: NextRequest) {
       genderExpression,
       ethnicity,
       emotionBias,
+      avatarComposition,
+      poseStyle,
+      cameraView,
+      eyeDirection,
+      headOrientation,
       bodyType,
       skinTone,
       hairStyle,
@@ -474,6 +524,13 @@ export async function POST(request: NextRequest) {
         gender_expression: emptyStringToNull(genderExpression),
         ethnicity: emptyStringToNull(ethnicity),
         emotion_bias: emotionBias,
+        
+        // Frame & Composition
+        avatar_composition: emptyStringToNull(avatarComposition),
+        pose_style: emptyStringToNull(poseStyle),
+        camera_view: emptyStringToNull(cameraView),
+        eye_direction: emptyStringToNull(eyeDirection),
+        head_orientation: emptyStringToNull(headOrientation),
         
         // Physical Traits & Outfits
         body_type: emptyStringToNull(bodyType),

@@ -295,9 +295,7 @@ export async function POST(request: NextRequest) {
         storage_path,
         status: 'completed',
         content: {
-          video_url: signedVideo?.signedUrl,
-          output_video_url: signedVideo?.signedUrl,
-          transcript_url: signedTranscript?.signedUrl,
+          video_storage_path: storage_path,
           transcript_storage_path: transcript_storage_path,
           ai_enhanced: false, // AI features disabled
           ...validatedData
