@@ -1,11 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Navigation } from "@/components/navigation"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { BackgroundSlideshow } from "@/components/background-slideshow"
+import { RainbowButton } from "@/components/ui/rainbow-button"
+import { Instrument_Serif } from "next/font/google"
 import { GoogleAuthPopup } from "@/components/auth/google-auth-popup"
 import { useAuth } from "@/components/auth/auth-provider"
-import { Sparkles } from "lucide-react"
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+})
 
 export function Hero() {
   const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false)
@@ -16,117 +22,92 @@ export function Hero() {
     setIsMounted(true)
   }, [])
 
+  const handlePrimaryClick = () => {
+    if (!isMounted) return
+    if (user) {
+      window.location.href = "/content"
+      return
+    }
+    setIsAuthPopupOpen(true)
+  }
+
+  const buttonLabel = !isMounted ? "Loading..." : user ? "Access Application" : "Get Started"
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-transparent">
-      {/* Starfield background */}
-      <div className="absolute inset-0">
-        {[...Array(50)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute h-0.5 w-0.5 rounded-full bg-white/40"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `twinkle ${2 + Math.random() * 3}s infinite ${Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
+    <main className="relative min-h-screen flex flex-col items-center justify-between overflow-hidden py-8">
+      <BackgroundSlideshow />
+      <div className="absolute inset-0 -z-10 bg-black/20" />
 
-      {/* Decorative sparkles */}
-      <div className="absolute left-[15%] top-[35%] text-purple-500">
-        <Sparkles className="h-6 w-6 animate-pulse" />
-      </div>
-      <div className="absolute right-[15%] top-[55%] text-purple-500">
-        <Sparkles className="h-4 w-4 animate-pulse" style={{ animationDelay: "1s" }} />
-      </div>
+      <div className="flex-1 flex items-center justify-center px-6">
+        <section className="flex flex-col items-center gap-8">
+          <h1
+            className={`${instrumentSerif.className} text-white text-center text-balance font-normal tracking-tight text-7xl`}
+          >
+            imagination is limit
+          </h1>
 
-      <Navigation />
-
-      {/* Hero content */}
-      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-28 text-center">
-        <h1 className="mb-8 font-bold leading-tight">
-          <span className="block text-5xl text-primary">One Platform,</span>
-          <span className="block bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 bg-clip-text text-5xl text-transparent">
-            Endless Possibilities
-          </span>
-        </h1>
-
-        <p className="mx-auto mb-12 max-w-2xl text-sm leading-relaxed text-gray-500 md:text-sm z-20">
-          From automation to collaboration, our solution empowers your team to work smarter, not harder. Discover the
-          endless possibilities waiting for you.
-        </p>
-
-        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          {!isMounted ? (
-            <Button 
-              size="lg" 
-              className="bg-purple-600 text-sm font-semibold text-white cursor-pointer"
-              disabled
-              type="button"
-            >
-              Loading...
-            </Button>
-          ) : user ? (
-            <Button 
-              size="lg" 
-              className="bg-purple-600 text-sm font-semibold text-white cursor-pointer"
-              onClick={() => window.location.href = '/content'}
-              type="button"
-            >
-              Access Application
-            </Button>
-          ) : (
-            <Button 
-              size="lg" 
-              className="bg-purple-600 text-sm font-semibold text-white cursor-pointer"
-              onClick={() => setIsAuthPopupOpen(true)}
-              type="button"
-            >
-              Get Started Now
-            </Button>
-          )}
-          <Button
-            size="lg"
+          <RainbowButton
             variant="outline"
-            className="text-sm font-semibold cursor-pointer"
+            className="group"
+            onClick={handlePrimaryClick}
+            disabled={!isMounted}
             type="button"
           >
-            Try Tutorial Now
-          </Button>
+            <span className="font-medium">{buttonLabel}</span>
+            <svg
+              className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </RainbowButton>
+        </section>
+      </div>
+
+      <footer className="flex flex-col items-center gap-4 px-6 pb-4">
+        <div className="flex items-center gap-6">
+          <a
+            href="https://x.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group p-3 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-full transition-all duration-300 hover:scale-110"
+            aria-label="X (Twitter)"
+          >
+            <svg
+              className="w-4 h-4 text-white/70 group-hover:text-white transition-colors"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+
+          <a
+            href="https://linkedin.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group p-3 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-full transition-all duration-300 hover:scale-110"
+            aria-label="LinkedIn"
+          >
+            <svg
+              className="w-4 h-4 text-white/70 group-hover:text-white transition-colors"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+          </a>
         </div>
-      </div>
 
-      {/* Linear wave shape at bottom */}
-      <div className="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1200 200" className="w-full h-32" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#5eecff" />
-              <stop offset="50%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#ec4899" />
-            </linearGradient>
-          </defs>
-          <path
-            fill="url(#waveGradient)"
-            fillOpacity="1"
-            d="M0,100 Q300,20 600,100 T1200,100 L1200,200 L0,200 Z"
-          ></path>
-        </svg>
-      </div>
+        <p className="text-white/50 text-xs">Powered By DreamCut</p>
+      </footer>
 
-      <style jsx>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 1; }
-        }
-      `}</style>
-
-      {/* Popup d'authentification Google */}
-      <GoogleAuthPopup 
-        isOpen={isAuthPopupOpen} 
-        onClose={() => setIsAuthPopupOpen(false)} 
-      />
-    </div>
+      <GoogleAuthPopup isOpen={isAuthPopupOpen} onClose={() => setIsAuthPopupOpen(false)} />
+    </main>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,9 +41,10 @@ interface SubtitleProject {
 interface SubtitleInterfaceProps {
   onClose: () => void
   projectTitle: string
+  emptyState?: ReactNode
 }
 
-export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfaceProps) {
+export function SubtitleInterface({ onClose, projectTitle, emptyState }: SubtitleInterfaceProps) {
   const [subtitleProjects, setSubtitleProjects] = useState<SubtitleProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
@@ -132,28 +133,26 @@ export function SubtitleInterface({ onClose, projectTitle }: SubtitleInterfacePr
             Manage your generated subtitle videos
           </p>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <X className="h-4 w-4 mr-2" />
-          Close
-        </Button>
       </div>
 
       {/* Projects Grid */}
       {subtitleProjects.length === 0 ? (
-        <div className="flex items-center justify-center min-h-[400px] bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/20 dark:via-amber-950/20 dark:to-orange-950/20 rounded-lg p-8">
-          <div className="text-center max-w-md space-y-6">
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 blur-2xl opacity-30 animate-pulse"></div>
-              <FileText className="relative h-24 w-24 text-transparent bg-gradient-to-r from-yellow-500 via-amber-600 to-orange-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+        emptyState ?? (
+          <div className="flex items-center justify-center min-h-[400px] bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950/20 dark:via-amber-950/20 dark:to-orange-950/20 rounded-lg p-8">
+            <div className="text-center max-w-md space-y-6">
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 blur-2xl opacity-30 animate-pulse"></div>
+                <FileText className="relative h-24 w-24 text-transparent bg-gradient-to-r from-yellow-500 via-amber-600 to-orange-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
+                No Subtitle Projects Yet
+              </h3>
+              <p className="text-muted-foreground">
+                Generate your first subtitle project to see it here.
+              </p>
             </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-700 bg-clip-text text-transparent">
-              No Subtitle Projects Yet
-            </h3>
-            <p className="text-muted-foreground">
-              Generate your first subtitle project to see it here.
-            </p>
           </div>
-        </div>
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {subtitleProjects.map((project) => (

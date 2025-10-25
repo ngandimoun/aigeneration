@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -28,9 +28,11 @@ import { convertToSignedUrls } from "@/lib/storage/signed-urls"
 interface WatermarkInterfaceProps {
   onClose: () => void
   projectTitle: string
+  emptyState?: ReactNode
+  hideCloseButton?: boolean
 }
 
-export function WatermarkInterface({ onClose, projectTitle }: WatermarkInterfaceProps) {
+export function WatermarkInterface({ onClose, projectTitle, emptyState, hideCloseButton = false }: WatermarkInterfaceProps) {
   const [watermarkProjects, setWatermarkProjects] = useState<WatermarkProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map())
@@ -218,55 +220,57 @@ export function WatermarkInterface({ onClose, projectTitle }: WatermarkInterface
             Manage your generated watermarked videos
           </p>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <X className="h-4 w-4 mr-2" />
-          Close
-        </Button>
+        {!hideCloseButton && (
+          <Button onClick={onClose} variant="outline">
+            <X className="h-4 w-4 mr-2" />
+            Close
+          </Button>
+        )}
       </div>
 
       {/* Projects Grid */}
       {watermarkProjects.length === 0 ? (
-        <div className="flex items-center justify-center min-h-[400px] bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 dark:from-cyan-950/20 dark:via-blue-950/20 dark:to-purple-950/20 rounded-lg p-8">
-          <div className="text-center max-w-md space-y-6">
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-2xl opacity-30 animate-pulse"></div>
-              <Droplets className="relative h-24 w-24 text-transparent bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+        emptyState ?? (
+          <div className="flex items-center justify-center min-h-[400px] bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 dark:from-cyan-950/20 dark:via-blue-950/20 dark:to-purple-950/20 rounded-lg p-8">
+            <div className="text-center max-w-md space-y-6">
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-2xl opacity-30 animate-pulse"></div>
+                <Droplets className="relative h-24 w-24 text-transparent bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-700 bg-clip-text mx-auto" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-700 bg-clip-text text-transparent">
+                No Watermark Projects Yet
+              </h3>
+              <p className="text-muted-foreground">
+                Generate your first watermarked video to see it here.
+              </p>
             </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-700 bg-clip-text text-transparent">
-              No Watermark Projects Yet
-            </h3>
-            <p className="text-muted-foreground">
-              Generate your first watermarked video to see it here.
-            </p>
           </div>
-        </div>
+        )
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {watermarkProjects.map((project) => (
-            <Card key={project.id} className="overflow-hidden">
+            <Card key={project.id} className="flex h-full flex-col overflow-hidden">
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{project.title}</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground mt-1">
+                <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <CardTitle className="text-sm font-semibold leading-tight break-words">
+                      {project.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground break-words">
                       {project.description}
                     </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    {getStatusIcon(project.status)}
-                    {getStatusBadge(project.status)}
                   </div>
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-1 flex-col gap-4">
                 {/* Video Player */}
                 {project.status === 'completed' && project.output_video_url && (
-                  <div className="relative">
+                  <div className="relative aspect-video overflow-hidden rounded-lg bg-black/5">
                     <video
                       src={signedUrls.get(project.output_video_url) || project.output_video_url}
                       controls
-                      className="w-full h-48 object-cover rounded-lg"
+                      className="h-full w-full object-cover"
                       poster="/placeholder.jpg"
                     >
                       Your browser does not support the video tag.
@@ -275,25 +279,25 @@ export function WatermarkInterface({ onClose, projectTitle }: WatermarkInterface
                 )}
 
                 {/* Project Details */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
+                <div className="grid gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 break-words text-xs">
+                    <Calendar className="h-3 w-3" />
                     <span>{formatDate(project.created_at)}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-lg">💧</span>
+                  <div className="flex items-center gap-2 break-words text-xs">
+                    <span className="">💧</span>
                     <span>Watermark: {project.watermark_text}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-lg">📏</span>
+                  <div className="flex items-center gap-2 break-words text-xs">
+                    <span className="">📏</span>
                     <span>Font size: {project.font_size}</span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="mt-auto flex flex-col gap-2 sm:flex-row">
                   {project.status === 'completed' && project.output_video_url && (
                     <>
                       <Button

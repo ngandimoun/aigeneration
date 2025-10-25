@@ -192,11 +192,11 @@ export function LibraryAssetPicker({
   const getTabLabel = (tab: string) => {
     switch (tab) {
       case 'avatars':
-        return 'Avatars & Personas'
+        return 'Avatars'
       case 'product_mockups':
-        return 'Product Mockups'
+        return 'Product'
       case 'charts_infographics':
-        return 'Charts & Infographics'
+        return 'Charts'
       default:
         return tab
     }
@@ -288,25 +288,17 @@ export function LibraryAssetPicker({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+          <DialogTitle className="flex items-center justify-between text-sm">
             <span>Select from Library</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden scrollbar-thin scrollbar-hover overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="avatars" className="flex items-center gap-2">
+            <TabsList className="flex w-full gap-2 pb-1">
+              <TabsTrigger value="avatars" className="flex items-center gap-2 text-xs flex-shrink-0">
                 {getTabIcon('avatars')}
-                <span className="hidden sm:inline">Avatars & Personas</span>
+                <span className="hidden sm:inline">Avatars</span>
                 <span className="sm:hidden">Avatars</span>
                 {assets.avatars.length > 0 && (
                   <Badge variant="secondary" className="ml-1">
@@ -314,9 +306,9 @@ export function LibraryAssetPicker({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="product_mockups" className="flex items-center gap-2">
+              <TabsTrigger value="product_mockups" className="flex items-center gap-2 text-xs flex-shrink-0">
                 {getTabIcon('product_mockups')}
-                <span className="hidden sm:inline">Product Mockups</span>
+                <span className="hidden sm:inline">Product</span>
                 <span className="sm:hidden">Mockups</span>
                 {assets.product_mockups.length > 0 && (
                   <Badge variant="secondary" className="ml-1">
@@ -324,9 +316,9 @@ export function LibraryAssetPicker({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="charts_infographics" className="flex items-center gap-2">
+              <TabsTrigger value="charts_infographics" className="flex items-center gap-2 text-xs flex-shrink-0">
                 {getTabIcon('charts_infographics')}
-                <span className="hidden sm:inline">Charts & Infographics</span>
+                <span className="hidden sm:inline">Charts</span>
                 <span className="sm:hidden">Charts</span>
                 {assets.charts_infographics.length > 0 && (
                   <Badge variant="secondary" className="ml-1">
@@ -336,7 +328,7 @@ export function LibraryAssetPicker({
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-y-auto mt-4">
+            <div className="flex-1 mt-4 text-xs">
               <TabsContent value="avatars" className="mt-0">
                 {renderAssetGrid(assets.avatars)}
               </TabsContent>
@@ -351,7 +343,7 @@ export function LibraryAssetPicker({
         </div>
 
         {/* Footer with selection info and confirm button */}
-        <div className="flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-between pt-4 border-t text-xs">
           <div className="text-sm text-muted-foreground">
             {selectedAssets.length > 0 ? (
               <span>
@@ -361,11 +353,11 @@ export function LibraryAssetPicker({
               <span>Select up to {maxSelection} assets</span>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 text-xs">
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleConfirmSelection}
               disabled={selectedAssets.length === 0}
             >

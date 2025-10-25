@@ -1,3 +1,5 @@
+import type { Dispatch, SetStateAction } from 'react'
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
@@ -23,14 +25,17 @@ export interface ChatConversation {
 
 export interface ChatbotContextType {
   isOpen: boolean
-  setIsOpen: (open: boolean) => void
+  setIsOpen: Dispatch<SetStateAction<boolean>>
   conversationId: string | null
-  setConversationId: (id: string | null) => void
+  setConversationId: Dispatch<SetStateAction<string | null>>
   messages: ChatMessage[]
-  setMessages: (messages: ChatMessage[]) => void
+  setMessages: Dispatch<SetStateAction<ChatMessage[]>>
   currentSection: string
   isLoading: boolean
-  setIsLoading: (loading: boolean) => void
+  setIsLoading: Dispatch<SetStateAction<boolean>>
+  sendMessage: (message: string, imageFiles?: File[], imageUrls?: string[]) => Promise<void>
+  clearConversation: () => void
+  loadConversation: (conversationId: string) => void
 }
 
 export interface SendMessageRequest {

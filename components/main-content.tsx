@@ -9,6 +9,8 @@ import { LibraryGrid } from "@/components/library-grid"
 import { Button } from "@/components/ui/button"
 import { PreviousGenerations } from "@/components/ui/previous-generations"
 import { useAuth } from "@/components/auth/auth-provider"
+import { SubtitleInterface } from "@/components/subtitle-interface"
+import { WatermarkInterface } from "@/components/watermark-interface"
 
 export function MainContent() {
   const { 
@@ -16,7 +18,9 @@ export function MainContent() {
     selectedSection, 
     characterVariations = [], 
     characterVariationsMetadata,
-    isGeneratingVariations = false
+    isGeneratingVariations = false,
+    showProjectForm,
+    setShowProjectForm
   } = useNavigation()
   const { user } = useAuth()
   const [selectedVariation, setSelectedVariation] = useState<number | undefined>(undefined)
@@ -41,9 +45,6 @@ export function MainContent() {
   return (
     <div className="flex-1 overflow-y-auto scrollbar-hover">
       <div className="p-8">
-        <h1 className="text-3xl font-bold text-foreground mb-6">
-          {getDisplayTitle()}
-        </h1>
         
         {/* Character Variations for Comics section */}
         {selectedSection === 'comics' && (characterVariations.length > 0 || isGeneratingVariations) && (
@@ -55,6 +56,40 @@ export function MainContent() {
               onSelect={handleSelectVariation}
               onRegenerate={() => console.log('Regenerate clicked')}
               selectedIndex={selectedVariation}
+            />
+          </div>
+        )}
+
+        {selectedSection === 'add-watermark' && !showProjectForm && (
+          <div className="space-y-6">
+            <WatermarkInterface 
+              onClose={() => setShowProjectForm(true)}
+              projectTitle="Watermark Studio"
+              hideCloseButton
+              emptyState={(
+                <div className="text-center py-12">
+                  <div className="max-w-2xl mx-auto">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-100 to-purple-100 flex items-center justify-center">
+                      <span className="text-2xl">💧</span>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+                      💧 Watermark Studio
+                    </h2>
+                    <div className="bg-gradient-to-r from-cyan-50 to-purple-50 border border-cyan-200 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-cyan-800 font-medium">
+                        ✨ Protégez vos vidéos avec des filigranes personnalisés et élégants.
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                      Ajoutez rapidement un watermark DREAMCUT ou créez le vôtre avec taille et placement sur mesure. Idéal pour vos contenus sociaux, tutoriels et vidéos professionnelles.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Sparkles className="h-3 w-3" />
+                      <span>Cliquez sur "New Watermark" pour générer votre première vidéo filigranée</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             />
           </div>
         )}
@@ -596,77 +631,38 @@ export function MainContent() {
         )}
 
         {/* Add Subtitles section - Project details or Attention Message */}
-        {selectedSection === 'add-subtitles' && (
-          false ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Project Image */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <img 
-                    src={"/placeholder.jpg"} 
-                    alt={"Placeholder Title"}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-                
-                {/* Project Details */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-foreground mb-2">
-                      {"Placeholder Title"}
+        {selectedSection === 'add-subtitles' && !showProjectForm && (
+          <div className="space-y-6">
+            <SubtitleInterface 
+              onClose={() => setShowProjectForm(true)}
+              projectTitle="Subtitles Studio"
+              emptyState={(
+                <div className="text-center py-12">
+                  <div className="max-w-2xl mx-auto">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                      <span className="text-2xl">🎬</span>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-blue-500 via-purple-500 to-violet-500 bg-clip-text text-transparent">
+                      🎬 Subtitles Studio
                     </h2>
-                  </div>
-                  
-                  {/* Project Status */}
-                  <div className="flex items-center gap-2">
-                    {false ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
-                        <Globe className="h-4 w-4" />
-                        Public
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">
-                        <Lock className="h-4 w-4" />
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Project Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {"Placeholder description"}
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-blue-800 font-medium">
+                        ✨ Transform your videos with professional, AI-powered subtitles that engage your audience!
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                      Create accurate, customizable subtitles with AI transcription, emoji enrichment, keyword emphasis, 
+                      and stunning visual styles. Perfect for social media content, tutorials, and professional videos.
                     </p>
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Sparkles className="h-3 w-3" />
+                      <span>Click "New Project" pour ajouter des sous-titres à votre première vidéo</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="max-w-2xl mx-auto">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                  <span className="text-2xl">🎬</span>
-                </div>
-                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-blue-500 via-purple-500 to-violet-500 bg-clip-text text-transparent">
-                  🎬 Subtitles Studio
-                </h2>
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-800 font-medium">
-                    ✨ Transform your videos with professional, AI-powered subtitles that engage your audience!
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  Create accurate, customizable subtitles with AI transcription, emoji enrichment, keyword emphasis, 
-                  and stunning visual styles. Perfect for social media content, tutorials, and professional videos.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Click "New Project" to add subtitles to your first video</span>
-                </div>
-              </div>
-            </div>
-          )
+              )}
+            />
+          </div>
         )}
 
         {/* Video Translation section */}

@@ -131,17 +131,17 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       case "avatars-personas":
         return "Avatars & Personas"
       case "product-mockups":
-        return "Product Mockups"
+        return "Mockups"
       case "concept-worlds":
         return "Concept Worlds"
       case "charts-infographics":
-        return "Charts & Infographics"
+        return "Charts"
       case "voice-creation":
         return "Voice Creation"
       case "voiceovers":
-        return "Voiceovers"
+        return "Narration"
       case "music-jingles":
-        return "Music & Jingles"
+        return "Music Studio"
       case "music-videos":
         return "Music Videos"
       case "sound-fx":
@@ -151,11 +151,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       case "social-cuts":
         return "Social Cuts"
       case "talking-avatars":
-        return "Talking Avatars"
+        return "Conversational Characters"
       case "diverse-motion-single":
-        return "Diverse Motion - Single Asset"
+        return "Diverse Motion Single"
       case "diverse-motion-dual":
-        return "Diverse Motion - Dual Asset"
+        return "Diverse Motion Dual"
       case "thumbnails-covers":
         return "Thumbnails & Covers"
       case "storyboards-scripts":
@@ -165,9 +165,9 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       case "brand-kits":
         return "Brand Kits"
       case "add-subtitles":
-        return "Add Subtitles"
+        return "Subtitles Studio"
       case "add-watermark":
-        return "Add Watermark"
+        return "Watermark Studio"
       case "video-translate":
         return "Video Translation"
       default:

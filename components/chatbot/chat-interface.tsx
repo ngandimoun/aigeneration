@@ -5,25 +5,27 @@ import { useChatbot } from './chatbot-context'
 import { MessageBubble } from './message-bubble'
 import { LibraryAssetPicker } from './library-asset-picker'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 // import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   Send, 
   Image as ImageIcon, 
   X, 
-  Upload, 
   Loader2,
   MessageCircle,
-  Library
+  Library,
+  SendHorizonal
 } from 'lucide-react'
 import { toast } from 'sonner'
+import PulsingCircle from './pulsing-circle'
 // import { ChatbotService } from '@/lib/openai/chatbot-service'
 
 interface ChatInterfaceProps {
   onClose: () => void
+  onMinimize?: () => void
 }
 
-export function ChatInterface({ onClose }: ChatInterfaceProps) {
+export function ChatInterface({ onClose, onMinimize: _onMinimize }: ChatInterfaceProps) {
   const { 
     messages, 
     isLoading, 
@@ -39,7 +41,7 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -68,7 +70,7 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
     await sendMessage(message, selectedImages, selectedImageUrls)
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
@@ -144,14 +146,6 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
             </span>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="h-8 w-8 p-0"
-        >
-          <X className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Messages */}
@@ -159,7 +153,7 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
         <div className="space-y-4">
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <PulsingCircle />
               <p className="text-lg font-medium mb-2">Welcome to DreamCut AI Assistant!</p>
               <p className="text-sm">
                 I can help you with:
@@ -236,52 +230,57 @@ export function ChatInterface({ onClose }: ChatInterfaceProps) {
 
       {/* Input area */}
       <div className="p-4 border-t border-border">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Input
+        <div className="flex flex-col gap-2">
+          <div className="relative chat-input-shadow">
+            <Textarea
               ref={inputRef}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Ask me anything about DreamCut or upload images for prompt generation..."
-              className="pr-20"
+              className="min-h-28 resize-none pr-14 pb-12"
               disabled={isLoading}
+              rows={3}
             />
-            
-            {/* Image upload buttons */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+
+            <div className="absolute bottom-2 left-3 flex gap-2">
               <Button
-                size="sm"
+                size="icon"
                 variant="ghost"
-                className="h-6 w-6 p-0"
+                className="h-8 w-8"
                 onClick={() => setShowLibraryModal(true)}
                 title="Select from library"
               >
-                <Library className="h-3 w-3" />
+                <Library className="h-4 w-4" />
               </Button>
               <Button
-                size="sm"
+                size="icon"
                 variant="ghost"
-                className="h-6 w-6 p-0"
+                className="h-8 w-8"
                 onClick={() => fileInputRef.current?.click()}
                 title="Upload image"
               >
-                <ImageIcon className="h-3 w-3" />
+                <ImageIcon className="h-4 w-4" />
               </Button>
             </div>
+
+            <Button
+              size="icon"
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
+              onClick={handleSendMessage}
+              disabled={
+                isLoading ||
+                (!inputMessage.trim() && selectedImages.length === 0 && selectedImageUrls.length === 0)
+              }
+              title="Send message"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SendHorizonal className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          
-          <Button
-            onClick={handleSendMessage}
-            disabled={isLoading || (!inputMessage.trim() && selectedImages.length === 0 && selectedImageUrls.length === 0)}
-            className="px-4"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
         </div>
 
         {/* Library Asset Picker Modal */}

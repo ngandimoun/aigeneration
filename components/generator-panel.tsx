@@ -29,10 +29,8 @@ import { SocialCutsForm } from "@/components/forms/social-cuts-form"
 import { TalkingAvatarsForm } from "@/components/forms/talking-avatars-form"
 import { ComicsForm } from "@/components/forms/comics-form"
 import { SubtitleForm } from "@/components/forms/subtitle-form"
-import { SubtitleInterface } from "@/components/subtitle-interface"
 import { SoundToVideoInterface } from "@/components/sound-to-video-interface"
 import { WatermarkForm } from "@/components/forms/watermark-form"
-import { WatermarkInterface } from "@/components/watermark-interface"
 import { VideoTranslationForm } from "@/components/forms/video-translation-form"
 import { VideoTranslationInterface } from "@/components/video-translation-interface"
 import { ComicCard } from "@/components/comic-card"
@@ -759,14 +757,6 @@ export function GeneratorPanel() {
           />
         )}
 
-        {/* Subtitle Interface */}
-        {selectedSection === 'add-subtitles' && !showProjectForm && (
-          <SubtitleInterface 
-            onClose={() => setShowProjectForm(true)}
-            projectTitle="Add Subtitles"
-          />
-        )}
-
         {/* Video Translation Interface */}
         {selectedSection === 'video-translate' && !showProjectForm && (
           <VideoTranslationInterface 
@@ -781,14 +771,6 @@ export function GeneratorPanel() {
           <SoundToVideoInterface 
             onClose={() => setShowProjectForm(true)}
             projectTitle="Add Sound to Video"
-          />
-        )}
-
-        {/* Watermark Interface */}
-        {selectedSection === 'add-watermark' && !showProjectForm && (
-          <WatermarkInterface 
-            onClose={() => setShowProjectForm(true)}
-            projectTitle="Add Watermark"
           />
         )}
 
@@ -846,12 +828,12 @@ export function GeneratorPanel() {
         
         {/* Empty states */}
         {selectedSection === 'artifacts' && !false && true && !false && (
-          <EmptyState message="No artifacts yet. Create your first artifact!" />
+          <EmptyState message="" />
         )}
         
         
         {shouldShowEmptyState() && selectedSection !== 'explainers' && selectedSection !== 'add-subtitles' && selectedSection !== 'add-sound' && selectedSection !== 'add-watermark' && selectedSection !== 'social-cuts' && (
-          <EmptyState message="No projects yet. Create your first project!" />
+          <EmptyState message="" />
         )}
         
         {shouldShowEmptyState() && selectedSection === 'social-cuts' && (

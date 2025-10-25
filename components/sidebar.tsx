@@ -621,7 +621,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
-            <div className="flex items-center gap-1">
+            {/* <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 className={`flex-1 justify-start gap-3 text-xs ${
@@ -653,7 +653,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: 
               >
                 <Plus className="h-3 w-3" />
               </Button>
-            </div>
+            </div> */}
           </div>
         )}
         </nav>
